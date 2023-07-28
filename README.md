@@ -15,6 +15,7 @@ Computations are all done using Ponca on polyscope datastructures (see code for 
 ```bash
 git clone https://github.com/poncateam/poncascope.git # Fetch repository
 git submodule update --recursive --init               # Get dependencies: Polyscope, Ponca
+git submodule update --remote
 mkdir build && cd build                               # Goto to compilation directory
 cmake ../ -DCMAKE_BUILD_TYPE=Release                  # Configure in release mode
 make                                                  # Compile
