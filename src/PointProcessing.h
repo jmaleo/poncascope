@@ -13,11 +13,13 @@ class PointProcessing {
     public:
 
         KdTree tree;                   /// < kdtree for nearest neighbors search
+        KnnGraph *knnGraph = nullptr;  /// < k-neighbor graph
 
         // Options for algorithms
-        int    iVertexSource  = 7;     /// < id of the selected point
-        int    kNN            = 10;    /// < neighborhood size (knn)
-        int    mlsIter        = 3;     /// < number of moving least squares iterations
+        bool  useKnnGraph    = false; /// < use k-neighbor graph instead of kdtree
+        int   iVertexSource  = 7;     /// < id of the selected point
+        int   kNN            = 10;    /// < neighborhood size (knn)
+        int   mlsIter        = 3;     /// < number of moving least squares iterations
         float NSize          = 0.25;  /// < neighborhood size (euclidean)
 
         // Current Point Cloud Data
@@ -26,6 +28,7 @@ class PointProcessing {
 
         PointProcessing() {
             // Default values
+            useKnnGraph    = false;
             iVertexSource  = 7;
             kNN            = 10;
             mlsIter        = 3;
@@ -36,19 +39,24 @@ class PointProcessing {
         PointProcessing(MyPointCloud &cloud) {
 
             // Default values
+            useKnnGraph    = false;
             iVertexSource  = 7;
             kNN            = 10;
             mlsIter        = 3;
             NSize          = 0.25;
         
-            // build kdtree
-            buildKdTree(cloud.getVertices(), cloud.getNormals(), tree);
+            // build kdtree and knn graph
+            update(cloud);
         };
 
         // update the KdTree
         void update(MyPointCloud &cloud) {
             buildKdTree(cloud.getVertices(), cloud.getNormals(), tree);
+            recomputeKnnGraph();
         }
+
+        /// Recompute K-Neighbor graph
+        void recomputeKnnGraph();
 
         // Traverse the point cloud to compute differential quantities
         template<typename FitT>
@@ -70,6 +78,9 @@ private :
 
         template <typename Functor>
         void measureTime( const std::string &actionName, Functor F );
+
+        template <typename Functor>
+        void processRangeNeighbors(const int &idx, const Functor f);
 
         // Compute differential quantities
         template<typename FitT, typename Functor>

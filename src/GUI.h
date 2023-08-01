@@ -21,19 +21,34 @@ class GUI {
             selectedQuantities.resize(6, 0);
             loadObject(mainCloud, assetsDir + "armadillo.obj", 0.0f, 0.0f);
             pointProcessing.update(mainCloud);
-            polyscopeClouds.push_back(polyscope::registerPointCloud("mainCloud", mainCloud.getVertices()));
-            addQuantities(0, "real normals", mainCloud.getNormals());
-            for (int i = 0; i < 2; i++){
-                polyscopeClouds.push_back(nullptr);
-            }
+            polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.getVertices());
+            addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
+            remove_clouds();
         }
 
         void mainCallBack();
 
+        void remove_clouds(){
+            for (polyscope::PointCloud* pc : polyscope_projectionClouds){
+                // delete the point cloud
+                polyscope::removeStructure(pc->name, false);
+            }
+            for (polyscope::PointCloud* pc : polyscope_uniqueClouds){
+                // delete the point cloud
+                polyscope::removeStructure(pc->name, false);
+            }
+            polyscope_projectionClouds.clear();
+            polyscope_uniqueClouds.clear();
+        }
+
 
     private: 
         // First one : main cloud, second one : projection cloud, others : temporary clouds
-        std::vector<polyscope::PointCloud*> polyscopeClouds; // SIZE OF 3 for the mainCloud, the projection and the unique projection
+
+        polyscope::PointCloud* polyscope_mainCloud;
+        std::vector<polyscope::PointCloud*> polyscope_projectionClouds;
+        std::vector<polyscope::PointCloud*> polyscope_uniqueClouds;
+
 
         MyPointCloud mainCloud;
         MyPointCloud tempCloud;
@@ -48,6 +63,7 @@ class GUI {
 
         // State of the radio button (selection of a file or an implicit function)
         int radioButtonCloudGeneration = 0;
+        std::string mainCloudName = "mainCloud";
         std::string assetsDir = "assets/";
         std::string selectedFile = "";
         int selectedFileIndex = -1;
@@ -85,7 +101,6 @@ class GUI {
         bool all_computed = false;
         bool unique_computed = false;
         std::string methodName = "";
-        std::string uniqueCloudName = "unique projection";
 
         void cloudComputing();
 
@@ -98,7 +113,7 @@ class GUI {
 
         void cloudComputingParameters();
 
-        void addQuantities(int num_pc, const std::string &name, const Eigen::MatrixXd &values);
+        void addQuantities(polyscope::PointCloud *pc, const std::string &name, const Eigen::MatrixXd &values);
 
 
 }; // class GUI

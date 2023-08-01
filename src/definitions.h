@@ -10,6 +10,7 @@ using Scalar             = double;
 using VectorType         = Eigen::Matrix<Scalar, 3,1>;
 using PPAdapter          = BlockPointAdapter<Scalar>;
 using KdTree             = Ponca::KdTree<PPAdapter>;
+using KnnGraph           = Ponca::KnnGraph<PPAdapter>;
 
 // Weighting functions
 

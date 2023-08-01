@@ -10,6 +10,19 @@ PointProcessing::measureTime( const std::string &actionName, Functor F ){
     std::cout << actionName << " in " << (end - start) / 1ms << "ms.\n";
 }
 
+template <typename Functor>
+void PointProcessing::processRangeNeighbors(const int &idx, const Functor f){
+    if(useKnnGraph)
+        for (int j : knnGraph->range_neighbors(idx, NSize)){
+            f(j);
+        }
+    else
+        for (int j : tree.range_neighbors(idx, NSize)){
+            f(j);
+        }
+}
+
+
 template<typename FitT, typename Functor>
 void PointProcessing::processOnePoint(const int &idx, const typename FitT::WeightFunction& w, Functor f){
         VectorType pos = tree.point_data()[idx].pos();
@@ -18,7 +31,17 @@ void PointProcessing::processOnePoint(const int &idx, const typename FitT::Weigh
             fit.setWeightFunc(w);
             fit.init( pos );
             
-            Ponca::FIT_RESULT res = fit.computeWithIds(tree.range_neighbors(idx, NSize), tree.point_data() );
+            // Ponca::FIT_RESULT res = fit.computeWithIds(tree.range_neighbors(idx, NSize), tree.point_data() );
+            
+            Ponca::FIT_RESULT res;
+            do {
+                fit.startNewPass();
+                processRangeNeighbors(idx, [this, &fit](int j) {
+                    fit.addNeighbor(tree.point_data()[j]);
+                });
+                res = fit.finalize();
+            } while (res == Ponca::NEED_OTHER_PASS);
+            
             if (res == Ponca::STABLE){
 
                 pos = fit.project( pos );
@@ -132,9 +155,9 @@ const Eigen::VectorXd PointProcessing::colorizeKnn(MyPointCloud &cloud) {
     closest.setZero();
 
     closest(iVertexSource) = 2;
-    for (int j : tree.k_nearest_neighbors(iVertexSource, kNN)){
+    processRangeNeighbors(iVertexSource, [&closest](int j){
         closest(j) = 1;
-    }
+    });
     
     return closest;
 }
@@ -150,9 +173,18 @@ const Eigen::VectorXd PointProcessing::colorizeEuclideanNeighborhood(MyPointClou
 
     closest(iVertexSource) = 2;
     const auto &p = tree.point_data()[iVertexSource];
-    for (int j : tree.range_neighbors(iVertexSource, NSize)){
+    processRangeNeighbors(iVertexSource, [this, w,p,&closest](int j){
         const auto &q = tree.point_data()[j];
         closest(j) = w.w( q.pos() - p.pos(), q ).first;
-    }
+    });
     return closest;
+}
+
+void PointProcessing::recomputeKnnGraph() {
+    if(useKnnGraph) {
+        measureTime("[Ponca] Build KnnGraph", [this]() {
+            delete knnGraph;
+            knnGraph = new KnnGraph(tree, kNN);
+        });
+    }
 }
