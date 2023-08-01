@@ -1,7 +1,6 @@
 [submodule "external/ponca"]
 	path = external/ponca
-	url = https://github.com/poncateam/ponca.git
-	branch = master
+	url = https://github.com/jmaleo/ponca.git
 [submodule "external/polyscope"]
 	path = external/polyscope
 	url = https://github.com/nmwsharp/polyscope.git
