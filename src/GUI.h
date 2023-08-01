@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <mutex>
 #include "polyscope/polyscope.h"
 #include "polyscope/messages.h"
 #include "polyscope/point_cloud.h"
@@ -21,6 +22,10 @@ class GUI {
             loadObject(mainCloud, assetsDir + "armadillo.obj", 0.0f, 0.0f);
             pointProcessing.update(mainCloud);
             polyscopeClouds.push_back(polyscope::registerPointCloud("mainCloud", mainCloud.getVertices()));
+            addQuantities(0, "real normals", mainCloud.getNormals());
+            for (int i = 0; i < 2; i++){
+                polyscopeClouds.push_back(nullptr);
+            }
         }
 
         void mainCallBack();
@@ -28,9 +33,10 @@ class GUI {
 
     private: 
         // First one : main cloud, second one : projection cloud, others : temporary clouds
-        std::vector<polyscope::PointCloud*> polyscopeClouds; 
+        std::vector<polyscope::PointCloud*> polyscopeClouds; // SIZE OF 3 for the mainCloud, the projection and the unique projection
 
         MyPointCloud mainCloud;
+        MyPointCloud tempCloud;
         CylinderGenerator cylinderGenerator;
         PointProcessing pointProcessing;
 
@@ -76,10 +82,19 @@ class GUI {
 
         // Make computation of the cloud
 
-        bool computed = false;
+        bool all_computed = false;
+        bool unique_computed = false;
         std::string methodName = "";
+        std::string uniqueCloudName = "unique projection";
 
         void cloudComputing();
+
+        void cloudComputingUpdateUnique();
+
+        void cloudComputingUpdateAll();
+
+        template <typename FitT>
+        void methodForCloudComputing(const std::string &metName);
 
         void cloudComputingParameters();
 
@@ -88,4 +103,4 @@ class GUI {
 
 }; // class GUI
 
-#include "GUI.hpp";
+#include "GUI.hpp"

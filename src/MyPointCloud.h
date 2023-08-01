@@ -25,6 +25,26 @@ class DiffQuantities {
             m_kMax = kMax;
             m_kMean = kMean;
         }
+
+        ~DiffQuantities(){
+            m_vertices.resize(0, 0);
+            m_normals.resize(0, 0);
+            m_kMinDir.resize(0, 0);
+            m_kMaxDir.resize(0, 0);
+            m_kMin.resize(0);
+            m_kMax.resize(0);
+            m_kMean.resize(0);
+        }
+
+        void clear(){
+            m_vertices.resize(0, 0);
+            m_normals.resize(0, 0);
+            m_kMinDir.resize(0, 0);
+            m_kMaxDir.resize(0, 0);
+            m_kMin.resize(0);
+            m_kMax.resize(0);
+            m_kMean.resize(0);
+        }
     
         const Eigen::MatrixXd & getVertices(){
             return m_vertices;
@@ -95,9 +115,17 @@ class MyPointCloud {
             m_vertices = vertices;
             m_normals = normals;
             m_size = vertices.rows();
+            updateBoundingBox();
         }
 
         ~MyPointCloud(){
+            m_diffQuantities.clear();
+            m_vertices.resize(0, 0);
+            m_normals.resize(0, 0);
+        }
+
+        void clear(){
+            m_diffQuantities.clear();
             m_vertices.resize(0, 0);
             m_normals.resize(0, 0);
         }
@@ -111,6 +139,7 @@ class MyPointCloud {
             assert(points.rows() == m_size);
             assert(points.cols() == 3);
             m_vertices = points;
+            updateBoundingBox();
         }
 
         void setNormals(Eigen::MatrixXd &normals){
@@ -151,11 +180,28 @@ class MyPointCloud {
             }
         }
 
+        Eigen::VectorXd getMin(){
+            return m_min;
+        }
+
+        Eigen::VectorXd getMax(){
+            return m_max;
+        }
+
     private:
 
         Eigen::MatrixXd m_vertices;
         Eigen::MatrixXd m_normals;
         DiffQuantities  m_diffQuantities;
         int m_size;
+
+        Eigen::VectorXd m_min;
+        Eigen::VectorXd m_max;
+
+
+        void updateBoundingBox(){
+            m_min = m_vertices.colwise().minCoeff();
+            m_max = m_vertices.colwise().maxCoeff();
+        }
 
 }; // class MyPointCloud

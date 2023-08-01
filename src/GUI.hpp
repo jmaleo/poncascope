@@ -13,9 +13,11 @@ void GUI::mainCallBack(){
     if (cloudNeedsUpdate){
         pointProcessing.update(mainCloud);
         polyscopeClouds[0] = polyscope::registerPointCloud("mainCloud", mainCloud.getVertices());
+        addQuantities(0, "real normals", mainCloud.getNormals());
         // Remove other clouds
         for (int i = 1; i < polyscopeClouds.size(); i++){
-            polyscopeClouds[i]->remove();
+            if (polyscopeClouds[i] != nullptr)
+                polyscopeClouds[i]->remove();
         }
         cloudNeedsUpdate = false;
     }
@@ -161,42 +163,79 @@ void GUI::quantitiesParameters() {
     ImGui::Checkbox ("Projected point cloud", &displayProjectedPointCloud);
 }
 
+template <typename FitT>
+void GUI::methodForCloudComputing(const std::string& metName){
+    std::string buttonName_all = "Compute " + metName;
+    std::string buttonName_unique = "Compute " + metName + " for selected";
+    if (ImGui::Button(buttonName_all.c_str())){
+        methodName = metName;
+        all_computed = true;
+        pointProcessing.computeDiffQuantities<FitT>(metName, mainCloud);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(buttonName_unique.c_str())){
+        // Compute the distance between points for the cube, by taking 1/50 of the maximum distance between points of the mainCloud
+        double dist = (mainCloud.getMin() - mainCloud.getMax()).norm() / 50.0;
+        create_cube(tempCloud, pointProcessing.getVertexSourcePosition(), dist);
+        methodName = metName;
+        unique_computed = true;
+        pointProcessing.computeUniquePoint<FitT>(metName, tempCloud);
+    }
+
+}
+
+void GUI::cloudComputingUpdateAll (){
+    if (!all_computed) return;
+
+    for (int i = 0; i < selectedQuantities.size(); ++i) {
+        if (selectedQuantities[i]){
+            std::string completeName = "[" + methodName + "] "+ quantityNames[i];
+            addQuantities(0,completeName, mainCloud.getDiffQuantities().getByName(quantityNames[i]));
+        }
+    }
+    if (displayProjectedPointCloud){
+        std::string cloudName = "[" + methodName + "] " + "projection";
+        polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, mainCloud.getDiffQuantities().getVertices());
+        polyscopeClouds[1] = newCloud;
+        addQuantities(1, "normals", mainCloud.getDiffQuantities().getNormals());
+    }
+    else {
+        if (polyscopeClouds[1] != nullptr) {
+            // remove the projected point cloud
+            polyscopeClouds[1]->remove();
+            polyscopeClouds[1] = nullptr;
+        }
+    }
+    all_computed = false;
+    methodName = "";
+}
+
+
+void GUI::cloudComputingUpdateUnique (){
+    if (!unique_computed) return;
+
+    polyscope::removeStructure(uniqueCloudName, false);
+
+    polyscopeClouds[2] = polyscope::registerPointCloud(uniqueCloudName, tempCloud.getDiffQuantities().getVertices());
+
+    std::string normalsName = "[" + methodName + "] "+ "Normals";
+    addQuantities(2,normalsName, tempCloud.getDiffQuantities().getByName("Normals"));
+
+    unique_computed = false;
+    methodName = "";
+}
+
+
 void GUI::cloudComputing(){
 
     cloudComputingParameters();
 
-    if (ImGui::Button("Compute APSS")){
-        methodName = "APSS";
-        computed = true;
-        pointProcessing.computeDiffQuantities<basket_AlgebraicPointSetSurfaceFit>("APSS", mainCloud);
-    }
+    methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
 
-    if (computed){
-        computed = false;
-        for (int i = 0; i < selectedQuantities.size(); ++i) {
-            if (selectedQuantities[i]){
-                std::string completeName = "[" + methodName + "] "+ quantityNames[i];
-                addQuantities(0,completeName, mainCloud.getDiffQuantities().getByName(quantityNames[i]));
-            }
-        }
-        if (displayProjectedPointCloud){
-            std::string cloudName = "[" + methodName + "] " + "projection";
-            polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, mainCloud.getDiffQuantities().getVertices());
-            if (polyscopeClouds.size() < 2) {
-                polyscopeClouds.push_back(newCloud);
-            } else {
-                polyscopeClouds[1] = newCloud;
-            }
-            addQuantities(1, "normals", mainCloud.getDiffQuantities().getNormals());
-        }
-        else {
-            if (polyscopeClouds.size() > 1) {
-                // remove the projected point cloud
-                polyscopeClouds[1]->remove();
-            }
-        }
-        methodName = "";
-    }
+    methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
+
+    cloudComputingUpdateAll();
+    cloudComputingUpdateUnique();
 
 }
 
@@ -218,10 +257,6 @@ void GUI::cloudComputingParameters(){
 }
 
 void GUI::addQuantities(int num_pc, const std::string &name, const Eigen::MatrixXd &values){
-    if (values.rows() != mainCloud.getSize()){
-        std::cout << "Error: the number of values is not equal to the number of points" << std::endl;
-        return;
-    }
     if (values.cols() == 1){
         // Make values beeing a vector
         Eigen::VectorXd valuesVec = values.col(0);

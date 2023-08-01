@@ -10,35 +10,41 @@ PointProcessing::measureTime( const std::string &actionName, Functor F ){
     std::cout << actionName << " in " << (end - start) / 1ms << "ms.\n";
 }
 
-/// Generic processing function: traverse point cloud, compute fitting, and use functor to process fitting output
-/// \note Functor is called only if fit is stable
 template<typename FitT, typename Functor>
-void PointProcessing::processPointCloud(const typename FitT::WeightFunction& w, Functor f){
-
-    int nvert = tree.index_data().size();
-
-
-    // Traverse point cloud
-    #pragma omp parallel for
-    for (int i = 0; i < nvert; ++i) {
-
-        VectorType pos = tree.point_data()[i].pos();
+void PointProcessing::processOnePoint(const int &idx, const typename FitT::WeightFunction& w, Functor f){
+        VectorType pos = tree.point_data()[idx].pos();
         for( int mm = 0; mm < mlsIter; ++mm) {
             FitT fit;
             fit.setWeightFunc(w);
             fit.init( pos );
             
-            Ponca::FIT_RESULT res = fit.computeWithIds(tree.range_neighbors(i, NSize), tree.point_data() );
+            Ponca::FIT_RESULT res = fit.computeWithIds(tree.range_neighbors(idx, NSize), tree.point_data() );
             if (res == Ponca::STABLE){
 
                 pos = fit.project( pos );
                 if ( mm == mlsIter -1 ) // last mls step, calling functor
-                    f(i, fit, pos);
+                    f(idx, fit, pos);
             }
             else {
-                std::cerr << "Warning: fit " << i << " is not stable" << std::endl;
+                std::cerr << "Warning: fit " << idx << " is not stable" << std::endl;
             }
+        }
+}
 
+/// Generic processing function: traverse point cloud, compute fitting, and use functor to process fitting output
+/// \note Functor is called only if fit is stable
+template<typename FitT, typename Functor>
+void PointProcessing::processPointCloud(const bool &unique, const typename FitT::WeightFunction& w, Functor f){
+
+    if (unique) {
+        processOnePoint<FitT, Functor>( iVertexSource, w, f );
+    }
+    else {
+        int nvert = tree.index_data().size();
+        // Traverse point cloud
+        #pragma omp parallel for
+        for (int i = 0; i < nvert; ++i) {
+            processOnePoint<FitT, Functor>(i, w, f);
         }
     }
 }
@@ -46,13 +52,16 @@ void PointProcessing::processPointCloud(const typename FitT::WeightFunction& w, 
 template<typename FitT>
 void
 PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud &cloud) {
+    
     int nvert = tree.index_data().size();
+
+    // Allocate memory
     Eigen::VectorXd mean ( nvert ), kmin ( nvert ), kmax ( nvert );
     Eigen::MatrixXd normal( nvert, 3 ), dmin( nvert, 3 ), dmax( nvert, 3 ), proj( nvert, 3 );
 
     measureTime( "[Ponca] Compute differential quantities using " + name,
                  [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj]() {
-                    processPointCloud<FitT>(SmoothWeightFunc(NSize),
+                    processPointCloud<FitT>(false, SmoothWeightFunc(NSize),
                                 [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj]
                                 ( int i, const FitT& fit, const VectorType& mlsPos){
 
@@ -78,7 +87,40 @@ template<typename FitT>
 void
 PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud &cloud)
 {
-    // Compute unique point
+    int nvert = cloud.getSize();
+
+    // Allocate memory
+    Eigen::VectorXd mean ( nvert ), kmin ( nvert ), kmax ( nvert );
+    Eigen::MatrixXd normal( nvert, 3 ), dmin( nvert, 3 ), dmax( nvert, 3 ), proj( nvert, 3 );
+
+    // set Zeros 
+    mean.setZero();
+    kmin.setZero();
+    kmax.setZero();
+    normal.setZero();
+    dmin.setZero();
+    dmax.setZero();
+    proj.setZero();
+
+    measureTime( "[Ponca] Compute differential quantities using " + name,
+                 [this, &cloud, &nvert, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj]() {
+                    processPointCloud<FitT>(true, SmoothWeightFunc(NSize),
+                                [this, &cloud, &nvert, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj]
+                                ( int i, const FitT& fit, const VectorType& mlsPos){
+                                    
+                                    for (int k = 0; k < nvert; k++){
+                                        VectorType init = cloud.getVertices().row(k);
+                                        VectorType projPoint = fit.project(init);
+                                        if (projPoint != init) {
+                                            normal.row( k ) = fit.primitiveGradient(init);
+                                            proj.row( k )   = projPoint;
+                                        }
+                                    }
+                                });
+                    });
+
+    // Add differential quantities to the cloud
+    cloud.setDiffQuantities(DiffQuantities(proj, normal,dmin, dmax, kmin, kmax, mean));
 }
 
 

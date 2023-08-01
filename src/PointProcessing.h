@@ -50,10 +50,11 @@ class PointProcessing {
             buildKdTree(cloud.getVertices(), cloud.getNormals(), tree);
         }
 
-        // Compute differential quantities
+        // Traverse the point cloud to compute differential quantities
         template<typename FitT>
         void computeDiffQuantities(const std::string &name, MyPointCloud &cloud);
 
+        // Compute differential quantities for a single point
         template<typename FitT>
         void computeUniquePoint(const std::string &name, MyPointCloud &cloud);
 
@@ -63,13 +64,19 @@ class PointProcessing {
         // ColorizeEuclideanNeighborhood
         const Eigen::VectorXd colorizeEuclideanNeighborhood(MyPointCloud &cloud);
 
+        const Eigen::VectorXd getVertexSourcePosition(){ return tree.point_data()[iVertexSource].pos(); }
+
 private :
 
         template <typename Functor>
         void measureTime( const std::string &actionName, Functor F );
 
+        // Compute differential quantities
         template<typename FitT, typename Functor>
-        void processPointCloud(const typename FitT::WeightFunction& w, Functor f);
+        void processOnePoint(const int &idx, const typename FitT::WeightFunction& w, Functor f);
+
+        template<typename FitT, typename Functor>
+        void processPointCloud(const bool &unique, const typename FitT::WeightFunction& w, Functor f);
 
 }; // class PointProcessing
 
