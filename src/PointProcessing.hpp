@@ -188,3 +188,22 @@ void PointProcessing::recomputeKnnGraph() {
         });
     }
 }
+
+/// Dry run: loop over all vertices + run MLS loops without computation
+/// This function is useful to monitor the KdTree performances
+void PointProcessing::mlsDryRun() {
+    int nvert = tree.index_data().size();
+    m_meanNeighbors = Scalar(0);
+
+    // Allocate memory
+    measureTime( "[Ponca] Compute differential quantities using dry fit",
+                 [this]() {
+                    processPointCloud<basket_dryFit>(false, SmoothWeightFunc(NSize),
+                                [this]
+                                ( int, const basket_dryFit& fit, const VectorType&){
+                                    m_meanNeighbors += fit.getNumNeighbors();
+                    });
+                });
+
+    m_meanNeighbors /= nvert;    
+}

@@ -63,6 +63,7 @@ class GUI {
 
         // State of the radio button (selection of a file or an implicit function)
         int radioButtonCloudGeneration = 0;
+        std::string lastDryRun = "";
         std::string mainCloudName = "mainCloud";
         std::string assetsDir = "assets/";
         std::string selectedFile = "";

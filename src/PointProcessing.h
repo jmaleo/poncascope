@@ -66,6 +66,8 @@ class PointProcessing {
         template<typename FitT>
         void computeUniquePoint(const std::string &name, MyPointCloud &cloud);
 
+        void mlsDryRun();
+
         // ColorizeKnn
         const Eigen::VectorXd colorizeKnn(MyPointCloud &cloud);
 
@@ -74,7 +76,11 @@ class PointProcessing {
 
         const Eigen::VectorXd getVertexSourcePosition(){ return tree.point_data()[iVertexSource].pos(); }
 
+        Scalar getMeanNeighbors() { return m_meanNeighbors; }
+
 private :
+
+        Scalar m_meanNeighbors = 0;
 
         template <typename Functor>
         void measureTime( const std::string &actionName, Functor F );

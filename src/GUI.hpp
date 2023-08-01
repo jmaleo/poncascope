@@ -17,6 +17,7 @@ void GUI::mainCallBack(){
         addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
         // Remove other clouds
         remove_clouds();
+        lastDryRun = "";
         cloudNeedsUpdate = false;
     }
 
@@ -161,27 +162,6 @@ void GUI::quantitiesParameters() {
     ImGui::Checkbox ("Projected point cloud", &displayProjectedPointCloud);
 }
 
-template <typename FitT>
-void GUI::methodForCloudComputing(const std::string& metName){
-    std::string buttonName_all = "Compute " + metName;
-    std::string buttonName_unique = metName + " for selected";
-    if (ImGui::Button(buttonName_all.c_str())){
-        methodName = metName;
-        all_computed = true;
-        pointProcessing.computeDiffQuantities<FitT>(metName, mainCloud);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(buttonName_unique.c_str())){
-        // Compute the distance between points for the cube, by taking 1/50 of the maximum distance between points of the mainCloud
-        double dist = (mainCloud.getMin() - mainCloud.getMax()).norm() / 50.0;
-        create_cube(tempCloud, pointProcessing.getVertexSourcePosition(), dist);
-        methodName = metName;
-        unique_computed = true;
-        pointProcessing.computeUniquePoint<FitT>(metName, tempCloud);
-    }
-
-}
-
 void GUI::cloudComputingUpdateAll (){
     if (!all_computed) return;
 
@@ -239,9 +219,37 @@ void GUI::cloudComputingUpdateUnique (){
 }
 
 
+template <typename FitT>
+void GUI::methodForCloudComputing(const std::string& metName){
+    std::string buttonName_all = "Compute " + metName;
+    std::string buttonName_unique = metName + " for selected";
+    if (ImGui::Button(buttonName_all.c_str())){
+        methodName = metName;
+        all_computed = true;
+        pointProcessing.computeDiffQuantities<FitT>(metName, mainCloud);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(buttonName_unique.c_str())){
+        // Compute the distance between points for the cube, by taking 1/50 of the maximum distance between points of the mainCloud
+        double dist = (mainCloud.getMin() - mainCloud.getMax()).norm() / 50.0;
+        create_cube(tempCloud, pointProcessing.getVertexSourcePosition(), dist);
+        methodName = metName;
+        unique_computed = true;
+        pointProcessing.computeUniquePoint<FitT>(metName, tempCloud);
+    }
+
+}
+
 void GUI::cloudComputing(){
 
     cloudComputingParameters();
+
+    if (ImGui::Button("Dry Fit All")){
+        pointProcessing.mlsDryRun();
+        lastDryRun = "Last time run : " + std::to_string(pointProcessing.getMeanNeighbors()) + " number of neighbors (mean) \n";
+    }
+    ImGui::SameLine();
+    ImGui::Text(lastDryRun.c_str());
 
     methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
 
