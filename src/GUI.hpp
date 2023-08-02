@@ -75,6 +75,15 @@ void GUI::generationFromFile(){
     // Display the list of files
     ImGui::ListBox("Files", &selectedFileIndex, fileNamesCStr.data(), fileNamesCStr.size());
 
+    ImGui::SameLine();
+    if (ImGui::Button("File research")){
+        dialogInfo.title = "Choose File";
+        dialogInfo.type = ImGuiFileDialogType_OpenFile;
+        dialogInfo.directoryPath = std::filesystem::current_path();
+        fileDialogOpen = true;
+    }
+    fileResearch();
+
     // If the user selected a file, display the name of the file
     if(selectedFileIndex != -1){
         selectedFile = assetsDir + fileNames[selectedFileIndex];
@@ -305,4 +314,20 @@ void GUI::addQuantities(polyscope::PointCloud *pc, const std::string &name, cons
     }
     else 
         pc->addVectorQuantity(name, values);
+}
+
+
+void GUI::fileResearch(){
+
+    if (FileDialog(&fileDialogOpen, &dialogInfo))
+    {
+        // L'utilisateur a sélectionné un fichier et a cliqué sur "Open".
+        // Le chemin du fichier sélectionné est dans dialogInfo.resultPath.
+        fileDialogOpen = false;  // Ferme la boîte de dialogue pour la prochaine fois
+        selectedFile = dialogInfo.resultPath.string();
+        selectedFileIndex = -1;
+    }
+
+    // open = false;
+    return;
 }

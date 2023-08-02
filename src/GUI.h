@@ -12,12 +12,19 @@
 #include "CloudGeneration.h"
 #include "PointProcessing.h"
 #include <Eigen/Dense>
+#include "imgui_filedialog.h"
 
 class GUI {
 
     public:
 
         GUI(){
+            // Initialize fileDialogue
+            dialogInfo.title = "Choose File";
+            dialogInfo.type = ImGuiFileDialogType_OpenFile;
+            dialogInfo.directoryPath = std::filesystem::current_path();
+
+            // Initialize polyscope
             selectedQuantities.resize(6, 0);
             loadObject(mainCloud, assetsDir + "armadillo.obj", 0.0f, 0.0f);
             pointProcessing.update(mainCloud);
@@ -61,7 +68,12 @@ class GUI {
 
         Scalar pointRadius    = 0.005; /// < display radius of the point cloud
 
-        // State of the radio button (selection of a file or an implicit function)
+        
+        // FILEDIALOGUE
+        bool fileDialogOpen = false;
+        ImFileDialogInfo dialogInfo;
+
+        // State of the radio button (selection of a file or an implicit function)*
         int radioButtonCloudGeneration = 0;
         std::string lastDryRun = "";
         std::string mainCloudName = "mainCloud";
@@ -79,6 +91,8 @@ class GUI {
         void generationFromFile();
 
         void generationFromImplicit();
+
+        void fileResearch ();
 
         void cylinderParameters();
 
