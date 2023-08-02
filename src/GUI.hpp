@@ -75,6 +75,15 @@ void GUI::generationFromFile(){
     // Display the list of files
     ImGui::ListBox("Files", &selectedFileIndex, fileNamesCStr.data(), fileNamesCStr.size());
 
+    ImGui::SameLine();
+    if (ImGui::Button("File research")){
+        dialogInfo.title = "Choose File";
+        dialogInfo.type = ImGuiFileDialogType_OpenFile;
+        dialogInfo.directoryPath = std::filesystem::current_path();
+        fileDialogOpen = true;
+    }
+    fileResearch();
+
     // If the user selected a file, display the name of the file
     if(selectedFileIndex != -1){
         selectedFile = assetsDir + fileNames[selectedFileIndex];
@@ -224,7 +233,7 @@ void GUI::cloudComputingUpdateUnique (){
 
 
 template <typename FitT>
-void GUI::methodForCloudComputing(const std::string& metName){
+void GUI::methodForCloudComputing(const std::string& metName, bool unique){
     std::string buttonName_all = "Compute " + metName;
     std::string buttonName_unique = metName + " for selected";
     if (ImGui::Button(buttonName_all.c_str())){
@@ -232,6 +241,9 @@ void GUI::methodForCloudComputing(const std::string& metName){
         all_computed = true;
         pointProcessing.computeDiffQuantities<FitT>(metName, mainCloud);
     }
+    
+    if (!unique) return;
+
     ImGui::SameLine();
     if (ImGui::Button(buttonName_unique.c_str())){
         // Compute the distance between points for the cube, by taking 1/50 of the maximum distance between points of the mainCloud
@@ -256,6 +268,10 @@ void GUI::cloudComputing(){
     ImGui::Text(lastDryRun.c_str());
 
     methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
+
+    methodForCloudComputing<basket_AlgebraicShapeOperatorFit>("ASO", false);
+
+    methodForCloudComputing<basket_planeFit>("plane");
 
     methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
 
@@ -294,9 +310,30 @@ void GUI::addQuantities(polyscope::PointCloud *pc, const std::string &name, cons
         Eigen::VectorXd valuesVec = values.col(0);
         auto quantity = pc->addScalarQuantity(name, valuesVec);
         // Set bound [-5, 5] for the scalar quantity
-        quantity->setMapRange(std::pair<double,double>(-5,5));
-        quantity->setColorMap("coolwarm");
+        if (name != "knn" && name != "euclidean nei"){
+            quantity->setMapRange(std::pair<double,double>(-5,5));
+            quantity->setColorMap("coolwarm");
+        }
+        else {
+            quantity->setColorMap("turbo");
+        }
     }
     else 
         pc->addVectorQuantity(name, values);
+}
+
+
+void GUI::fileResearch(){
+
+    if (FileDialog(&fileDialogOpen, &dialogInfo))
+    {
+        // L'utilisateur a sélectionné un fichier et a cliqué sur "Open".
+        // Le chemin du fichier sélectionné est dans dialogInfo.resultPath.
+        fileDialogOpen = false;  // Ferme la boîte de dialogue pour la prochaine fois
+        selectedFile = dialogInfo.resultPath.string();
+        selectedFileIndex = -1;
+    }
+
+    // open = false;
+    return;
 }

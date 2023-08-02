@@ -95,7 +95,12 @@ private :
 
         template<typename FitT, typename Functor>
         void processPointCloud(const bool &unique, const typename FitT::WeightFunction& w, Functor f);
-
+        
+        // Used to compute the normal of a single point and to avoid compilation errors
+        template<typename FitT>
+        void
+        processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, Eigen::MatrixXd& normal);
+        
 }; // class PointProcessing
 
 #include "PointProcessing.hpp"

@@ -108,6 +108,20 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud &cl
 
 template<typename FitT>
 void
+PointProcessing::processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, Eigen::MatrixXd& normal)
+{
+    normal.row(idx) = fit.primitiveGradient(init);
+}
+
+template<>
+void
+PointProcessing::processPointUniqueNormal<basket_AlgebraicShapeOperatorFit>(const int &idx, const basket_AlgebraicShapeOperatorFit& fit, const VectorType& init, Eigen::MatrixXd& normal)
+{
+    // Do nothing because ASO does not have a primitive gradient (VectorType pos) function.
+}
+
+template<typename FitT>
+void
 PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud &cloud)
 {
     int nvert = cloud.getSize();
@@ -125,23 +139,26 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud &cloud
     dmax.setZero();
     proj.setZero();
 
+
     measureTime( "[Ponca] Compute differential quantities using " + name,
-                 [this, &cloud, &nvert, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj]() {
+                [this, &cloud, &nvert, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj]() {
                     processPointCloud<FitT>(true, SmoothWeightFunc(NSize),
                                 [this, &cloud, &nvert, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj]
                                 ( int i, const FitT& fit, const VectorType& mlsPos){
                                     
+                        
                                     for (int k = 0; k < nvert; k++){
                                         VectorType init = cloud.getVertices().row(k);
                                         VectorType projPoint = fit.project(init);
                                         if (projPoint != init) {
-                                            normal.row( k ) = fit.primitiveGradient(init);
+                                            processPointUniqueNormal<FitT>(k, fit, init, normal);
                                             proj.row( k )   = projPoint;
                                         }
                                     }
+
+                                    
                                 });
                     });
-
     // Add differential quantities to the cloud
     cloud.setDiffQuantities(DiffQuantities(proj, normal,dmin, dmax, kmin, kmax, mean));
 }
