@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <mutex>
 #include "polyscope/polyscope.h"
 #include "polyscope/messages.h"
 #include "polyscope/point_cloud.h"
@@ -20,17 +21,37 @@ class GUI {
             selectedQuantities.resize(6, 0);
             loadObject(mainCloud, assetsDir + "armadillo.obj", 0.0f, 0.0f);
             pointProcessing.update(mainCloud);
-            polyscopeClouds.push_back(polyscope::registerPointCloud("mainCloud", mainCloud.getVertices()));
+            polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.getVertices());
+            addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
+            remove_clouds();
         }
 
         void mainCallBack();
 
+        void remove_clouds(){
+            for (polyscope::PointCloud* pc : polyscope_projectionClouds){
+                // delete the point cloud
+                polyscope::removeStructure(pc->name, false);
+            }
+            for (polyscope::PointCloud* pc : polyscope_uniqueClouds){
+                // delete the point cloud
+                polyscope::removeStructure(pc->name, false);
+            }
+            polyscope_projectionClouds.clear();
+            polyscope_uniqueClouds.clear();
+        }
+
 
     private: 
         // First one : main cloud, second one : projection cloud, others : temporary clouds
-        std::vector<polyscope::PointCloud*> polyscopeClouds; 
+
+        polyscope::PointCloud* polyscope_mainCloud;
+        std::vector<polyscope::PointCloud*> polyscope_projectionClouds;
+        std::vector<polyscope::PointCloud*> polyscope_uniqueClouds;
+
 
         MyPointCloud mainCloud;
+        MyPointCloud tempCloud;
         CylinderGenerator cylinderGenerator;
         PointProcessing pointProcessing;
 
@@ -42,6 +63,8 @@ class GUI {
 
         // State of the radio button (selection of a file or an implicit function)
         int radioButtonCloudGeneration = 0;
+        std::string lastDryRun = "";
+        std::string mainCloudName = "mainCloud";
         std::string assetsDir = "assets/";
         std::string selectedFile = "";
         int selectedFileIndex = -1;
@@ -76,16 +99,24 @@ class GUI {
 
         // Make computation of the cloud
 
-        bool computed = false;
+        bool all_computed = false;
+        bool unique_computed = false;
         std::string methodName = "";
 
         void cloudComputing();
 
+        void cloudComputingUpdateUnique();
+
+        void cloudComputingUpdateAll();
+
+        template <typename FitT>
+        void methodForCloudComputing(const std::string &metName, bool unique=true);
+
         void cloudComputingParameters();
 
-        void addQuantities(int num_pc, const std::string &name, const Eigen::MatrixXd &values);
+        void addQuantities(polyscope::PointCloud *pc, const std::string &name, const Eigen::MatrixXd &values);
 
 
 }; // class GUI
 
-#include "GUI.hpp";
+#include "GUI.hpp"

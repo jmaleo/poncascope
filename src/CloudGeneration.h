@@ -87,6 +87,25 @@ void loadObject (MyPointCloud &cloud, std::string filename, float sigma_pos, flo
     cloud.addNoise(sigma_pos, sigma_normal);
 }
 
+void create_cube (MyPointCloud &cloud, const Eigen::VectorXd &pos, const double &dist = 0.1) {
+    int size = 20 * 20 * 20;
+    Eigen::MatrixXd cloudV(size, 3);
+    Eigen::MatrixXd cloudN(size, 3);
+    cloudN.setZero();
+
+    int index = 0;
+    for (int i = -10 ; i < 10; i++ ){
+        for (int j = -10; j < 10; j++){
+            for (int k = -10; k < 10; k ++){
+                cloudV.row(index) = pos + dist * Eigen::Vector3d(i, j, k);
+                index ++;
+            }
+        }
+    }
+
+    cloud = MyPointCloud(cloudV, cloudN);
+}
+
 class CylinderGenerator {
 
     public:
