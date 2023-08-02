@@ -165,29 +165,32 @@ void GUI::quantitiesParameters() {
 void GUI::cloudComputingUpdateAll (){
     if (!all_computed) return;
 
-    for (int i = 0; i < selectedQuantities.size(); ++i) {
-        if (selectedQuantities[i]){
-            std::string completeName = "[" + methodName + "] "+ quantityNames[i];
-            addQuantities(polyscope_mainCloud,completeName, mainCloud.getDiffQuantities().getByName(quantityNames[i]));
-        }
-    }
-    if (displayProjectedPointCloud){
-        std::string cloudName = "[" + methodName + "] " + "projection";
-
-
-        // Find if the point cloud already exists
-        for (int i = 0; i < polyscope_projectionClouds.size(); ++i) {
-            if (polyscope_projectionClouds[i]->name == cloudName){
-                // remove the projected point cloud
-                polyscope_projectionClouds.erase(polyscope_projectionClouds.begin() + i);
-                polyscope::removeStructure(cloudName, false);
-                break;
+    pointProcessing.measureTime("[Polyscope] Update diff quantities and projection", [this](){
+        
+        for (int i = 0; i < selectedQuantities.size(); ++i) {
+            if (selectedQuantities[i]){
+                std::string completeName = "[" + methodName + "] "+ quantityNames[i];
+                addQuantities(polyscope_mainCloud,completeName, mainCloud.getDiffQuantities().getByName(quantityNames[i]));
             }
         }
-        polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, mainCloud.getDiffQuantities().getVertices());
-        polyscope_projectionClouds.push_back(newCloud);
-        addQuantities(newCloud, "normals", mainCloud.getDiffQuantities().getNormals());
-    }
+        if (displayProjectedPointCloud){
+            std::string cloudName = "[" + methodName + "] " + "projection";
+
+            // Find if the point cloud already exists
+            for (int i = 0; i < polyscope_projectionClouds.size(); ++i) {
+                if (polyscope_projectionClouds[i]->name == cloudName){
+                    // remove the projected point cloud
+                    polyscope_projectionClouds.erase(polyscope_projectionClouds.begin() + i);
+                    polyscope::removeStructure(cloudName, false);
+                    break;
+                }
+            }
+            polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, mainCloud.getDiffQuantities().getVertices());
+            polyscope_projectionClouds.push_back(newCloud);
+            addQuantities(newCloud, "normals", mainCloud.getDiffQuantities().getNormals());
+        }
+
+    });
 
     all_computed = false;
     methodName = "";
@@ -197,22 +200,23 @@ void GUI::cloudComputingUpdateAll (){
 void GUI::cloudComputingUpdateUnique (){
     if (!unique_computed) return;
 
-    std::string cloudName = "[" + methodName + "] " + "unique";
 
-
-    for (int i = 0; i < polyscope_uniqueClouds.size(); ++i) {
-        if (polyscope_uniqueClouds[i]->name == cloudName){
-            // remove the unique proj point cloud
-            polyscope_uniqueClouds.erase(polyscope_uniqueClouds.begin() + i);
-            polyscope::removeStructure(cloudName, false);
-            break;
-        }
-    }
+    pointProcessing.measureTime("[Polyscope] Update unique projection", [this](){
     
-
-    polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, tempCloud.getDiffQuantities().getVertices());
-    polyscope_uniqueClouds.push_back(newCloud);
-    addQuantities(newCloud, "normals", tempCloud.getDiffQuantities().getNormals());
+        std::string cloudName = "[" + methodName + "] " + "unique";
+        for (int i = 0; i < polyscope_uniqueClouds.size(); ++i) {
+            if (polyscope_uniqueClouds[i]->name == cloudName){
+                // remove the unique proj point cloud
+                polyscope_uniqueClouds.erase(polyscope_uniqueClouds.begin() + i);
+                polyscope::removeStructure(cloudName, false);
+                break;
+            }
+        }
+        polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, tempCloud.getDiffQuantities().getVertices());
+        polyscope_uniqueClouds.push_back(newCloud);
+        addQuantities(newCloud, "normals", tempCloud.getDiffQuantities().getNormals());
+    
+    });
 
     unique_computed = false;
     methodName = "";
@@ -288,7 +292,10 @@ void GUI::addQuantities(polyscope::PointCloud *pc, const std::string &name, cons
     if (values.cols() == 1){
         // Make values beeing a vector
         Eigen::VectorXd valuesVec = values.col(0);
-        pc->addScalarQuantity(name, valuesVec);
+        auto quantity = pc->addScalarQuantity(name, valuesVec);
+        // Set bound [-5, 5] for the scalar quantity
+        quantity->setMapRange(std::pair<double,double>(-5,5));
+        quantity->setColorMap("coolwarm");
     }
     else 
         pc->addVectorQuantity(name, values);

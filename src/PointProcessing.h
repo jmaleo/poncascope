@@ -55,6 +55,9 @@ class PointProcessing {
             recomputeKnnGraph();
         }
 
+        template <typename Functor>
+        void measureTime( const std::string &actionName, Functor F );
+        
         /// Recompute K-Neighbor graph
         void recomputeKnnGraph();
 
@@ -82,8 +85,6 @@ private :
 
         Scalar m_meanNeighbors = 0;
 
-        template <typename Functor>
-        void measureTime( const std::string &actionName, Functor F );
 
         template <typename Functor>
         void processRangeNeighbors(const int &idx, const Functor f);

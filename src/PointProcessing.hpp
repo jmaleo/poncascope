@@ -49,7 +49,7 @@ void PointProcessing::processOnePoint(const int &idx, const typename FitT::Weigh
                     f(idx, fit, pos);
             }
             else {
-                std::cerr << "Warning: fit " << idx << " is not stable" << std::endl;
+                std::cerr << "[Ponca][Warning] fit " << idx << " is not stable" << std::endl;
             }
         }
 }
