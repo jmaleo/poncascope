@@ -51,7 +51,10 @@ class PointProcessing {
 
         // update the KdTree
         void update(MyPointCloud &cloud) {
-            buildKdTree(cloud.getVertices(), cloud.getNormals(), tree);
+            measureTime( "[Ponca] Build KdTree",
+                 [this, &cloud]() {
+                    buildKdTree(cloud.getVertices(), cloud.getNormals(), tree);
+                });
             recomputeKnnGraph();
         }
 

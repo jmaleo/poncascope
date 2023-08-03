@@ -26,7 +26,11 @@ class GUI {
 
             // Initialize polyscope
             selectedQuantities.resize(6, 0);
-            loadObject(mainCloud, assetsDir + "armadillo.obj", 0.0f, 0.0f);
+
+            pointProcessing.measureTime("[Generation] Load object", [this](){
+                loadObject(mainCloud, assetsDir + "armadillo.obj", 0.0f, 0.0f);
+            });
+            
             pointProcessing.update(mainCloud);
             polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.getVertices());
             addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
