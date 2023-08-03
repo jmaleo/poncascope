@@ -11,14 +11,18 @@ void GUI::mainCallBack(){
     }
 
     if (cloudNeedsUpdate){
+
         pointProcessing.update(mainCloud);
-        polyscope::removeStructure(mainCloudName, false);
-        polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.getVertices());
-        addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
-        // Remove other clouds
-        remove_clouds();
+        pointProcessing.measureTime("[Polyscope] Update current main cloud", [this](){
+            polyscope::removeStructure(mainCloudName, false);
+            polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.getVertices());
+            addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
+            // Remove other clouds
+            remove_clouds();
+        });
         lastDryRun = "";
         cloudNeedsUpdate = false;
+
     }
 
     ImGui::Separator();
@@ -99,7 +103,11 @@ void GUI::generationFromFile(){
         displayImplicitParameters = false;
         isCylinder = false;
         cloudNeedsUpdate = true;
-        loadObject(mainCloud, selectedFile, pointNoise, normalNoise);
+        
+        pointProcessing.measureTime("[Generation] Load object", [this](){
+            loadObject(mainCloud, selectedFile, pointNoise, normalNoise);
+        });
+        
     }
 }
 
@@ -109,7 +117,11 @@ void GUI::generationFromImplicit() {
         displayImplicitParameters = true;
         isCylinder = true;
         cloudNeedsUpdate = true;
-        cylinderGenerator.generateCylinder(mainCloud, pointNoise, normalNoise);
+
+        pointProcessing.measureTime("[Generation] Generate cylinder", [this](){
+            cylinderGenerator.generateCylinder(mainCloud, pointNoise, normalNoise);
+        });
+
     }
 }
 
