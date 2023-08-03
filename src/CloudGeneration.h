@@ -1,5 +1,6 @@
 #pragma once
 
+#include <igl/read_triangle_mesh.h>
 #include <igl/readOBJ.h>
 #include <igl/readPLY.h>
 #include <igl/per_vertex_normals.h>
@@ -61,22 +62,30 @@ void loadObject (MyPointCloud &cloud, std::string filename, float sigma_pos, flo
     Eigen::MatrixXi meshF;
     Eigen::MatrixXd cloudV, cloudN;
 
-    // If filename end with .ply, load the file as a PLY file
-    if ( filename.substr(filename.find_last_of(".") + 1) == "ply" ) {
-        igl::readPLY(filename, cloudV, meshF);
-    }
-    else if ( filename.substr(filename.find_last_of(".") + 1) == "obj" ) {
-        igl::readOBJ(filename, cloudV, meshF);
-    }
-    else if (filename.substr(filename.find_last_of(".") + 1) == "pts") {
+    if (filename.substr(filename.find_last_of(".") + 1) == "pts") {
         loadPTSObject(cloud, filename, sigma_pos, sigma_normal);
         return;
     }
-    igl::per_vertex_normals(cloudV, meshF, cloudN);
+    else {
+        if (filename.substr(filename.find_last_of(".") + 1) == "ply"){
+            Eigen::MatrixXi cloudE;
+            Eigen::MatrixXd cloudUV;
+            igl::readPLY(filename, cloudV, meshF, cloudE, cloudN, cloudUV);
+        }
+        else {
+            igl::read_triangle_mesh(filename, cloudV, meshF);
+            igl::per_vertex_normals(cloudV, meshF, cloudN);
+        }
+    }
+    // Check if there is mesh 
+    if ( meshF.rows() == 0 && cloudN.rows() == 0 ) {
+        std::cerr << "[libIGL] The mesh is empty. Aborting..." << std::endl;
+        exit (EXIT_FAILURE);
+    }
 
     // Check if normals have been properly loaded
     int nbUnitNormal = cloudN.rowwise().squaredNorm().sum();
-    if ( nbUnitNormal != cloudV.rows() ) {
+    if ( meshF.rows() != 0 && nbUnitNormal != cloudV.rows() ) {
         std::cerr << "[libIGL] An error occurred when computing the normal vectors from the mesh. Aborting..."
                   << std::endl;
         exit (EXIT_FAILURE);
