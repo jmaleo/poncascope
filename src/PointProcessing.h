@@ -75,6 +75,13 @@ class PointProcessing {
         template<typename FitT>
         void computeDiffQuantities(const std::string &name, MyPointCloud &cloud);
 
+        /// @brief Compute differential quantities for a single point
+        /// @tparam FitT Fit Type, \see definitions.h
+        /// @param name Name of the method, to be displayed in the console
+        /// @param cloud Point Cloud to process
+        template<typename FitT>
+        void computeUniquePoint(const std::string &name, MyPointCloud &cloud);
+
         /// Dry run: loop over all vertices + run MLS loops without computation
         /// This function is useful to monitor the KdTree performances
         /// And to compute the mean number of neighbors
@@ -117,7 +124,18 @@ private :
         /// @param w weight function
         /// @param f function to apply on the fitting
         template<typename FitT, typename Functor>
-        void processPointCloud(const typename FitT::WeightFunction& w, Functor f);
+        void processPointCloud(const bool &unique, const typename FitT::WeightFunction& w, Functor f);
+
+        /// @brief Used to compute the normal of a single point and to avoid compilation errors
+        /// @tparam FitT Fit Type, \see definitions.h
+        /// @param idx index of the point to process
+        /// @param fit fitting method
+        /// @param init initial point
+        /// @param normal output normals
+        template<typename FitT>
+        void
+        processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, Eigen::MatrixXd& normal);
+        
         
 }; // class PointProcessing
 

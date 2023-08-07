@@ -17,6 +17,8 @@ void GUI::mainCallBack(){
             polyscope::removeStructure(mainCloudName, false);
             polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.getVertices());
             addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
+            // Remove other clouds
+            remove_clouds();
         });
         lastDryRun = "";
         cloudNeedsUpdate = false;
@@ -223,14 +225,54 @@ void GUI::cloudComputingUpdateAll (){
     methodName = "";
 }
 
+void GUI::cloudComputingUpdateUnique (){
+    if (!unique_computed) return;
+
+
+    pointProcessing.measureTime("[Polyscope] Update unique projection", [this](){
+    
+        std::string cloudName = "[" + methodName + "] " + "unique";
+        for (int i = 0; i < polyscope_uniqueClouds.size(); ++i) {
+            if (polyscope_uniqueClouds[i]->name == cloudName){
+                // remove the unique proj point cloud
+                polyscope_uniqueClouds.erase(polyscope_uniqueClouds.begin() + i);
+                polyscope::removeStructure(cloudName, false);
+                break;
+            }
+        }
+        polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, tempCloud.getDiffQuantities().getVertices());
+        polyscope_uniqueClouds.push_back(newCloud);
+        addQuantities(newCloud, "normals", tempCloud.getDiffQuantities().getNormals());
+    
+    });
+
+    unique_computed = false;
+    methodName = "";
+}
+
+
 template <typename FitT>
-void GUI::methodForCloudComputing(const std::string& metName){
-    std::string buttonName_all = metName;
+void GUI::methodForCloudComputing(const std::string& metName, bool unique){
+    std::string buttonName_all = "Compute " + metName;
+    std::string buttonName_unique = metName + " for selected";
     if (ImGui::Button(buttonName_all.c_str())){
         methodName = metName;
         all_computed = true;
         pointProcessing.computeDiffQuantities<FitT>(metName, mainCloud);
     }
+    
+    if (!unique) return;
+
+    ImGui::SameLine();
+    if (ImGui::Button(buttonName_unique.c_str())){
+        // Compute the distance between points for the cube, by taking 1/50 of the maximum distance between points of the mainCloud
+        double dist = (mainCloud.getMin() - mainCloud.getMax()).norm() / 50.0;
+        create_cube(tempCloud, pointProcessing.getVertexSourcePosition(), dist);
+        methodName = metName;
+        unique_computed = true;
+        pointProcessing.computeUniquePoint<FitT>(metName, tempCloud);
+    }
+
 }
 
 void GUI::cloudComputing(){
@@ -248,15 +290,12 @@ void GUI::cloudComputing(){
 
     methodForCloudComputing<basket_planeFit>("Plane (PCA)");
 
-    ImGui::SameLine();
-
     methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
 
-    ImGui::SameLine();
-
-    methodForCloudComputing<basket_AlgebraicShapeOperatorFit>("ASO");
+    methodForCloudComputing<basket_AlgebraicShapeOperatorFit>("ASO", false);
 
     cloudComputingUpdateAll();
+    cloudComputingUpdateUnique();
 }
 
 void GUI::cloudComputingParameters(){

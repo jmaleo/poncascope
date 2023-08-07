@@ -47,7 +47,12 @@ class GUI {
                 // delete the point cloud
                 polyscope::removeStructure(pc->name, false);
             }
+            for (polyscope::PointCloud* pc : polyscope_uniqueClouds){
+                // delete the point cloud
+                polyscope::removeStructure(pc->name, false);
+            }
             polyscope_projectionClouds.clear();
+            polyscope_uniqueClouds.clear();
         }
 
 
@@ -74,9 +79,11 @@ class GUI {
         
         polyscope::PointCloud* polyscope_mainCloud;
         std::vector<polyscope::PointCloud*> polyscope_projectionClouds;
+        std::vector<polyscope::PointCloud*> polyscope_uniqueClouds;
 
         CylinderGenerator cylinderGenerator;
         MyPointCloud mainCloud;
+        MyPointCloud tempCloud;
         
         PointProcessing pointProcessing;
     
@@ -112,14 +119,17 @@ class GUI {
         std::string methodName = "";
 
         bool all_computed = false;
+        bool unique_computed = false;
         bool displayProjectedPointCloud = false;
 
         void cloudComputing();
 
         void cloudComputingUpdateAll();
 
+        void cloudComputingUpdateUnique();
+
         template <typename FitT>
-        void methodForCloudComputing(const std::string &metName);
+        void methodForCloudComputing(const std::string &metName, bool unique=true);
 
         void quantitiesParameters();
 
