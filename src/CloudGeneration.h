@@ -97,3 +97,54 @@ void loadObject (MyPointCloud &cloud, std::string filename, float sigma_pos, flo
 
     cloud.addNoise(sigma_pos, sigma_normal);
 }
+
+class CylinderGenerator {
+
+    public:
+        CylinderGenerator() = default;
+
+        void generateCylinder(MyPointCloud &cloud, float sigma_pos, float sigma_normal) {
+
+            Eigen::MatrixXd parabolic_verts = Eigen::MatrixXd(x_cylinder * z_cylinder, 3);
+            Eigen::MatrixXd parabolic_norms = Eigen::MatrixXd(x_cylinder * z_cylinder, 3);
+
+            float dx = (2.0f) / (x_cylinder - 1);
+            float dz = (2.0f) / (z_cylinder - 1);
+
+            for (int i = 0; i < x_cylinder; ++i) {
+                for (int j = 0; j < z_cylinder; ++j) {
+                    float x = -1 + i * dx;
+                    float z = -1 + j * dz;
+                    float y = a_cylinder + bx_cylinder * x + bz_cylinder * z + c_a * (cx_cylinder * x + cz_cylinder * z)*(cx_cylinder * x + cz_cylinder * z);
+
+                    parabolic_verts(i * z_cylinder + j, 0) =  x;
+                    parabolic_verts(i * z_cylinder + j, 1) =  y;
+                    parabolic_verts(i * z_cylinder + j, 2) =  z;
+
+                    parabolic_norms(i * z_cylinder + j, 0) =  bx_cylinder + 2 * c_a * (cx_cylinder  * cx_cylinder * x + cx_cylinder * cz_cylinder * z);
+                    parabolic_norms(i * z_cylinder + j, 1) =  -1;
+                    parabolic_norms(i * z_cylinder + j, 2) =  bz_cylinder  + 2 * c_a * (cz_cylinder * cz_cylinder * z + cx_cylinder * cz_cylinder * x);
+                }
+            }
+            cloud = MyPointCloud(parabolic_verts, parabolic_norms);
+            cloud.addNoise(sigma_pos, sigma_normal);
+        }
+
+    public:
+        
+        // Parameters for the parabolic cylinder public for easy access and modification
+
+        float a_cylinder  = -0.3;
+
+        float bx_cylinder  = 0.2;
+        float bz_cylinder  = 0.1;
+
+        float c_a = 0.6;
+        float cx_cylinder  = -0.8;
+        float cz_cylinder  = 0.2;
+
+        int x_cylinder      = 40;
+        int z_cylinder      = 40;
+
+
+}; // class cylinderGenerator

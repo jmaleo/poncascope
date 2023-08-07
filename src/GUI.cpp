@@ -6,6 +6,9 @@ void GUI::mainCallBack(){
     ImGui::SetNextWindowSize(ImVec2(300, 600), ImGuiCond_FirstUseEver);
 
     cloudGeneration();
+    if (isCylinder){
+        cylinderParameters();
+    }
     ImGui::Separator();
 
     if (cloudNeedsUpdate){
@@ -23,6 +26,26 @@ void GUI::mainCallBack(){
 
 }
 
+//////////////////////////////////////////////////////////////////////
+////                       CLOUD GENERATING                       ////
+//////////////////////////////////////////////////////////////////////
+
+void GUI::fileResearch(){
+
+    if (FileDialog(&fileDialogOpen, &dialogInfo))
+    {
+        // L'utilisateur a sélectionné un fichier et a cliqué sur "Open".
+        // Le chemin du fichier sélectionné est dans dialogInfo.resultPath.
+        fileDialogOpen = false;  // Ferme la boîte de dialogue pour la prochaine fois
+        selectedFile = dialogInfo.resultPath.string();
+        selectedFileIndex = -1;
+    }
+
+    // open = false;
+    return;
+}
+
+
 void GUI::cloudGeneration(){
 
     // Point noise and normal noise selection with sliders
@@ -30,9 +53,20 @@ void GUI::cloudGeneration(){
     ImGui::SameLine();
     ImGui::SliderFloat("Normal noise", &normalNoise, 0.0f, 5.0f);
 
-    // If the user selected the file selection
-    generationFromFile();
+    // Display the 2 radios buttons, one for file selection and the other for implicit function
+    ImGui::RadioButton("File selection", &radioButtonCloudGeneration, 0);
+    ImGui::SameLine();
+    ImGui::RadioButton("Implicit function", &radioButtonCloudGeneration, 1);
 
+    // If the user selected the file selection
+    if(radioButtonCloudGeneration == 0){
+        generationFromFile();
+    }
+    // If the user selected the implicit function
+    else if(radioButtonCloudGeneration == 1){
+        selectedFile = "";
+        generationFromImplicit();
+    }
 
 }
 
@@ -83,6 +117,73 @@ void GUI::generationFromFile(){
         
     }
 }
+
+void GUI::generationFromImplicit() {
+    // Display the 3 input fields for the implicit function
+    if (ImGui::Button("Cylinder")){
+        displayImplicitParameters = true;
+        isCylinder = true;
+        cloudNeedsUpdate = true;
+
+        pointProcessing.measureTime("[Generation] Generate cylinder", [this](){
+            cylinderGenerator.generateCylinder(mainCloud, pointNoise, normalNoise);
+        });
+
+    }
+}
+
+void GUI::cylinderParameters(){
+    // Set the initial position and size of the window
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x/2 - 150, ImGui::GetIO().DisplaySize.y/2 - 100), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(300, 600), ImGuiCond_FirstUseEver);
+
+    // Create a window for the cylinder parameters, no close button
+    ImGui::Begin("Cylinder parameters", NULL);
+
+    ImGui::Text("Parameters of the parabolic-cylindrical shape");
+    ImGui::Text("u_c + u_l^T q + a * (u_q^T q)^2");
+
+    bool modification = false;
+    if (ImGui::SliderFloat("u_c", &cylinderGenerator.a_cylinder, -2.0, 2.0)) 
+        modification = true;
+
+    ImGui::Columns(2, "mycolumns"); // 2-Column layout
+    ImGui::Separator();
+    if (ImGui::SliderFloat("u_lx", &cylinderGenerator.bx_cylinder, -2, 2)) 
+        modification = true;
+    ImGui::NextColumn();
+    if (ImGui::SliderFloat("u_lz", &cylinderGenerator.bz_cylinder, -2, 2)) 
+        modification = true;
+    ImGui::Columns(1); // End of 2-Column layout
+
+    if (ImGui::SliderFloat("a", &cylinderGenerator.c_a, -2, 2)) 
+        modification = true;
+
+    ImGui::Columns(2, "mycolumns"); // 2-Column layout
+    ImGui::Separator();
+    if (ImGui::SliderFloat("u_qx", &cylinderGenerator.cx_cylinder, -2, 2)) 
+        modification = true;
+    ImGui::NextColumn();
+    if (ImGui::SliderFloat("u_qz", &cylinderGenerator.cz_cylinder, -2, 2)) 
+        modification = true;
+    ImGui::Columns(1); // End of 2-Column layout
+
+    if (ImGui::SliderInt("x_number", &cylinderGenerator.x_cylinder, 0, 60 )      ||
+        ImGui::SliderInt("z_number", &cylinderGenerator.z_cylinder, 0, 60 ))
+            modification = true;
+
+    if (modification){
+        cloudNeedsUpdate = true;
+        cylinderGenerator.generateCylinder(mainCloud, pointNoise, normalNoise);
+    }
+
+    ImGui::End();
+}
+
+
+/////////////////////////////////////////////////////////////////////
+////                       CLOUD COMPUTING                       ////
+/////////////////////////////////////////////////////////////////////
 
 void GUI::cloudComputingUpdateAll (){
     if (!all_computed) return;
@@ -174,19 +275,4 @@ void GUI::addQuantities(polyscope::PointCloud *pc, const std::string &name, cons
     }
     else 
         pc->addVectorQuantity(name, values);
-}
-
-void GUI::fileResearch(){
-
-    if (FileDialog(&fileDialogOpen, &dialogInfo))
-    {
-        // L'utilisateur a sélectionné un fichier et a cliqué sur "Open".
-        // Le chemin du fichier sélectionné est dans dialogInfo.resultPath.
-        fileDialogOpen = false;  // Ferme la boîte de dialogue pour la prochaine fois
-        selectedFile = dialogInfo.resultPath.string();
-        selectedFileIndex = -1;
-    }
-
-    // open = false;
-    return;
 }
