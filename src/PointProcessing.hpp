@@ -89,8 +89,8 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud &cl
                                     dmin.row( i )   = fit.kminDirection();
                                     dmax.row( i )   = fit.kmaxDirection();
 
-                                    proj.row( i )   = mlsPos - tree.point_data()[i].pos();
-                                    // proj.row( i )   = mlsPos;
+                                    // proj.row( i )   = mlsPos - tree.point_data()[i].pos();
+                                    proj.row( i )   = mlsPos;
                                 });
                     });
     

@@ -25,7 +25,7 @@ class GUI {
             dialogInfo.directoryPath = std::filesystem::current_path();
 
             // Initialize polyscope
-            selectedQuantities.resize(7, 1);
+            selectedQuantities.resize(6, 1);
 
             // Initialize the point cloud
             selectedFile = assetsDir + "armadillo.obj";
@@ -37,9 +37,18 @@ class GUI {
             pointProcessing.update(mainCloud);
             polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.getVertices());
             addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
+            remove_clouds();
         }
 
         void mainCallBack();
+
+        void remove_clouds(){
+            for (polyscope::PointCloud* pc : polyscope_projectionClouds){
+                // delete the point cloud
+                polyscope::removeStructure(pc->name, false);
+            }
+            polyscope_projectionClouds.clear();
+        }
 
 
     private: 
@@ -62,10 +71,13 @@ class GUI {
         int selectedFileIndex = -1;
 
         Scalar pointRadius    = 0.005; /// < display radius of the point cloud
+        
         polyscope::PointCloud* polyscope_mainCloud;
+        std::vector<polyscope::PointCloud*> polyscope_projectionClouds;
 
         CylinderGenerator cylinderGenerator;
         MyPointCloud mainCloud;
+        
         PointProcessing pointProcessing;
     
         float pointNoise = 0.0f;
@@ -93,13 +105,14 @@ class GUI {
         // 4 : display min curvature
         // 5 : display max curvature
         // 6 : display mean curvature
-        std::vector<std::string> quantityNames = {"Projections", "Normals", "Min curvature direction", "Max curvature direction", "Min curvature", "Max curvature", "Mean curvature"};
-        std::vector<int> selectedQuantities; // Initialize to 1 all quantities
+        std::vector<int> selectedQuantities; // Initialiser avec 6 éléments, tous à '0'
+        std::vector<std::string> quantityNames = {/*"Projections",*/"Normals", "Min curvature direction", "Max curvature direction", "Min curvature", "Max curvature", "Mean curvature"};
         
         std::string lastDryRun = "";
+        std::string methodName = "";
 
         bool all_computed = false;
-        std::string methodName = "";
+        bool displayProjectedPointCloud = false;
 
         void cloudComputing();
 
@@ -107,6 +120,8 @@ class GUI {
 
         template <typename FitT>
         void methodForCloudComputing(const std::string &metName);
+
+        void quantitiesParameters();
 
         void cloudComputingParameters();
 

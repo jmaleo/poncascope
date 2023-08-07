@@ -22,6 +22,10 @@ void GUI::mainCallBack(){
         cloudNeedsUpdate = false;
     }
 
+    quantitiesParameters();
+
+    ImGui::Separator();
+
     cloudComputing();
 
 }
@@ -196,12 +200,28 @@ void GUI::cloudComputingUpdateAll (){
                 addQuantities(polyscope_mainCloud,completeName, mainCloud.getDiffQuantities().getByName(quantityNames[i]));
             }
         }
+        if (displayProjectedPointCloud){
+            std::string cloudName = "[" + methodName + "] " + "projection";
+
+            // Find if the point cloud already exists
+            for (int i = 0; i < polyscope_projectionClouds.size(); ++i) {
+                if (polyscope_projectionClouds[i]->name == cloudName){
+                    // remove the projected point cloud
+                    polyscope_projectionClouds.erase(polyscope_projectionClouds.begin() + i);
+                    polyscope::removeStructure(cloudName, false);
+                    break;
+                }
+            }
+            polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, mainCloud.getDiffQuantities().getVertices());
+            polyscope_projectionClouds.push_back(newCloud);
+            addQuantities(newCloud, "normals", mainCloud.getDiffQuantities().getNormals());
+        }
+
     });
 
     all_computed = false;
     methodName = "";
 }
-
 
 template <typename FitT>
 void GUI::methodForCloudComputing(const std::string& metName){
@@ -275,4 +295,14 @@ void GUI::addQuantities(polyscope::PointCloud *pc, const std::string &name, cons
     }
     else 
         pc->addVectorQuantity(name, values);
+}
+
+void GUI::quantitiesParameters() {
+    // Set of check boxes for the quantities to display (proj, normal, dir min curv, dir max curv, min curv, max curv, mean curv)
+    // Also another combo boxe to display the projected point cloud
+    for (int i = 0; i < selectedQuantities.size(); ++i) {
+        ImGui::Checkbox(quantityNames[i].c_str(), (bool*)&selectedQuantities[i]);
+    }
+    ImGui::Separator();
+    ImGui::Checkbox ("Projected point cloud", &displayProjectedPointCloud);
 }
