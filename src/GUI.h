@@ -11,6 +11,7 @@
 #include "MyPointCloud.h"
 #include "CloudGeneration.h"
 #include "PointProcessing.h"
+#include "imgui_filedialog.h"
 #include <Eigen/Dense>
 
 class GUI {
@@ -18,6 +19,10 @@ class GUI {
     public:
 
         GUI(){
+            // Initialize fileDialogue
+            dialogInfo.title = "Choose File";
+            dialogInfo.type = ImGuiFileDialogType_OpenFile;
+            dialogInfo.directoryPath = std::filesystem::current_path();
 
             // Initialize polyscope
             selectedQuantities.resize(7, 1);
@@ -26,7 +31,7 @@ class GUI {
             selectedFile = assetsDir + "armadillo.obj";
 
             pointProcessing.measureTime("[Generation] Load object", [this](){
-                loadObject(mainCloud, selectedFile);
+                loadObject(mainCloud, assetsDir + "armadillo.obj", 0.0f, 0.0f);
             });
             
             pointProcessing.update(mainCloud);
@@ -39,17 +44,33 @@ class GUI {
 
     private: 
 
+        bool cloudNeedsUpdate = false;
+
+        // FILEDIALOGUE
+        bool fileDialogOpen = false;
+        ImFileDialogInfo dialogInfo;
+
+
         // Point Cloud Informations
-        
         std::string mainCloudName = "mainCloud";
         std::string assetsDir = "assets/";
         std::string selectedFile = "";
+        int selectedFileIndex = -1;
 
         Scalar pointRadius    = 0.005; /// < display radius of the point cloud
         polyscope::PointCloud* polyscope_mainCloud;
 
         MyPointCloud mainCloud;
         PointProcessing pointProcessing;
+    
+        float pointNoise = 0.0f;
+        float normalNoise = 0.0f;
+
+        void cloudGeneration();
+
+        void generationFromFile();
+
+        void fileResearch ();
 
     private:
 

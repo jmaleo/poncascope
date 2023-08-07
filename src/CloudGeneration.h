@@ -6,7 +6,7 @@
 #include <igl/per_vertex_normals.h>
 #include "MyPointCloud.h"
 
-void loadPTSObject (MyPointCloud &cloud, std::string filename){
+void loadPTSObject (MyPointCloud &cloud, std::string filename, float sigma_pos, float sigma_normal){
 
     Eigen::MatrixXd cloudV, cloudN;
 
@@ -53,16 +53,17 @@ void loadPTSObject (MyPointCloud &cloud, std::string filename){
     file.close();
 
     cloud = MyPointCloud(cloudV, cloudN);
+    cloud.addNoise(sigma_pos, sigma_normal);
 }
 
 
-void loadObject (MyPointCloud &cloud, std::string filename) {
+void loadObject (MyPointCloud &cloud, std::string filename, float sigma_pos, float sigma_normal) {
 
     Eigen::MatrixXi meshF;
     Eigen::MatrixXd cloudV, cloudN;
 
     if (filename.substr(filename.find_last_of(".") + 1) == "pts") {
-        loadPTSObject(cloud, filename);
+        loadPTSObject(cloud, filename, sigma_pos, sigma_normal);
         return;
     }
     else {
@@ -74,10 +75,8 @@ void loadObject (MyPointCloud &cloud, std::string filename) {
         else {
             igl::read_triangle_mesh(filename, cloudV, meshF);
         }
-        
-        if ( cloudN.rows() == 0 )
+        if (cloudN.rows() == 0)
             igl::per_vertex_normals(cloudV, meshF, cloudN);
-        
     }
     // Check if there is mesh 
     if ( meshF.rows() == 0 && cloudN.rows() == 0 ) {
@@ -87,11 +86,14 @@ void loadObject (MyPointCloud &cloud, std::string filename) {
 
     // Check if normals have been properly loaded
     int nbUnitNormal = cloudN.rowwise().squaredNorm().sum();
-    if ( meshF.rows() != 0 && nbUnitNormal != cloudV.rows() ) {
+    // if ( meshF.rows() != 0 && nbUnitNormal != cloudV.rows() ) {
+    if ( meshF.rows() != 0 && cloudN.rows() == 0 ) {
         std::cerr << "[libIGL] An error occurred when computing the normal vectors from the mesh. Aborting..."
                   << std::endl;
         exit (EXIT_FAILURE);
     }
 
     cloud = MyPointCloud(cloudV, cloudN);
+
+    cloud.addNoise(sigma_pos, sigma_normal);
 }

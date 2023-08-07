@@ -173,6 +173,21 @@ class MyPointCloud {
             return m_max;
         }
 
+        void addNoise (const float &sigma_pos, const float &sigma_norm){
+
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::normal_distribution<double> dist_pos(0.0, sigma_pos);
+            std::normal_distribution<double> dist_normal(0.0, sigma_norm);
+
+            for (int i = 0; i < m_size; ++i) {
+                for (int j = 0; j < m_vertices.cols(); ++j) {
+                    m_vertices(i, j) += dist_pos(gen);
+                    m_normals(i, j) += dist_normal(gen);
+                }
+            }
+        }
+
     private:
 
         Eigen::MatrixXd m_vertices;
