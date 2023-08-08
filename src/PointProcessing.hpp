@@ -1,4 +1,3 @@
-
 template <typename Functor>
 void 
 PointProcessing::measureTime( const std::string &actionName, Functor F ){
@@ -22,7 +21,6 @@ void PointProcessing::processRangeNeighbors(const int &idx, const Functor f){
         }
 }
 
-
 template<typename FitT, typename Functor>
 void PointProcessing::processOnePoint(const int &idx, const typename FitT::WeightFunction& w, Functor f){
         VectorType pos = tree.point_data()[idx].pos();
@@ -33,6 +31,7 @@ void PointProcessing::processOnePoint(const int &idx, const typename FitT::Weigh
             
             // Ponca::FIT_RESULT res = fit.computeWithIds(tree.range_neighbors(idx, NSize), tree.point_data() );
             
+            // Loop until fit not need other pass, same process as fit.computeWithIds
             Ponca::FIT_RESULT res;
             do {
                 fit.startNewPass();
@@ -54,8 +53,6 @@ void PointProcessing::processOnePoint(const int &idx, const typename FitT::Weigh
         }
 }
 
-/// Generic processing function: traverse point cloud, compute fitting, and use functor to process fitting output
-/// \note Functor is called only if fit is stable
 template<typename FitT, typename Functor>
 void PointProcessing::processPointCloud(const bool &unique, const typename FitT::WeightFunction& w, Functor f){
 
@@ -163,9 +160,7 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud &cloud
     cloud.setDiffQuantities(DiffQuantities(proj, normal,dmin, dmax, kmin, kmax, mean));
 }
 
-
-/// Colorize point cloud using kNN
-const Eigen::VectorXd PointProcessing::colorizeKnn(MyPointCloud &cloud) {
+const Eigen::VectorXd PointProcessing::colorizeKnn() {
 
     int nvert = tree.index_data().size();
     Eigen::VectorXd closest ( nvert );
@@ -179,8 +174,7 @@ const Eigen::VectorXd PointProcessing::colorizeKnn(MyPointCloud &cloud) {
     return closest;
 }
 
-// Colorize point cloud using euclidean distance
-const Eigen::VectorXd PointProcessing::colorizeEuclideanNeighborhood(MyPointCloud &cloud) {
+const Eigen::VectorXd PointProcessing::colorizeEuclideanNeighborhood() {
 
     int nvert = tree.index_data().size();
     Eigen::VectorXd closest ( nvert );
@@ -206,8 +200,6 @@ void PointProcessing::recomputeKnnGraph() {
     }
 }
 
-/// Dry run: loop over all vertices + run MLS loops without computation
-/// This function is useful to monitor the KdTree performances
 void PointProcessing::mlsDryRun() {
     int nvert = tree.index_data().size();
     m_meanNeighbors = Scalar(0);

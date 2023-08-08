@@ -19,19 +19,19 @@ using ConstWeightFunc    = Ponca::DistWeightFunc<PPAdapter, Ponca::ConstantWeigh
 
 // Fitting methods
 
-using basket_dryFit                      =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::DryFit>;
+using basket_dryFit                      =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::DryFit>;            
 
 using basket_AlgebraicShapeOperatorFit   =  Ponca::BasketDiff<
-                                                Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedSphereFit>,
-                                                Ponca::DiffType::FitSpaceDer,
-                                                Ponca::OrientedSphereDer, Ponca::MlsSphereFitDer,
-                                                Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedSphereFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::OrientedSphereDer, Ponca::MlsSphereFitDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
 using basket_AlgebraicPointSetSurfaceFit =  Ponca::BasketDiff<
-                                                Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedSphereFit>,
-                                                Ponca::DiffType::FitSpaceDer,
-                                                Ponca::OrientedSphereDer,
-                                                Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedSphereFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::OrientedSphereDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
 using basket_planeFit                    =  Ponca::BasketDiff<
                                                 Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::CovariancePlaneFit>,

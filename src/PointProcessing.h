@@ -58,27 +58,40 @@ class PointProcessing {
             recomputeKnnGraph();
         }
 
+        /// @brief Measure time of a function
+        /// @tparam Functor type of the function
+        /// @param actionName name of the action 
+        /// @param F function to measure
         template <typename Functor>
         void measureTime( const std::string &actionName, Functor F );
         
-        /// Recompute K-Neighbor graph
+        /// Compute the kNN graph
         void recomputeKnnGraph();
 
-        // Traverse the point cloud to compute differential quantities
+        /// @brief Compute differential quantities
+        /// @tparam FitT Fit Type, \see definitions.h
+        /// @param name Name of the method, to be displayed in the console
+        /// @param cloud Point Cloud to process
         template<typename FitT>
         void computeDiffQuantities(const std::string &name, MyPointCloud &cloud);
 
-        // Compute differential quantities for a single point
+        /// @brief Compute differential quantities for a single point
+        /// @tparam FitT Fit Type, \see definitions.h
+        /// @param name Name of the method, to be displayed in the console
+        /// @param cloud Point Cloud to process
         template<typename FitT>
         void computeUniquePoint(const std::string &name, MyPointCloud &cloud);
 
+        /// Dry run: loop over all vertices + run MLS loops without computation
+        /// This function is useful to monitor the KdTree performances
+        /// And to compute the mean number of neighbors
         void mlsDryRun();
 
-        // ColorizeKnn
-        const Eigen::VectorXd colorizeKnn(MyPointCloud &cloud);
+        /// Colorize point cloud using kNN
+        const Eigen::VectorXd colorizeKnn();
 
-        // ColorizeEuclideanNeighborhood
-        const Eigen::VectorXd colorizeEuclideanNeighborhood(MyPointCloud &cloud);
+        /// Colorize point cloud using euclidean distance
+        const Eigen::VectorXd colorizeEuclideanNeighborhood();
 
         const Eigen::VectorXd getVertexSourcePosition(){ return tree.point_data()[iVertexSource].pos(); }
 
@@ -88,21 +101,41 @@ private :
 
         Scalar m_meanNeighbors = 0;
 
-
+        /// @brief Loop over all points to compute differential quantities, the method differ depending on the used spatial data structure
+        /// @tparam Functor type of the function
+        /// @param idx index of the point to process
+        /// @param f function to apply on the neighbors
         template <typename Functor>
         void processRangeNeighbors(const int &idx, const Functor f);
 
-        // Compute differential quantities
+        /// @brief Process one point, compute fitting, and use functor to process fitting output
+        /// @tparam FitT Fit Type, \see definitions.h
+        /// @tparam Functor type of the function
+        /// @param idx index of the point to process
+        /// @param w weight function
+        /// @param f function to apply on the fitting
         template<typename FitT, typename Functor>
         void processOnePoint(const int &idx, const typename FitT::WeightFunction& w, Functor f);
 
+        /// Generic processing function: traverse point cloud, compute fitting, and use functor to process fitting output
+        /// \note Functor is called only if fit is stable
+        /// @tparam FitT Fit Type, \see definitions.h
+        /// @tparam Functor type of the function
+        /// @param w weight function
+        /// @param f function to apply on the fitting
         template<typename FitT, typename Functor>
         void processPointCloud(const bool &unique, const typename FitT::WeightFunction& w, Functor f);
-        
-        // Used to compute the normal of a single point and to avoid compilation errors
+
+        /// @brief Used to compute the normal of a single point and to avoid compilation errors
+        /// @tparam FitT Fit Type, \see definitions.h
+        /// @param idx index of the point to process
+        /// @param fit fitting method
+        /// @param init initial point
+        /// @param normal output normals
         template<typename FitT>
         void
         processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, Eigen::MatrixXd& normal);
+        
         
 }; // class PointProcessing
 
