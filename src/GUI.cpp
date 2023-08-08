@@ -9,9 +9,9 @@ void GUI::mainCallBack(){
     if (isCylinder){
         cylinderParameters();
     }
+    ImGui::Separator();
 
     if (cloudNeedsUpdate){
-
         pointProcessing.update(mainCloud);
         pointProcessing.measureTime("[Polyscope] Update current main cloud", [this](){
             polyscope::removeStructure(mainCloudName, false);
@@ -22,10 +22,7 @@ void GUI::mainCallBack(){
         });
         lastDryRun = "";
         cloudNeedsUpdate = false;
-
     }
-
-    ImGui::Separator();
 
     quantitiesParameters();
 
@@ -33,9 +30,27 @@ void GUI::mainCallBack(){
 
     cloudComputing();
 
-    ImGui::Separator();
-
 }
+
+//////////////////////////////////////////////////////////////////////
+////                       CLOUD GENERATING                       ////
+//////////////////////////////////////////////////////////////////////
+
+void GUI::fileResearch(){
+
+    if (FileDialog(&fileDialogOpen, &dialogInfo))
+    {
+        // L'utilisateur a sélectionné un fichier et a cliqué sur "Open".
+        // Le chemin du fichier sélectionné est dans dialogInfo.resultPath.
+        fileDialogOpen = false;  // Ferme la boîte de dialogue pour la prochaine fois
+        selectedFile = dialogInfo.resultPath.string();
+        selectedFileIndex = -1;
+    }
+
+    // open = false;
+    return;
+}
+
 
 void GUI::cloudGeneration(){
 
@@ -100,13 +115,12 @@ void GUI::generationFromFile(){
 
     // generation
     if(ImGui::Button("Generate") && selectedFile != ""){
-        displayImplicitParameters = false;
-        isCylinder = false;
         cloudNeedsUpdate = true;
-
+        
         pointProcessing.measureTime("[Generation] Load object", [this](){
             loadObject(mainCloud, selectedFile, pointNoise, normalNoise);
         });
+        
     }
 }
 
@@ -116,10 +130,11 @@ void GUI::generationFromImplicit() {
         displayImplicitParameters = true;
         isCylinder = true;
         cloudNeedsUpdate = true;
-        
+
         pointProcessing.measureTime("[Generation] Generate cylinder", [this](){
             cylinderGenerator.generateCylinder(mainCloud, pointNoise, normalNoise);
         });
+
     }
 }
 
@@ -171,15 +186,10 @@ void GUI::cylinderParameters(){
     ImGui::End();
 }
 
-void GUI::quantitiesParameters() {
-    // Set of check boxes for the quantities to display (proj, normal, dir min curv, dir max curv, min curv, max curv, mean curv)
-    // Also another combo boxe to display the projected point cloud
-    for (int i = 0; i < selectedQuantities.size(); ++i) {
-        ImGui::Checkbox(quantityNames[i].c_str(), (bool*)&selectedQuantities[i]);
-    }
-    ImGui::Separator();
-    ImGui::Checkbox ("Projected point cloud", &displayProjectedPointCloud);
-}
+
+/////////////////////////////////////////////////////////////////////
+////                       CLOUD COMPUTING                       ////
+/////////////////////////////////////////////////////////////////////
 
 void GUI::cloudComputingUpdateAll (){
     if (!all_computed) return;
@@ -214,7 +224,6 @@ void GUI::cloudComputingUpdateAll (){
     all_computed = false;
     methodName = "";
 }
-
 
 void GUI::cloudComputingUpdateUnique (){
     if (!unique_computed) return;
@@ -270,18 +279,20 @@ void GUI::cloudComputing(){
 
     cloudComputingParameters();
 
-    if (ImGui::Button("Dry Fit All")){
+    ImGui::Text("Differential estimators");
+
+    if (ImGui::Button("Dry Run")){
         pointProcessing.mlsDryRun();
         lastDryRun = "Last time run : " + std::to_string(pointProcessing.getMeanNeighbors()) + " number of neighbors (mean) \n";
     }
     ImGui::SameLine();
     ImGui::Text(lastDryRun.c_str());
 
+    methodForCloudComputing<basket_planeFit>("Plane (PCA)");
+
     methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
 
     methodForCloudComputing<basket_AlgebraicShapeOperatorFit>("ASO", false);
-
-    methodForCloudComputing<basket_planeFit>("plane");
 
     methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
 
@@ -291,7 +302,6 @@ void GUI::cloudComputing(){
 
     cloudComputingUpdateAll();
     cloudComputingUpdateUnique();
-
 }
 
 void GUI::cloudComputingParameters(){
@@ -306,9 +316,9 @@ void GUI::cloudComputingParameters(){
     ImGui::InputInt("source vertex", &pointProcessing.iVertexSource);
     ImGui::InputInt("Nb MLS Iterations", &pointProcessing.mlsIter);
     ImGui::SameLine();
-    if (ImGui::Button("show knn")) addQuantities(polyscope_mainCloud, "knn", pointProcessing.colorizeKnn(mainCloud));
+    if (ImGui::Button("show knn")) addQuantities(polyscope_mainCloud, "knn", pointProcessing.colorizeKnn());
     ImGui::SameLine();
-    if (ImGui::Button("show euclidean nei")) addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood(mainCloud));
+    if (ImGui::Button("show euclidean nei")) addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood());
 
     ImGui::Separator();
 
@@ -332,18 +342,12 @@ void GUI::addQuantities(polyscope::PointCloud *pc, const std::string &name, cons
         pc->addVectorQuantity(name, values);
 }
 
-
-void GUI::fileResearch(){
-
-    if (FileDialog(&fileDialogOpen, &dialogInfo))
-    {
-        // L'utilisateur a sélectionné un fichier et a cliqué sur "Open".
-        // Le chemin du fichier sélectionné est dans dialogInfo.resultPath.
-        fileDialogOpen = false;  // Ferme la boîte de dialogue pour la prochaine fois
-        selectedFile = dialogInfo.resultPath.string();
-        selectedFileIndex = -1;
+void GUI::quantitiesParameters() {
+    // Set of check boxes for the quantities to display (proj, normal, dir min curv, dir max curv, min curv, max curv, mean curv)
+    // Also another combo boxe to display the projected point cloud
+    for (int i = 0; i < selectedQuantities.size(); ++i) {
+        ImGui::Checkbox(quantityNames[i].c_str(), (bool*)&selectedQuantities[i]);
     }
-
-    // open = false;
-    return;
+    ImGui::Separator();
+    ImGui::Checkbox ("Projected point cloud", &displayProjectedPointCloud);
 }
