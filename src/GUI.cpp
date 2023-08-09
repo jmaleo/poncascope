@@ -11,6 +11,7 @@ void GUI::mainCallBack(){
     }
     ImGui::Separator();
 
+
     if (cloudNeedsUpdate){
         pointProcessing.update(mainCloud);
         pointProcessing.measureTime("[Polyscope] Update current main cloud", [this](){
@@ -22,8 +23,11 @@ void GUI::mainCallBack(){
         });
         lastDryRun = "";
         cloudNeedsUpdate = false;
+        noCloud = false;
     }
 
+    if (noCloud) return;
+    
     quantitiesParameters();
 
     ImGui::Separator();

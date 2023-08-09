@@ -30,14 +30,23 @@ class GUI {
             // Initialize the point cloud
             selectedFile = assetsDir + "armadillo.obj";
 
+            bool noCloud = true;
+        }
+
+        void init(){
+
+            if (fileDialogOpen) return;
+
             pointProcessing.measureTime("[Generation] Load object", [this](){
-                loadObject(mainCloud, assetsDir + "armadillo.obj", 0.0f, 0.0f);
+                loadObject(mainCloud, selectedFile, 0.0f, 0.0f);
             });
             
             pointProcessing.update(mainCloud);
             polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.getVertices());
             addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
             remove_clouds();
+
+            noCloud = false;
         }
 
         void mainCallBack();
@@ -55,8 +64,18 @@ class GUI {
             polyscope_uniqueClouds.clear();
         }
 
+        void setFileDialogOpen () {
+            fileDialogOpen = true;
+        }
+
+        void setSelectedFile (const std::string &file) {
+            selectedFile = file;
+        }
+
 
     private: 
+
+        bool noCloud = true;
 
         bool cloudNeedsUpdate = false;
 
