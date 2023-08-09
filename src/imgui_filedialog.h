@@ -41,8 +41,4 @@ struct ImFileDialogInfo
 
 IMGUI_API bool FileDialog(bool* open, ImFileDialogInfo* dialogInfo);
 
-<<<<<<< HEAD
-#include "imgui_filedialog.hpp"
-=======
 #include "imgui_filedialog.cpp"
->>>>>>> 22e304b292a89f196cebb4b12e8b08d34e913988
