@@ -6,6 +6,30 @@
 #include <igl/per_vertex_normals.h>
 #include "MyPointCloud.h"
 
+Eigen::MatrixXd rescalePoints (Eigen::MatrixXd &vertices){
+    Eigen::MatrixXd baryCenter = Eigen::MatrixXd::Zero(1, 3);
+    // Compute barycenter
+    for (int i = 0; i < vertices.rows(); ++i){
+        baryCenter += vertices.row(i);
+    }
+    baryCenter /= double(vertices.rows());
+
+    // Compute max distance
+    Eigen::Vector3d maxDist({0.0, 0.0, 0.0});
+    for (int i = 0; i < vertices.rows(); ++i){
+        Eigen::Vector3d current = Eigen::Vector3d(vertices.row(i)[0], vertices.row(i)[1], vertices.row(i)[2]) - baryCenter;
+        maxDist = maxDist.cwiseMax(current.cwiseAbs());
+    }
+    double maxDistNorm = maxDist.maxCoeff();
+
+    // Rescale
+    Eigen::MatrixXd rescaledVertices = Eigen::MatrixXd::Zero(vertices.rows(), 3);
+    for (int i = 0; i < vertices.rows(); ++i){
+        rescaledVertices.row(i) = (vertices.row(i) - baryCenter) / maxDistNorm;
+    }
+    return rescaledVertices;
+}
+
 void loadPTSObject (MyPointCloud &cloud, std::string filename, float sigma_pos, float sigma_normal){
 
     Eigen::MatrixXd cloudV, cloudN;
@@ -30,7 +54,7 @@ void loadPTSObject (MyPointCloud &cloud, std::string filename, float sigma_pos, 
     std::map<std::string, int> indices;
     for (int i = 0; i < header.size(); ++i) {
         if (header[i] == "x" || header[i] == "y" || header[i] == "z" || header[i] == "nx" || header[i] == "ny" || header[i] == "nz") {
-            indices[header[i]] = i-1;
+            indices[header[i]] = i - 1;
         }
     }
 
@@ -51,6 +75,8 @@ void loadPTSObject (MyPointCloud &cloud, std::string filename, float sigma_pos, 
     }
 
     file.close();
+
+    std::cout << "cloudV: " << cloudV.rows() << " " << cloudV.cols() << std::endl;
 
     cloud = MyPointCloud(cloudV, cloudN);
     cloud.addNoise(sigma_pos, sigma_normal);
@@ -93,9 +119,67 @@ void loadObject (MyPointCloud &cloud, std::string filename, float sigma_pos, flo
         exit (EXIT_FAILURE);
     }
 
-    cloud = MyPointCloud(cloudV, cloudN);
+    Eigen::MatrixXd resca = rescalePoints(cloudV);
+    cloud = MyPointCloud(resca, cloudN);
 
     cloud.addNoise(sigma_pos, sigma_normal);
+}
+
+void create_tube(MyPointCloud &cloud) {
+
+    int size = 1000;
+
+    Eigen::MatrixXd cloudV(size, 3);
+    Eigen::MatrixXd cloudN(size, 3);
+    cloudN.setZero();
+
+    double a = 4; // radius in the x-direction
+    double b = 4;   // radius in the y-direction
+    double length = 20; // length of the tube
+    
+    for(int i = 0; i < size; ++i) {
+        double u = ((double) rand() / (RAND_MAX)) * 2 * M_PI; // azimuthal angle
+        double z = ((double) rand() / (RAND_MAX)) * length - length/2; // z-coordinate
+        
+        // Vertex calculation
+        cloudV.row(i) = Eigen::Vector3d(a * cos(u), b * sin(u), z);
+        
+        // Normal calculation
+        cloudN.row(i) = Eigen::Vector3d(cos(u) / a, sin(u) / b, 0);
+        
+        // Normalize the normal vector
+        cloudN.row(i) = cloudN.row(i) / cloudN.row(i).norm();
+    }
+
+    cloud = MyPointCloud(cloudV, cloudN);
+}
+
+void create_sphere(MyPointCloud &cloud) {
+
+    int size = 1000;
+
+    Eigen::MatrixXd cloudV(size, 3);
+    Eigen::MatrixXd cloudN(size, 3);
+    cloudN.setZero();
+
+    double r = 5.0; // radius of the sphere
+
+    for(int i = 0; i < size; ++i) {
+        double theta = ((double) rand() / (RAND_MAX)) * 2 * M_PI; // azimuthal angle
+        double phi = ((double) rand() / (RAND_MAX)) * M_PI; // polar angle
+        
+        // Vertex calculation
+        cloudV.row(i) = Eigen::Vector3d(
+            r * sin(phi) * cos(theta), // x
+            r * sin(phi) * sin(theta), // y
+            r * cos(phi)               // z
+        );
+        
+        // Normal calculation
+        cloudN.row(i) = cloudV.row(i) / r; // since the sphere is centered at origin, the normal is the position vector normalized
+    }
+
+    cloud = MyPointCloud(cloudV, cloudN);
 }
 
 void create_cube (MyPointCloud &cloud, const Eigen::VectorXd &pos, const double &dist = 0.1) {

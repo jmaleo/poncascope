@@ -136,6 +136,30 @@ void GUI::generationFromImplicit() {
         });
 
     }
+
+    if (ImGui::Button("Tube")){
+        displayImplicitParameters = false;
+        isCylinder = false;
+        cloudNeedsUpdate = true;
+
+        pointProcessing.measureTime("[Generation] Generate tube", [this](){
+            create_tube(mainCloud);
+            mainCloud.addNoise(pointNoise, normalNoise);
+        });
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Sphere")){
+        displayImplicitParameters = false;
+        isCylinder = false;
+        cloudNeedsUpdate = true;
+
+        pointProcessing.measureTime("[Generation] Generate sphere", [this](){
+            create_sphere(mainCloud);
+            mainCloud.addNoise(pointNoise, normalNoise);
+        });
+    }
 }
 
 void GUI::cylinderParameters(){

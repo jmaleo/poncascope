@@ -32,7 +32,7 @@ class GUI {
             selectedFile = assetsDir + "armadillo.obj";
 
             pointProcessing.measureTime("[Generation] Load object", [this](){
-                loadObject(mainCloud, assetsDir + "armadillo.obj", 0.0f, 0.0f);
+                loadObject(mainCloud, selectedFile, 0.0f, 0.0f);
             });
             
             pointProcessing.update(mainCloud);

@@ -28,7 +28,7 @@ using basket_NearOrientedCylinderFit     =  Ponca::Basket<PPAdapter, SmoothWeigh
 using basket_FullyOrientedEllipsoid2DFit =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedEllipsoid2DFit>;
 using basket_BaseEllipsoid2DFit          =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseEllipsoid2DFit>;
 using basket_BaseOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseOrientedEllipsoid2DFit>;
-using basket_NearOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::NearOrientedEllipsoid2DFit>;                
+using basket_NearOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::NearOrientedEllipsoid2DFit>;
 
 using basket_AlgebraicShapeOperatorFit   =  Ponca::BasketDiff<
                                             Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedSphereFit>,
