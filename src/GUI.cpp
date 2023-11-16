@@ -19,6 +19,7 @@ void GUI::mainCallBack(){
             addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
             // Remove other clouds
             remove_clouds();
+            remove_meshs();
         });
         lastDryRun = "";
         cloudNeedsUpdate = false;
@@ -264,10 +265,16 @@ void GUI::cloudComputingUpdateUnique (){
                 break;
             }
         }
-        polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, tempCloud.getDiffQuantities().getVertices());
-        polyscope_uniqueClouds.push_back(newCloud);
-        addQuantities(newCloud, "normals", tempCloud.getDiffQuantities().getNormals());
-    
+        // check if the methodName contains "CNC"
+        if (methodName.find("CNC") != std::string::npos){
+            // Create a new surface mesh
+        }
+        else {
+            // Create a new point cloud
+            polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, tempCloud.getDiffQuantities().getVertices());
+            polyscope_uniqueClouds.push_back(newCloud);
+            addQuantities(newCloud, "normals", tempCloud.getDiffQuantities().getNormals());
+        } 
     });
 
     unique_computed = false;
@@ -299,6 +306,37 @@ void GUI::methodForCloudComputing(const std::string& metName, bool unique){
 
 }
 
+void GUI::methodForCloudComputing_OnlyTriangle(const std::string &metName, const int& type){
+    std::string buttonName_unique = metName;
+    
+    if (ImGui::Button(buttonName_unique.c_str())){
+        // Compute the distance between points for the cube, by taking 1/50 of the maximum distance between points of the mainCloud
+        methodName = metName;
+        unique_computed = true;
+
+        std::vector<std::array<Scalar, 3>> triangles;
+
+        pointProcessing.computeUniquePoint_triangle(metName, type /*, MyPointCloud &cloud*/);
+
+        if (triangles.size() == 0) {
+            std::cerr << "Error: computeUniquePointTriangle returned an empty matrix" << std::endl;
+            return;
+        }
+
+        // std::vector for indices
+        std::vector<std::array<size_t, 3>> indices(triangles.size());
+
+        for (size_t i = 0; i < triangles.size()/3; ++i){
+            indices[i] = {3*i, 3*i+1, 3*i+2};
+        }
+
+        // Create a new surface mesh
+        std::string meshName = "[" + methodName + "] " + "mesh";
+        polyscope::SurfaceMesh* mesh = polyscope::registerSurfaceMesh(meshName, triangles, indices);
+        polyscope_meshs.push_back(mesh);
+    }
+}
+
 void GUI::cloudComputing(){
 
     cloudComputingParameters();
@@ -323,6 +361,14 @@ void GUI::cloudComputing(){
     methodForCloudComputing<basket_FullyOrientedCylinderFit>("Fully Oriented Cylinder");
 
     methodForCloudComputing<basket_cylinderFit>("Cylinder");
+
+    methodForCloudComputing_OnlyTriangle("CNC uniform", 1);
+
+    methodForCloudComputing_OnlyTriangle("CNC independent", 2);
+
+    methodForCloudComputing_OnlyTriangle("CNC HexagramGeneration", 3);
+
+    methodForCloudComputing_OnlyTriangle("CNC AvgHexagramGeneration", 4);
 
     cloudComputingUpdateAll();
     cloudComputingUpdateUnique();

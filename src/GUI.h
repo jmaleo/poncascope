@@ -8,6 +8,7 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/messages.h"
 #include "polyscope/point_cloud.h"
+#include "polyscope/surface_mesh.h"
 #include "MyPointCloud.h"
 #include "CloudGeneration.h"
 #include "PointProcessing.h"
@@ -56,6 +57,14 @@ class GUI {
             polyscope_uniqueClouds.clear();
         }
 
+        void remove_meshs(){
+            for (polyscope::SurfaceMesh* sm : polyscope_meshs){
+                // delete the point cloud
+                polyscope::removeStructure(sm->name, false);
+            }
+            polyscope_meshs.clear();
+        }
+
 
     private: 
 
@@ -81,6 +90,7 @@ class GUI {
         polyscope::PointCloud* polyscope_mainCloud;
         std::vector<polyscope::PointCloud*> polyscope_projectionClouds;
         std::vector<polyscope::PointCloud*> polyscope_uniqueClouds;
+        std::vector<polyscope::SurfaceMesh*> polyscope_meshs;
 
         CylinderGenerator cylinderGenerator;
         MyPointCloud mainCloud;
@@ -131,6 +141,8 @@ class GUI {
 
         template <typename FitT>
         void methodForCloudComputing(const std::string &metName, bool unique=true);
+
+        void methodForCloudComputing_OnlyTriangle(const std::string &metName, const int& type);
 
         void quantitiesParameters();
 

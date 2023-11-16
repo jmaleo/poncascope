@@ -53,6 +53,80 @@ void PointProcessing::processOnePoint(const int &idx, const typename FitT::Weigh
         }
 }
 
+template <typename Functor>
+void 
+PointProcessing::processOnePoint_Triangle(const int& idx, const int& type, Functor f){
+
+    VectorType pos = tree.point_data()[idx].pos();
+    basket_triangleGeneration fit;
+    fit.init( pos );
+
+    if (type == 2 ){
+        fit.chooseIndependentGeneration();
+    }
+    else if (type == 3) {
+        fit.chooseHexagramGeneration();
+    }
+    else if (type == 4) {
+        fit.chooseAvgHexagramGeneration();
+    }
+    else {
+        fit.chooseUniformGeneration();
+    }
+
+    // Position of each nei points
+    std::vector<VectorType> neiPos;
+    // Normal of each nei points
+    std::vector<VectorType> neiNormal;
+
+    // Loop on neighbors
+    if (useKnnGraph) {
+        for (int j : knnGraph->range_neighbors(idx, NSize)){
+            neiPos.push_back(tree.point_data()[j].pos());
+            neiNormal.push_back(tree.point_data()[j].normal());
+        }
+    }
+    else {
+        for (int j : tree.range_neighbors(idx, NSize)){
+            neiPos.push_back(tree.point_data()[j].pos());
+            neiNormal.push_back(tree.point_data()[j].normal());
+        }
+    }
+
+    Ponca::FIT_RESULT res;
+
+    fit.startNewPass();
+
+    fit.computeNeighbors(tree.point_data()[idx], neiPos, neiNormal);
+
+    res = Ponca::STABLE;
+
+    if (res == Ponca::STABLE){
+        f(idx, fit, pos);
+    }
+    else {
+        std::cerr << "[Ponca][Warning] fit " << idx << " is not stable" << std::endl;
+    }
+}
+
+template<typename Functor>
+void 
+PointProcessing::processPointCloud_Triangle(const bool &unique, const int& type, Functor f)
+{
+    if (unique) {
+        processOnePoint_Triangle( iVertexSource, type, f);
+    }
+    else {
+        int nvert = tree.index_data().size();
+        std::cout << "nvert: " << nvert << std::endl;
+        // Traverse point cloud
+        #pragma omp parallel for
+        for (int i = 0; i < nvert; ++i) {
+            processOnePoint_Triangle( i, type, f);
+        }
+    }
+}
+
 template<typename FitT, typename Functor>
 void PointProcessing::processPointCloud(const bool &unique, const typename FitT::WeightFunction& w, Functor f){
 
@@ -61,6 +135,7 @@ void PointProcessing::processPointCloud(const bool &unique, const typename FitT:
     }
     else {
         int nvert = tree.index_data().size();
+        std::cout << "nvert: " << nvert << std::endl;
         // Traverse point cloud
         #pragma omp parallel for
         for (int i = 0; i < nvert; ++i) {
@@ -102,6 +177,10 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud &cl
     // Add differential quantities to the cloud
     cloud.setDiffQuantities(DiffQuantities(proj, normal,dmin, dmax, kmin, kmax, mean));
 }
+
+// concept ConceptFitT = requires (ConceptFitT fit, VectorType init) {
+//     { fit.primitiveGradient(init) } -> std::same_as<Eigen::MatrixXd>;
+// };
 
 template<typename FitT>
 void
@@ -157,8 +236,25 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud &cloud
                                 });
                     });
     // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities(proj, normal,dmin, dmax, kmin, kmax, mean));
+    cloud.setDiffQuantities(DiffQuantities(proj, normal, dmin, dmax, kmin, kmax, mean));
 }
+
+void PointProcessing::computeUniquePoint_triangle(const std::string &name, const int& type/*, MyPointCloud &cloud*/){
+    // Used for the use of triangles
+    int nb_t = 0; 
+
+    measureTime( "[Ponca] Compute differential quantities using " + name,
+                [this, &type, &nb_t]() {
+                    processPointCloud_Triangle(true, type,
+                                [this, &nb_t]
+                                ( int i, const basket_triangleGeneration& fit, const VectorType& mlsPos){
+                                    nb_t = fit.getNumTriangles();
+                                });
+                    });
+
+    std::cout << "Number of triangles " << nb_t << std::endl;
+}
+
 
 const Eigen::VectorXd PointProcessing::colorizeKnn() {
 

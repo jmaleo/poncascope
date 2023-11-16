@@ -82,6 +82,19 @@ class PointProcessing {
         template<typename FitT>
         void computeUniquePoint(const std::string &name, MyPointCloud &cloud);
 
+        /// @brief Compute triangle mesh with CNC algorithm
+        /// @param name Name of the method, to be displayed in the console
+        void computeUniquePoint_triangle(const std::string &name, const int& type/*, MyPointCloud &cloud*/);
+
+
+        /// @brief Compute differential quantities
+        /// @tparam FitT Fit Type, \see definitions.h
+        /// @param name Name of the method, to be displayed in the console
+        /// @param cloud Point Cloud to process
+        template<typename FitT>
+        // void computeDiffQuantities_Triangle(const std::string &name, const int& type, MyPointCloud &cloud);
+
+
         /// Dry run: loop over all vertices + run MLS loops without computation
         /// This function is useful to monitor the KdTree performances
         /// And to compute the mean number of neighbors
@@ -117,6 +130,9 @@ private :
         template<typename FitT, typename Functor>
         void processOnePoint(const int &idx, const typename FitT::WeightFunction& w, Functor f);
 
+        template <typename Functor>
+        void processOnePoint_Triangle(const int& idx, const int& type, Functor f);
+
         /// Generic processing function: traverse point cloud, compute fitting, and use functor to process fitting output
         /// \note Functor is called only if fit is stable
         /// @tparam FitT Fit Type, \see definitions.h
@@ -125,6 +141,9 @@ private :
         /// @param f function to apply on the fitting
         template<typename FitT, typename Functor>
         void processPointCloud(const bool &unique, const typename FitT::WeightFunction& w, Functor f);
+
+        template<typename Functor>
+        void processPointCloud_Triangle(const bool &unique, const int& type, Functor f);
 
         /// @brief Used to compute the normal of a single point and to avoid compilation errors
         /// @tparam FitT Fit Type, \see definitions.h
