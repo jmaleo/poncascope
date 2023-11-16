@@ -7,7 +7,7 @@
 #include "MyPointCloud.h"
 
 Eigen::MatrixXd rescalePoints (Eigen::MatrixXd &vertices){
-    Eigen::MatrixXd baryCenter = Eigen::MatrixXd::Zero(1, 3);
+    Eigen::Vector3d baryCenter = Eigen::Vector3d::Zero();
     // Compute barycenter
     for (int i = 0; i < vertices.rows(); ++i){
         baryCenter += vertices.row(i);
@@ -25,7 +25,8 @@ Eigen::MatrixXd rescalePoints (Eigen::MatrixXd &vertices){
     // Rescale
     Eigen::MatrixXd rescaledVertices = Eigen::MatrixXd::Zero(vertices.rows(), 3);
     for (int i = 0; i < vertices.rows(); ++i){
-        rescaledVertices.row(i) = (vertices.row(i) - baryCenter) / maxDistNorm;
+        Eigen::Vector3d current = Eigen::Vector3d(vertices.row(i)[0], vertices.row(i)[1], vertices.row(i)[2]);
+        rescaledVertices.row(i) = (current - baryCenter) / maxDistNorm;
     }
     return rescaledVertices;
 }

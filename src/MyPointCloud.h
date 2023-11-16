@@ -153,6 +153,14 @@ class MyPointCloud {
             return m_diffQuantities;
         }
 
+        void setTriangles(std::vector<std::array<double, 3>> &triangles){
+            m_triangles = triangles;
+        }
+
+        std::vector<std::array<double, 3>> & getTriangles(){
+            return m_triangles;
+        }
+
         Eigen::MatrixXd getVertices(){
             return m_vertices;
         }
@@ -197,6 +205,8 @@ class MyPointCloud {
 
         Eigen::VectorXd m_min;
         Eigen::VectorXd m_max;
+
+        std::vector<std::array<double, 3>> m_triangles;
 
 
         void updateBoundingBox(){

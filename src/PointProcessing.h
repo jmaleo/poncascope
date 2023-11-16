@@ -75,6 +75,12 @@ class PointProcessing {
         template<typename FitT>
         void computeDiffQuantities(const std::string &name, MyPointCloud &cloud);
 
+        /// @brief Compute differential quantities
+        /// @tparam FitT Fit Type, \see definitions.h
+        /// @param name Name of the method, to be displayed in the console
+        /// @param cloud Point Cloud to process
+        void computeDiffQuantities_Triangle(const std::string &name, const int& type, MyPointCloud &cloud);
+
         /// @brief Compute differential quantities for a single point
         /// @tparam FitT Fit Type, \see definitions.h
         /// @param name Name of the method, to be displayed in the console
@@ -84,15 +90,8 @@ class PointProcessing {
 
         /// @brief Compute triangle mesh with CNC algorithm
         /// @param name Name of the method, to be displayed in the console
-        void computeUniquePoint_triangle(const std::string &name, const int& type/*, MyPointCloud &cloud*/);
+        void computeUniquePoint_triangle(const std::string &name, const int& type, MyPointCloud &cloud);
 
-
-        /// @brief Compute differential quantities
-        /// @tparam FitT Fit Type, \see definitions.h
-        /// @param name Name of the method, to be displayed in the console
-        /// @param cloud Point Cloud to process
-        template<typename FitT>
-        // void computeDiffQuantities_Triangle(const std::string &name, const int& type, MyPointCloud &cloud);
 
 
         /// Dry run: loop over all vertices + run MLS loops without computation

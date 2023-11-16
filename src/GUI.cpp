@@ -307,32 +307,40 @@ void GUI::methodForCloudComputing(const std::string& metName, bool unique){
 }
 
 void GUI::methodForCloudComputing_OnlyTriangle(const std::string &metName, const int& type){
-    std::string buttonName_unique = metName;
+    std::string buttonName_all = "Compute " + metName;
+    std::string buttonName_unique = metName + " for selected";
     
+    if (ImGui::Button (buttonName_all.c_str())){
+        methodName = metName;
+        all_computed = true;
+        pointProcessing.computeDiffQuantities_Triangle(metName,type, mainCloud);
+    }
+
+    ImGui::SameLine();
+
     if (ImGui::Button(buttonName_unique.c_str())){
         // Compute the distance between points for the cube, by taking 1/50 of the maximum distance between points of the mainCloud
         methodName = metName;
         unique_computed = true;
 
-        std::vector<std::array<Scalar, 3>> triangles;
+        mainCloud.getTriangles().clear();
+        pointProcessing.computeUniquePoint_triangle(metName, type, mainCloud);
 
-        pointProcessing.computeUniquePoint_triangle(metName, type /*, MyPointCloud &cloud*/);
-
-        if (triangles.size() == 0) {
+        if (mainCloud.getTriangles().size() == 0) {
             std::cerr << "Error: computeUniquePointTriangle returned an empty matrix" << std::endl;
             return;
         }
 
         // std::vector for indices
-        std::vector<std::array<size_t, 3>> indices(triangles.size());
+        std::vector<std::array<size_t, 3>> indices(mainCloud.getTriangles().size());
 
-        for (size_t i = 0; i < triangles.size()/3; ++i){
+        for (size_t i = 0; i < mainCloud.getTriangles().size()/3; ++i){
             indices[i] = {3*i, 3*i+1, 3*i+2};
         }
 
         // Create a new surface mesh
         std::string meshName = "[" + methodName + "] " + "mesh";
-        polyscope::SurfaceMesh* mesh = polyscope::registerSurfaceMesh(meshName, triangles, indices);
+        polyscope::SurfaceMesh* mesh = polyscope::registerSurfaceMesh(meshName, mainCloud.getTriangles(), indices);
         polyscope_meshs.push_back(mesh);
     }
 }
