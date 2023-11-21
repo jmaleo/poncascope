@@ -55,4 +55,8 @@ using basket_ellipsoidFit                =  Ponca::BasketDiff<
 
 
 // Trying to generate triangles
-using basket_triangleGeneration          = Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::TriangleGeneration>;
+using basket_triangleGeneration          =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::TriangleGeneration>;
+
+using basket_orientedWaveJets            =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedWaveJetsFit>;
+
+using basket_waveJets                    =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::WaveJetsFit>;

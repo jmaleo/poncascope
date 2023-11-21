@@ -360,15 +360,19 @@ void GUI::cloudComputing(){
 
     methodForCloudComputing<basket_planeFit>("Plane (PCA)");
 
-    methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
+    // methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
 
     methodForCloudComputing<basket_AlgebraicShapeOperatorFit>("ASO", false);
 
-    methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
+    methodForCloudComputing<basket_waveJets>("WaveJets", false);
+
+    methodForCloudComputing<basket_orientedWaveJets>("oriented WaveJets", false);
+
+    // methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
 
     methodForCloudComputing<basket_FullyOrientedCylinderFit>("Fully Oriented Cylinder");
 
-    methodForCloudComputing<basket_cylinderFit>("Cylinder");
+    // methodForCloudComputing<basket_cylinderFit>("Cylinder");
 
     methodForCloudComputing_OnlyTriangle("CNC uniform", 1);
 
