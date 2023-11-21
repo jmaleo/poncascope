@@ -332,9 +332,9 @@ void GUI::methodForCloudComputing_OnlyTriangle(const std::string &metName, const
         }
 
         // std::vector for indices
-        std::vector<std::array<size_t, 3>> indices(mainCloud.getTriangles().size());
+        std::vector<std::array<size_t, 3>> indices(mainCloud.getTriangles().size()/3);
 
-        for (size_t i = 0; i < mainCloud.getTriangles().size()/3; ++i){
+        for (size_t i = 0; i < mainCloud.getTriangles().size()/3; i++){
             indices[i] = {3*i, 3*i+1, 3*i+2};
         }
 
@@ -364,11 +364,11 @@ void GUI::cloudComputing(){
 
     methodForCloudComputing<basket_AlgebraicShapeOperatorFit>("ASO", false);
 
-    methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
+    // methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
 
     methodForCloudComputing<basket_FullyOrientedCylinderFit>("Fully Oriented Cylinder");
 
-    methodForCloudComputing<basket_cylinderFit>("Cylinder");
+    // methodForCloudComputing<basket_cylinderFit>("Cylinder");
 
     methodForCloudComputing_OnlyTriangle("CNC uniform", 1);
 
@@ -380,6 +380,15 @@ void GUI::cloudComputing(){
 
     cloudComputingUpdateAll();
     cloudComputingUpdateUnique();
+}
+
+void GUI::CNCParameters(){
+
+    ImGui::InputInt("max triangles", &pointProcessing.nb_max_triangles);
+    
+    ImGui::SameLine();
+    
+    ImGui::InputFloat("avg normals weight", &pointProcessing.avg_normals_weight);
 }
 
 void GUI::cloudComputingParameters(){
@@ -397,6 +406,10 @@ void GUI::cloudComputingParameters(){
     if (ImGui::Button("show knn")) addQuantities(polyscope_mainCloud, "knn", pointProcessing.colorizeKnn());
     ImGui::SameLine();
     if (ImGui::Button("show euclidean nei")) addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood());
+
+    ImGui::Separator();
+
+    CNCParameters();
 
     ImGui::Separator();
 

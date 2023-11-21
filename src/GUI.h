@@ -150,6 +150,8 @@ class GUI {
 
         void addQuantities(polyscope::PointCloud *pc, const std::string &name, const Eigen::MatrixXd &values);
 
+        void CNCParameters();
+
 
 }; // class GUI
 

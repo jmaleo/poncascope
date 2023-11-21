@@ -12,15 +12,18 @@ class PointProcessing {
     // Variables
     public:
 
-        KdTree tree;                   /// < kdtree for nearest neighbors search
-        KnnGraph *knnGraph = nullptr;  /// < k-neighbor graph
+        KdTree tree;                         /// < kdtree for nearest neighbors search
+        KnnGraph *knnGraph       = nullptr;  /// < k-neighbor graph
 
         // Options for algorithms
-        bool  useKnnGraph    = false; /// < use k-neighbor graph instead of kdtree
-        int   iVertexSource  = 7;     /// < id of the selected point
-        int   kNN            = 10;    /// < neighborhood size (knn)
-        int   mlsIter        = 3;     /// < number of moving least squares iterations
-        float NSize          = 0.25;  /// < neighborhood size (euclidean)
+        bool  useKnnGraph        = false;    /// < use k-neighbor graph instead of kdtree
+        int   iVertexSource      = 7;        /// < id of the selected point
+        int   kNN                = 10;       /// < neighborhood size (knn)
+        int   mlsIter            = 3;        /// < number of moving least squares iterations
+        float NSize              = 0.25;     /// < neighborhood size (euclidean)
+
+        float avg_normals_weight = 0.5;      /// < weight of the average normals in the fitting
+        int   nb_max_triangles   = 100;      /// < maximum number of triangles to compute
 
         // Current Point Cloud Data
 
@@ -28,22 +31,26 @@ class PointProcessing {
 
         PointProcessing() {
             // Default values
-            useKnnGraph    = false;
-            iVertexSource  = 7;
-            kNN            = 10;
-            mlsIter        = 3;
-            NSize          = 0.25;
+            useKnnGraph        = false;
+            iVertexSource      = 7;
+            kNN                = 10;
+            mlsIter            = 3;
+            NSize              = 0.25;
+            avg_normals_weight = 0.5;
+            nb_max_triangles   = 100;
         }
 
         // Constructor
         PointProcessing(MyPointCloud &cloud) {
 
             // Default values
-            useKnnGraph    = false;
-            iVertexSource  = 7;
-            kNN            = 10;
-            mlsIter        = 3;
-            NSize          = 0.25;
+            useKnnGraph        = false;
+            iVertexSource      = 7;
+            kNN                = 10;
+            mlsIter            = 3;
+            NSize              = 0.25;
+            avg_normals_weight = 0.5;
+            nb_max_triangles   = 100;
         
             // build kdtree and knn graph
             update(cloud);

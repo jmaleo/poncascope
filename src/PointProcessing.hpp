@@ -62,16 +62,16 @@ PointProcessing::processOnePoint_Triangle(const int& idx, const int& type, Funct
     fit.init( pos );
 
     if (type == 2 ){
-        fit.chooseIndependentGeneration();
+        fit.chooseIndependentGeneration(nb_max_triangles);
     }
     else if (type == 3) {
-        fit.chooseHexagramGeneration();
+        fit.chooseHexagramGeneration(avg_normals_weight);
     }
     else if (type == 4) {
-        fit.chooseAvgHexagramGeneration();
+        fit.chooseAvgHexagramGeneration(avg_normals_weight);
     }
     else {
-        fit.chooseUniformGeneration();
+        fit.chooseUniformGeneration(nb_max_triangles);
     }
 
     // Position of each nei points
@@ -82,12 +82,13 @@ PointProcessing::processOnePoint_Triangle(const int& idx, const int& type, Funct
     // Loop on neighbors
     if (useKnnGraph) {
         for (int j : knnGraph->range_neighbors(idx, NSize)){
+            std::cout << "[PONCA] KnnGraph used with range_neighbors" << std::endl;
             neiPos.push_back(tree.point_data()[j].pos());
             neiNormal.push_back(tree.point_data()[j].normal());
         }
     }
     else {
-        for (int j : tree.range_neighbors(idx, NSize)){
+        for (int j : tree.k_nearest_neighbors(idx, kNN)){
             neiPos.push_back(tree.point_data()[j].pos());
             neiNormal.push_back(tree.point_data()[j].normal());
         }
@@ -300,9 +301,17 @@ const Eigen::VectorXd PointProcessing::colorizeKnn() {
     closest.setZero();
 
     closest(iVertexSource) = 2;
-    processRangeNeighbors(iVertexSource, [&closest](int j){
-        closest(j) = 1;
-    });
+    if (useKnnGraph) {
+        for (int j : knnGraph->range_neighbors(iVertexSource, NSize)){
+            std::cout << "[PONCA] KnnGraph used with range_neighbors" << std::endl;
+            closest(j) = 1;
+        }
+    }
+    else {
+        for (int j : tree.k_nearest_neighbors(iVertexSource, kNN)){
+            closest(j) = 1;
+        }
+    }
     
     return closest;
 }
