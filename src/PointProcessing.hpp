@@ -80,17 +80,22 @@ PointProcessing::processOnePoint_Triangle(const int& idx, const int& type, Funct
     std::vector<VectorType> neiNormal;
 
     // Loop on neighbors
-    if (useKnnGraph) {
-        for (int j : knnGraph->range_neighbors(idx, NSize)){
-            neiPos.push_back(tree.point_data()[j].pos());
-            neiNormal.push_back(tree.point_data()[j].normal());
-        }
-    }
-    else {
-        for (int j : tree.range_neighbors(idx, NSize)){
-            neiPos.push_back(tree.point_data()[j].pos());
-            neiNormal.push_back(tree.point_data()[j].normal());
-        }
+    // if (useKnnGraph) {
+    //     for (int j : knnGraph->range_neighbors(idx, NSize)){
+    //         neiPos.push_back(tree.point_data()[j].pos());
+    //         neiNormal.push_back(tree.point_data()[j].normal());
+    //     }
+    // }
+    // else {
+    //     for (int j : tree.range_neighbors(idx, NSize)){
+    //         neiPos.push_back(tree.point_data()[j].pos());
+    //         neiNormal.push_back(tree.point_data()[j].normal());
+    //     }
+    // }
+
+    for (int j : tree.k_nearest_neighbors(idx, kNN)){
+        neiPos.push_back(tree.point_data()[j].pos());
+        neiNormal.push_back(tree.point_data()[j].normal());
     }
 
     Ponca::FIT_RESULT res;
