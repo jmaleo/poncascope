@@ -6,6 +6,7 @@
 #include <iostream>
 #include <utility>
 #include <chrono>
+#include <random>
 
 class PointProcessing {
 
@@ -44,7 +45,7 @@ class PointProcessing {
             kNN            = 10;
             mlsIter        = 3;
             NSize          = 0.25;
-        
+
             // build kdtree and knn graph
             update(cloud);
         };

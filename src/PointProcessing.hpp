@@ -59,6 +59,8 @@ PointProcessing::processOnePoint_Triangle(const int& idx, const int& type, Funct
 
     VectorType pos = tree.point_data()[idx].pos();
     basket_triangleGeneration fit;
+    // use a ptr of m_randomG for the init
+
     fit.init( pos );
 
     if (type == 2 ){
