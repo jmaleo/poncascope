@@ -95,11 +95,10 @@ PointProcessing::processOnePoint_Triangle(const int& idx, const int& type, Funct
     //     }
     // }
 
-    for (int j : tree.k_nearest_neighbors(idx, kNN)){
+    for (int j : tree.k_nearest_neighbors(pos, kNN)){
         neiPos.push_back(tree.point_data()[j].pos());
         neiNormal.push_back(tree.point_data()[j].normal());
     }
-
     Ponca::FIT_RESULT res;
 
     fit.startNewPass();
