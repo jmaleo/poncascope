@@ -244,6 +244,11 @@ void GUI::cloudComputingUpdateAll (){
             addQuantities(newCloud, "normals", mainCloud.getDiffQuantities().getNormals());
         }
 
+        // Add the shapeIndex to the main cloud
+        std::string completeName = "[" + methodName + "] "+ "shape index";
+        auto quantity = polyscope_mainCloud->addScalarQuantity(completeName, mainCloud.getDiffQuantities().getShapeIndex());
+        quantity->setMapRange(std::pair<double,double>(-1,1));
+
     });
 
     all_computed = false;

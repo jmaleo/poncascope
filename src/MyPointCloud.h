@@ -14,9 +14,10 @@ class DiffQuantities {
             m_kMin = Eigen::VectorXd::Zero(0);
             m_kMax = Eigen::VectorXd::Zero(0);
             m_kMean = Eigen::VectorXd::Zero(0);
+            m_shapeIndex = Eigen::VectorXd::Zero(0);
         }
 
-        DiffQuantities(const Eigen::MatrixXd &vertices, const Eigen::MatrixXd &normals, const Eigen::MatrixXd &kMinDir, const Eigen::MatrixXd &kMaxDir, const Eigen::VectorXd &kMin, const Eigen::VectorXd &kMax, const Eigen::VectorXd &kMean){
+        DiffQuantities(const Eigen::MatrixXd &vertices, const Eigen::MatrixXd &normals, const Eigen::MatrixXd &kMinDir, const Eigen::MatrixXd &kMaxDir, const Eigen::VectorXd &kMin, const Eigen::VectorXd &kMax, const Eigen::VectorXd &kMean, const Eigen::VectorXd &shapeIndex){
             m_vertices = vertices;
             m_normals = normals;
             m_kMinDir = kMinDir;
@@ -24,6 +25,12 @@ class DiffQuantities {
             m_kMin = kMin;
             m_kMax = kMax;
             m_kMean = kMean;
+            m_shapeIndex = shapeIndex;
+        }
+
+        DiffQuantities(const Eigen::MatrixXd &vertices, const Eigen::MatrixXd &normals){
+            m_vertices = vertices;
+            m_normals = normals;
         }
 
         ~DiffQuantities(){
@@ -34,6 +41,7 @@ class DiffQuantities {
             m_kMin.resize(0);
             m_kMax.resize(0);
             m_kMean.resize(0);
+            m_shapeIndex.resize(0);
         }
 
         void clear(){
@@ -44,6 +52,7 @@ class DiffQuantities {
             m_kMin.resize(0);
             m_kMax.resize(0);
             m_kMean.resize(0);
+            m_shapeIndex.resize(0);
         }
     
         const Eigen::MatrixXd & getVertices(){
@@ -74,6 +83,10 @@ class DiffQuantities {
             return m_kMean;
         }
 
+        const Eigen::VectorXd & getShapeIndex(){
+            return m_shapeIndex;
+        }
+
         const Eigen::MatrixXd getByName (const std::string &name){
             if (name == "Projections") return m_vertices;
             if (name == "Normals") return m_normals;
@@ -82,6 +95,7 @@ class DiffQuantities {
             if (name == "Min curvature") return m_kMin;
             if (name == "Max curvature") return m_kMax;
             if (name == "Mean curvature") return m_kMean;
+            if (name == "Shape index") return m_shapeIndex;
             return m_vertices;
         }
 
@@ -94,6 +108,7 @@ class DiffQuantities {
         Eigen::VectorXd m_kMin;
         Eigen::VectorXd m_kMax;
         Eigen::VectorXd m_kMean;
+        Eigen::VectorXd m_shapeIndex;
 
 }; // class DiffQuantities
 
