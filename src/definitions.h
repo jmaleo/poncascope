@@ -20,7 +20,6 @@ using ConstWeightFunc    = Ponca::DistWeightFunc<PPAdapter, Ponca::ConstantWeigh
 // Fitting methods
 
 using basket_dryFit                      =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::DryFit>;
-using basket_cylinderFit                 =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedCylinderFit>;
 using basket_FullyOrientedCylinderFit    =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedParabolicCylinderFit>;
 using basket_BaseCylinderFit             =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseParabolicCylinderFit>;
 using basket_BaseOrientedCylinderFit     =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseOrientedParabolicCylinderFit>;
@@ -53,6 +52,7 @@ using basket_ellipsoidFit                =  Ponca::BasketDiff<
                                                 Ponca::DiffType::FitSpaceDer, Ponca::OrientedEllipsoidDer,
                                                 Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
+using basket_ellipsoidTestFit            =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedCylinderFit>;
 
 // Trying to generate triangles
 using basket_triangleGeneration          =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::TriangleGeneration>;

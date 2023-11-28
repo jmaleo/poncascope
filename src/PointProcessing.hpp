@@ -178,7 +178,7 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud &cl
                                     // proj.row( i )   = mlsPos - tree.point_data()[i].pos();
                                     proj.row( i )   = mlsPos;
 
-                                    shapeIndex(i) = (2.0 / M_PI) * std::atan(fit.kmax() + fit.kmin() / fit.kmax() - fit.kmin());
+                                    shapeIndex(i) = (2.0 / M_PI) * std::atan( ( fit.kmin() + fit.kmax() ) / ( fit.kmin() - fit.kmax() ) );
                                 });
                     });
     
@@ -212,7 +212,7 @@ PointProcessing::computeDiffQuantities_Triangle(const std::string &name, const i
                                     dmin.row( i )   = fit.kminDirection();
                                     dmax.row( i )   = fit.kmaxDirection();
                                     
-                                    shapeIndex(i) = (2.0 / M_PI) * std::atan(fit.kmax() + fit.kmin() / fit.kmax() - fit.kmin());
+                                    shapeIndex(i) = (2.0 / M_PI) * std::atan( ( fit.kmin() + fit.kmax() ) / ( fit.kmin() - fit.kmax() ) );
                                 });
                     });
     

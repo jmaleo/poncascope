@@ -365,25 +365,28 @@ void GUI::cloudComputing(){
 
     methodForCloudComputing<basket_planeFit>("Plane (PCA)");
 
-    // methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
+    methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
 
     methodForCloudComputing<basket_AlgebraicShapeOperatorFit>("ASO", false);
 
-    methodForCloudComputing<basket_waveJets>("WaveJets", false);
+    // methodForCloudComputing<basket_waveJets>("WaveJets", false);
 
     methodForCloudComputing<basket_orientedWaveJets>("oriented WaveJets", false);
 
-    // methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
+    methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
+
+    methodForCloudComputing<basket_ellipsoidTestFit>("Ellipsoid Test");
+    
+    methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit>("Ellipsoid 2D");
 
     methodForCloudComputing<basket_FullyOrientedCylinderFit>("Fully Oriented Cylinder");
 
-    // methodForCloudComputing<basket_cylinderFit>("Cylinder");
 
     methodForCloudComputing_OnlyTriangle("CNC uniform", 1);
 
-    methodForCloudComputing_OnlyTriangle("CNC independent", 2);
+    // methodForCloudComputing_OnlyTriangle("CNC independent", 2);
 
-    methodForCloudComputing_OnlyTriangle("CNC HexagramGeneration", 3);
+    // methodForCloudComputing_OnlyTriangle("CNC HexagramGeneration", 3);
 
     methodForCloudComputing_OnlyTriangle("CNC AvgHexagramGeneration", 4);
 
