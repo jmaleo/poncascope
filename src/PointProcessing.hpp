@@ -157,13 +157,13 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud &cl
     int nvert = tree.index_data().size();
 
     // Allocate memory
-    Eigen::VectorXd mean ( nvert ), kmin ( nvert ), kmax ( nvert );
+    Eigen::VectorXd mean ( nvert ), kmin ( nvert ), kmax ( nvert ), shapeIndex( nvert );
     Eigen::MatrixXd normal( nvert, 3 ), dmin( nvert, 3 ), dmax( nvert, 3 ), proj( nvert, 3 );
 
     measureTime( "[Ponca] Compute differential quantities using " + name,
-                 [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj]() {
+                 [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj, &shapeIndex]() {
                     processPointCloud<FitT>(false, SmoothWeightFunc(NSize),
-                                [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj]
+                                [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj, &shapeIndex]
                                 ( int i, const FitT& fit, const VectorType& mlsPos){
 
                                     mean(i) = fit.kMean();
@@ -177,11 +177,13 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud &cl
 
                                     // proj.row( i )   = mlsPos - tree.point_data()[i].pos();
                                     proj.row( i )   = mlsPos;
+
+                                    shapeIndex(i) = (2.0 / M_PI) * std::atan(fit.kmax() + fit.kmin() / fit.kmax() - fit.kmin());
                                 });
                     });
     
     // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities(proj, normal,dmin, dmax, kmin, kmax, mean));
+    cloud.setDiffQuantities(DiffQuantities(proj, normal,dmin, dmax, kmin, kmax, mean, shapeIndex));
 }
 
 void
@@ -190,16 +192,16 @@ PointProcessing::computeDiffQuantities_Triangle(const std::string &name, const i
     int nvert = tree.index_data().size();
 
     // Allocate memory
-    Eigen::VectorXd mean ( nvert ), kmin ( nvert ), kmax ( nvert );
+    Eigen::VectorXd mean ( nvert ), kmin ( nvert ), kmax ( nvert ), shapeIndex( nvert );;
     Eigen::MatrixXd normal( nvert, 3 ), dmin( nvert, 3 ), dmax( nvert, 3 ), proj( nvert, 3 );
 
     proj.setZero();
     normal.setZero();
 
     measureTime( "[Ponca] Compute differential quantities using " + name,
-                 [this, &type, &mean, &kmin, &kmax, &dmin, &dmax]() {
+                 [this, &type, &mean, &kmin, &kmax, &dmin, &dmax, &shapeIndex]() {
                     processPointCloud_Triangle(false, type,
-                                [this, &mean, &kmin, &kmax, &dmin, &dmax]
+                                [this, &mean, &kmin, &kmax, &dmin, &dmax, &shapeIndex]
                                 ( int i, basket_triangleGeneration& fit, const VectorType& mlsPos){
 
                                     mean(i) = fit.kMean();
@@ -209,12 +211,13 @@ PointProcessing::computeDiffQuantities_Triangle(const std::string &name, const i
 
                                     dmin.row( i )   = fit.kminDirection();
                                     dmax.row( i )   = fit.kmaxDirection();
-
+                                    
+                                    shapeIndex(i) = (2.0 / M_PI) * std::atan(fit.kmax() + fit.kmin() / fit.kmax() - fit.kmin());
                                 });
                     });
     
     // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities(proj, normal,dmin, dmax, kmin, kmax, mean));
+    cloud.setDiffQuantities(DiffQuantities(proj, normal,dmin, dmax, kmin, kmax, mean, shapeIndex));
 }
 
 // concept ConceptFitT = requires (ConceptFitT fit, VectorType init) {
@@ -242,23 +245,17 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud &cloud
     int nvert = cloud.getSize();
 
     // Allocate memory
-    Eigen::VectorXd mean ( nvert ), kmin ( nvert ), kmax ( nvert );
-    Eigen::MatrixXd normal( nvert, 3 ), dmin( nvert, 3 ), dmax( nvert, 3 ), proj( nvert, 3 );
+    Eigen::MatrixXd normal( nvert, 3 ), proj( nvert, 3 );
 
     // set Zeros 
-    mean.setZero();
-    kmin.setZero();
-    kmax.setZero();
     normal.setZero();
-    dmin.setZero();
-    dmax.setZero();
     proj.setZero();
 
 
     measureTime( "[Ponca] Compute differential quantities using " + name,
-                [this, &cloud, &nvert, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj]() {
+                [this, &cloud, &nvert, &normal, &proj]() {
                     processPointCloud<FitT>(true, SmoothWeightFunc(NSize),
-                                [this, &cloud, &nvert, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj]
+                                [this, &cloud, &nvert, &normal, &proj]
                                 ( int i, const FitT& fit, const VectorType& mlsPos){
                                     
                         
@@ -275,7 +272,7 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud &cloud
                                 });
                     });
     // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities(proj, normal, dmin, dmax, kmin, kmax, mean));
+    cloud.setDiffQuantities(DiffQuantities(proj, normal));
 }
 
 void PointProcessing::computeUniquePoint_triangle(const std::string &name, const int& type, MyPointCloud &cloud){
