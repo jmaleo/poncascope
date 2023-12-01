@@ -363,7 +363,7 @@ void GUI::cloudComputing(){
     ImGui::SameLine();
     ImGui::Text(lastDryRun.c_str());
 
-    methodForCloudComputing<basket_planeFit>("Plane (PCA)");
+    // methodForCloudComputing<basket_planeFit>("Plane (PCA)");
 
     methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
 
@@ -374,21 +374,25 @@ void GUI::cloudComputing(){
     methodForCloudComputing<basket_orientedWaveJets>("oriented WaveJets", false);
 
     methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
+    //Same as ellipsoidFit
+    methodForCloudComputing<basket_hyperboloidFit_Diff>("Hyperboloid 3D basket Diff");
 
-    methodForCloudComputing<basket_ellipsoidTestFit>("Ellipsoid Test");
+    methodForCloudComputing<basket_hyperboloidFit>("Hyperboloid 3D ACP");
     
-    methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit>("Ellipsoid 2D");
+    methodForCloudComputing<basket_FullyOrientedCylinderFit>("FO Cylinder");
+    methodForCloudComputing<basket_BaseOrientedCylinderFit>("B0 Cylinder");
+    methodForCloudComputing<basket_BaseCylinderFit>("B Cylinder");
+    methodForCloudComputing<basket_NearOrientedCylinderFit>("N0 Cylinder");
 
-    methodForCloudComputing<basket_FullyOrientedCylinderFit>("Fully Oriented Cylinder");
+    methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit>("FO Ellipsoid2D");
 
-
-    methodForCloudComputing_OnlyTriangle("CNC uniform", 1);
+    // methodForCloudComputing_OnlyTriangle("CNC uniform", 1);
 
     // methodForCloudComputing_OnlyTriangle("CNC independent", 2);
 
     // methodForCloudComputing_OnlyTriangle("CNC HexagramGeneration", 3);
 
-    methodForCloudComputing_OnlyTriangle("CNC AvgHexagramGeneration", 4);
+    // methodForCloudComputing_OnlyTriangle("CNC AvgHexagramGeneration", 4);
 
     cloudComputingUpdateAll();
     cloudComputingUpdateUnique();

@@ -20,20 +20,51 @@ using ConstWeightFunc    = Ponca::DistWeightFunc<PPAdapter, Ponca::ConstantWeigh
 // Fitting methods
 
 using basket_dryFit                      =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::DryFit>;
-using basket_FullyOrientedCylinderFit    =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedParabolicCylinderFit>;
-using basket_BaseCylinderFit             =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseParabolicCylinderFit>;
-using basket_BaseOrientedCylinderFit     =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseOrientedParabolicCylinderFit>;
-using basket_NearOrientedCylinderFit     =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::NearOrientedParabolicCylinderFit>;
+
+using basket_FullyOrientedCylinderFit    =  Ponca::BasketDiff<
+                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedParabolicCylinderFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+
+
+using basket_BaseCylinderFit             =  Ponca::BasketDiff<
+                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseParabolicCylinderFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalCovarianceCurvatureEstimator>;
+
+using basket_BaseOrientedCylinderFit     =  Ponca::BasketDiff<
+                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedParabolicCylinderFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+
+using basket_NearOrientedCylinderFit     =  Ponca::BasketDiff<
+                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::NearOrientedParabolicCylinderFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalCovarianceCurvatureEstimator>;
+
 using basket_FullyOrientedEllipsoid2DFit =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedEllipsoid2DFit>;
+
+// Fixed
+// using basket_FullyOrientedEllipsoid2DFitTest = Ponca::BasketDiff<
+//                                             Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedEllipsoid2DFit>,
+//                                             Ponca::DiffType::FitSpaceDer,
+//                                             Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+
 using basket_BaseEllipsoid2DFit          =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseEllipsoid2DFit>;
 using basket_BaseOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseOrientedEllipsoid2DFit>;
 using basket_NearOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::NearOrientedEllipsoid2DFit>;
+
 
 using basket_AlgebraicShapeOperatorFit   =  Ponca::BasketDiff<
                                             Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedSphereFit>,
                                             Ponca::DiffType::FitSpaceDer,
                                             Ponca::OrientedSphereDer, Ponca::MlsSphereFitDer,
                                             Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+
+// using basket_AlgebraicShapeOperatorFit   =  Ponca::BasketDiff<
+//                                             Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedSphereFit>,
+//                                             Ponca::DiffType::FitSpaceDer,
+//                                             Ponca::OrientedSphereDer, Ponca::MlsSphereFitDerTest>;
 
 using basket_AlgebraicPointSetSurfaceFit =  Ponca::BasketDiff<
                                             Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedSphereFit>,
@@ -52,7 +83,18 @@ using basket_ellipsoidFit                =  Ponca::BasketDiff<
                                                 Ponca::DiffType::FitSpaceDer, Ponca::OrientedEllipsoidDer,
                                                 Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
-using basket_ellipsoidTestFit            =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedCylinderFit>;
+// using basket_ellipsoidFit                =  Ponca::BasketDiff<
+//                                                 Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedEllipsoidFit>,
+//                                                 Ponca::DiffType::FitSpaceDer, Ponca::OrientedEllipsoidDer>;
+
+
+using basket_hyperboloidFit              =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedHyperboloid_ACP_Fit>;
+
+// Same as ellipsoidFit
+using basket_hyperboloidFit_Diff         =  Ponca::BasketDiff<
+                                                Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedHyperboloid_ACP_Fit>,
+                                                Ponca::DiffType::FitSpaceDer,
+                                                Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
 // Trying to generate triangles
 using basket_triangleGeneration          =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::TriangleGeneration>;
