@@ -365,26 +365,33 @@ void GUI::cloudComputing(){
 
     // methodForCloudComputing<basket_planeFit>("Plane (PCA)");
 
-    methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
+    // methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
 
-    methodForCloudComputing<basket_AlgebraicShapeOperatorFit>("ASO", false);
+    // methodForCloudComputing<basket_AlgebraicShapeOperatorFit>("ASO", false);
 
     // methodForCloudComputing<basket_waveJets>("WaveJets", false);
 
-    methodForCloudComputing<basket_orientedWaveJets>("oriented WaveJets", false);
+    // methodForCloudComputing<basket_orientedWaveJets>("oriented WaveJets", false);
 
-    methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
-    //Same as ellipsoidFit
-    methodForCloudComputing<basket_hyperboloidFit_Diff>("Hyperboloid 3D basket Diff");
+    // methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
+    // //Same as ellipsoidFit
+    // methodForCloudComputing<basket_hyperboloidFit_Diff>("Hyperboloid 3D basket Diff");
 
-    methodForCloudComputing<basket_hyperboloidFit>("Hyperboloid 3D ACP");
-    
-    methodForCloudComputing<basket_FullyOrientedCylinderFit>("FO Cylinder");
-    methodForCloudComputing<basket_BaseOrientedCylinderFit>("B0 Cylinder");
-    methodForCloudComputing<basket_BaseCylinderFit>("B Cylinder");
-    methodForCloudComputing<basket_NearOrientedCylinderFit>("N0 Cylinder");
+    // methodForCloudComputing<basket_hyperboloidFit>("Hyperboloid 3D ACP");
 
     methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit>("FO Ellipsoid2D");
+    methodForCloudComputing<basket_FullyOrientedEllipsoid2DFitTest>("FO Ellipsoid2D Test");
+    methodForCloudComputing<basket_BaseOrientedEllipsoid2DFit>("B0 Ellipsoid2D");
+    methodForCloudComputing<basket_BaseOrientedEllipsoid2DFitTest>("B0 Ellipsoid2D Test");
+    methodForCloudComputing<basket_BaseEllipsoid2DFit>("B Ellipsoid2D");
+    methodForCloudComputing<basket_BaseEllipsoid2DFitTest>("B Ellipsoid2D Test");
+    methodForCloudComputing<basket_NearOrientedEllipsoid2DFit>("N0 Ellipsoid2D");
+    methodForCloudComputing<basket_NearOrientedEllipsoid2DFitTest>("N0 Ellipsoid2D Test");
+
+    methodForCloudComputing<basket_BaseOrientedCylinderFit>("B0 Cylinder");
+    methodForCloudComputing<basket_BaseCylinderFit>("B Cylinder");
+    methodForCloudComputing<basket_NearOrientedCylinderFit>("NO Cylinder");
+    methodForCloudComputing<basket_FullyOrientedCylinderFit>("FO Cylinder");
 
     // methodForCloudComputing_OnlyTriangle("CNC uniform", 1);
 

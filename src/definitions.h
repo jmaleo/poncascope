@@ -33,26 +33,44 @@ using basket_BaseCylinderFit             =  Ponca::BasketDiff<
                                             Ponca::CurvatureEstimatorBase, Ponca::NormalCovarianceCurvatureEstimator>;
 
 using basket_BaseOrientedCylinderFit     =  Ponca::BasketDiff<
-                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedParabolicCylinderFit>,
+                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseOrientedParabolicCylinderFit>,
                                             Ponca::DiffType::FitSpaceDer,
-                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalCovarianceCurvatureEstimator>;
 
 using basket_NearOrientedCylinderFit     =  Ponca::BasketDiff<
                                             Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::NearOrientedParabolicCylinderFit>,
                                             Ponca::DiffType::FitSpaceDer,
-                                            Ponca::CurvatureEstimatorBase, Ponca::NormalCovarianceCurvatureEstimator>;
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
 using basket_FullyOrientedEllipsoid2DFit =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedEllipsoid2DFit>;
 
 // Fixed
-// using basket_FullyOrientedEllipsoid2DFitTest = Ponca::BasketDiff<
-//                                             Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedEllipsoid2DFit>,
-//                                             Ponca::DiffType::FitSpaceDer,
-//                                             Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+using basket_FullyOrientedEllipsoid2DFitTest = Ponca::BasketDiff<
+                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedEllipsoid2DFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
 using basket_BaseEllipsoid2DFit          =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseEllipsoid2DFit>;
+
+using basket_BaseEllipsoid2DFitTest = Ponca::BasketDiff<
+                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseEllipsoid2DFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+
+
 using basket_BaseOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseOrientedEllipsoid2DFit>;
+
+using basket_BaseOrientedEllipsoid2DFitTest = Ponca::BasketDiff<
+                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseOrientedEllipsoid2DFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+
 using basket_NearOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::NearOrientedEllipsoid2DFit>;
+
+using basket_NearOrientedEllipsoid2DFitTest = Ponca::BasketDiff<
+                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::NearOrientedEllipsoid2DFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
 
 using basket_AlgebraicShapeOperatorFit   =  Ponca::BasketDiff<
