@@ -93,8 +93,8 @@ class GUI {
         std::vector<polyscope::SurfaceMesh*> polyscope_meshs;
 
         CylinderGenerator cylinderGenerator;
-        MyPointCloud mainCloud;
-        MyPointCloud tempCloud;
+        MyPointCloud<Scalar> mainCloud;
+        MyPointCloud<Scalar> tempCloud;
         
         PointProcessing pointProcessing;
     
@@ -148,7 +148,7 @@ class GUI {
 
         void cloudComputingParameters();
 
-        void addQuantities(polyscope::PointCloud *pc, const std::string &name, const Eigen::MatrixXd &values);
+        void addQuantities(polyscope::PointCloud *pc, const std::string &name, const SampleMatrixType &values);
 
 
 }; // class GUI

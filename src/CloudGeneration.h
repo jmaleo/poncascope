@@ -5,35 +5,36 @@
 #include <igl/readPLY.h>
 #include <igl/per_vertex_normals.h>
 #include "MyPointCloud.h"
+#include "definitions.h"
 
-Eigen::MatrixXd rescalePoints (Eigen::MatrixXd &vertices){
-    Eigen::Vector3d baryCenter = Eigen::Vector3d::Zero();
+SampleMatrixType rescalePoints (SampleMatrixType &vertices){
+    VectorType baryCenter = VectorType::Zero();
     // Compute barycenter
     for (int i = 0; i < vertices.rows(); ++i){
         baryCenter += vertices.row(i);
     }
-    baryCenter /= double(vertices.rows());
+    baryCenter /= Scalar(vertices.rows());
 
     // Compute max distance
-    Eigen::Vector3d maxDist({0.0, 0.0, 0.0});
+    VectorType maxDist({0.0, 0.0, 0.0});
     for (int i = 0; i < vertices.rows(); ++i){
-        Eigen::Vector3d current = Eigen::Vector3d(vertices.row(i)[0], vertices.row(i)[1], vertices.row(i)[2]) - baryCenter;
+        VectorType current = VectorType(vertices.row(i)[0], vertices.row(i)[1], vertices.row(i)[2]) - baryCenter;
         maxDist = maxDist.cwiseMax(current.cwiseAbs());
     }
-    double maxDistNorm = maxDist.maxCoeff();
+    Scalar maxDistNorm = maxDist.maxCoeff();
 
     // Rescale
-    Eigen::MatrixXd rescaledVertices = Eigen::MatrixXd::Zero(vertices.rows(), 3);
+    SampleMatrixType rescaledVertices = SampleMatrixType::Zero(vertices.rows(), 3);
     for (int i = 0; i < vertices.rows(); ++i){
-        Eigen::Vector3d current = Eigen::Vector3d(vertices.row(i)[0], vertices.row(i)[1], vertices.row(i)[2]);
+        VectorType current = VectorType(vertices.row(i)[0], vertices.row(i)[1], vertices.row(i)[2]);
         rescaledVertices.row(i) = (current - baryCenter) / maxDistNorm;
     }
     return rescaledVertices;
 }
 
-void loadPTSObject (MyPointCloud &cloud, std::string filename, float sigma_pos, float sigma_normal){
+void loadPTSObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_pos, Scalar sigma_normal){
 
-    Eigen::MatrixXd cloudV, cloudN;
+    SampleMatrixType cloudV, cloudN;
 
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -62,7 +63,7 @@ void loadPTSObject (MyPointCloud &cloud, std::string filename, float sigma_pos, 
     // Read the rest of the file
     while (std::getline(file, line)) {
         std::istringstream iss(line);
-        std::vector<double> values(header.size());
+        std::vector<Scalar> values(header.size());
         for (int i = 0; i < header.size(); ++i) {
             iss >> values[i];
         }
@@ -84,10 +85,10 @@ void loadPTSObject (MyPointCloud &cloud, std::string filename, float sigma_pos, 
 }
 
 
-void loadObject (MyPointCloud &cloud, std::string filename, float sigma_pos, float sigma_normal) {
+void loadObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_pos, Scalar sigma_normal) {
 
     Eigen::MatrixXi meshF;
-    Eigen::MatrixXd cloudV, cloudN;
+    SampleMatrixType cloudV, cloudN;
 
     if (filename.substr(filename.find_last_of(".") + 1) == "pts") {
         loadPTSObject(cloud, filename, sigma_pos, sigma_normal);
@@ -96,7 +97,7 @@ void loadObject (MyPointCloud &cloud, std::string filename, float sigma_pos, flo
     else {
         if (filename.substr(filename.find_last_of(".") + 1) == "ply"){
             Eigen::MatrixXi cloudE;
-            Eigen::MatrixXd cloudUV;
+            SampleMatrixType cloudUV;
             igl::readPLY(filename, cloudV, meshF, cloudE, cloudN, cloudUV);
         }
         else {
@@ -120,33 +121,33 @@ void loadObject (MyPointCloud &cloud, std::string filename, float sigma_pos, flo
         exit (EXIT_FAILURE);
     }
 
-    Eigen::MatrixXd resca = rescalePoints(cloudV);
+    SampleMatrixType resca = rescalePoints(cloudV);
     cloud = MyPointCloud(resca, cloudN);
 
     cloud.addNoise(sigma_pos, sigma_normal);
 }
 
-void create_tube(MyPointCloud &cloud) {
+void create_tube(MyPointCloud<Scalar> &cloud) {
 
     int size = 1000;
 
-    Eigen::MatrixXd cloudV(size, 3);
-    Eigen::MatrixXd cloudN(size, 3);
+    SampleMatrixType cloudV(size, 3);
+    SampleMatrixType cloudN(size, 3);
     cloudN.setZero();
 
-    double a = 4; // radius in the x-direction
-    double b = 4;   // radius in the y-direction
-    double length = 20; // length of the tube
+    Scalar a = 4; // radius in the x-direction
+    Scalar b = 4;   // radius in the y-direction
+    Scalar length = 20; // length of the tube
     
     for(int i = 0; i < size; ++i) {
-        double u = ((double) rand() / (RAND_MAX)) * 2 * M_PI; // azimuthal angle
-        double z = ((double) rand() / (RAND_MAX)) * length - length/2; // z-coordinate
+        Scalar u = ((Scalar) rand() / (RAND_MAX)) * 2 * M_PI; // azimuthal angle
+        Scalar z = ((Scalar) rand() / (RAND_MAX)) * length - length/2; // z-coordinate
         
         // Vertex calculation
-        cloudV.row(i) = Eigen::Vector3d(a * cos(u), b * sin(u), z);
+        cloudV.row(i) = VectorType(a * cos(u), b * sin(u), z);
         
         // Normal calculation
-        cloudN.row(i) = Eigen::Vector3d(cos(u) / a, sin(u) / b, 0);
+        cloudN.row(i) = VectorType(cos(u) / a, sin(u) / b, 0);
         
         // Normalize the normal vector
         cloudN.row(i) = cloudN.row(i) / cloudN.row(i).norm();
@@ -155,22 +156,22 @@ void create_tube(MyPointCloud &cloud) {
     cloud = MyPointCloud(cloudV, cloudN);
 }
 
-void create_sphere(MyPointCloud &cloud) {
+void create_sphere(MyPointCloud<Scalar> &cloud) {
 
     int size = 1000;
 
-    Eigen::MatrixXd cloudV(size, 3);
-    Eigen::MatrixXd cloudN(size, 3);
+    SampleMatrixType cloudV(size, 3);
+    SampleMatrixType cloudN(size, 3);
     cloudN.setZero();
 
-    double r = 5.0; // radius of the sphere
+    Scalar r = 5.0; // radius of the sphere
 
     for(int i = 0; i < size; ++i) {
-        double theta = ((double) rand() / (RAND_MAX)) * 2 * M_PI; // azimuthal angle
-        double phi = ((double) rand() / (RAND_MAX)) * M_PI; // polar angle
+        Scalar theta = ((Scalar) rand() / (RAND_MAX)) * 2 * M_PI; // azimuthal angle
+        Scalar phi = ((Scalar) rand() / (RAND_MAX)) * M_PI; // polar angle
         
         // Vertex calculation
-        cloudV.row(i) = Eigen::Vector3d(
+        cloudV.row(i) = VectorType(
             r * sin(phi) * cos(theta), // x
             r * sin(phi) * sin(theta), // y
             r * cos(phi)               // z
@@ -183,17 +184,17 @@ void create_sphere(MyPointCloud &cloud) {
     cloud = MyPointCloud(cloudV, cloudN);
 }
 
-void create_cube (MyPointCloud &cloud, const Eigen::VectorXd &pos, const double &dist = 0.1) {
+void create_cube (MyPointCloud<Scalar> &cloud, const SampleVectorType &pos, const Scalar &dist = 0.1) {
     int size = 20 * 20 * 20;
-    Eigen::MatrixXd cloudV(size, 3);
-    Eigen::MatrixXd cloudN(size, 3);
+    SampleMatrixType cloudV(size, 3);
+    SampleMatrixType cloudN(size, 3);
     cloudN.setZero();
 
     int index = 0;
     for (int i = -10 ; i < 10; i++ ){
         for (int j = -10; j < 10; j++){
             for (int k = -10; k < 10; k ++){
-                cloudV.row(index) = pos + dist * Eigen::Vector3d(i, j, k);
+                cloudV.row(index) = pos + dist * VectorType(i, j, k);
                 index ++;
             }
         }
@@ -207,19 +208,19 @@ class CylinderGenerator {
     public:
         CylinderGenerator() = default;
 
-        void generateCylinder(MyPointCloud &cloud, float sigma_pos, float sigma_normal) {
+        void generateCylinder(MyPointCloud<Scalar> &cloud, Scalar sigma_pos, Scalar sigma_normal) {
 
-            Eigen::MatrixXd parabolic_verts = Eigen::MatrixXd(x_cylinder * z_cylinder, 3);
-            Eigen::MatrixXd parabolic_norms = Eigen::MatrixXd(x_cylinder * z_cylinder, 3);
+            SampleMatrixType parabolic_verts = SampleMatrixType(x_cylinder * z_cylinder, 3);
+            SampleMatrixType parabolic_norms = SampleMatrixType(x_cylinder * z_cylinder, 3);
 
-            float dx = (2.0f) / (x_cylinder - 1);
-            float dz = (2.0f) / (z_cylinder - 1);
+            Scalar dx = (2.0f) / (x_cylinder - 1);
+            Scalar dz = (2.0f) / (z_cylinder - 1);
 
             for (int i = 0; i < x_cylinder; ++i) {
                 for (int j = 0; j < z_cylinder; ++j) {
-                    float x = -1 + i * dx;
-                    float z = -1 + j * dz;
-                    float y = a_cylinder + bx_cylinder * x + bz_cylinder * z + c_a * (cx_cylinder * x + cz_cylinder * z)*(cx_cylinder * x + cz_cylinder * z);
+                    Scalar x = -1 + i * dx;
+                    Scalar z = -1 + j * dz;
+                    Scalar y = a_cylinder + bx_cylinder * x + bz_cylinder * z + c_a * (cx_cylinder * x + cz_cylinder * z)*(cx_cylinder * x + cz_cylinder * z);
 
                     parabolic_verts(i * z_cylinder + j, 0) =  x;
                     parabolic_verts(i * z_cylinder + j, 1) =  y;

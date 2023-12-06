@@ -152,13 +152,13 @@ void PointProcessing::processPointCloud(const bool &unique, const typename FitT:
 
 template<typename FitT>
 void
-PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud &cloud) {
+PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Scalar> &cloud) {
     
     int nvert = tree.index_data().size();
 
     // Allocate memory
-    Eigen::VectorXd mean ( nvert ), kmin ( nvert ), kmax ( nvert ), shapeIndex( nvert );
-    Eigen::MatrixXd normal( nvert, 3 ), dmin( nvert, 3 ), dmax( nvert, 3 ), proj( nvert, 3 );
+    SampleVectorType mean ( nvert ), kmin ( nvert ), kmax ( nvert ), shapeIndex( nvert );
+    SampleMatrixType normal( nvert, 3 ), dmin( nvert, 3 ), dmax( nvert, 3 ), proj( nvert, 3 );
 
     measureTime( "[Ponca] Compute differential quantities using " + name,
                  [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj, &shapeIndex]() {
@@ -183,17 +183,17 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud &cl
                     });
     
     // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities(proj, normal,dmin, dmax, kmin, kmax, mean, shapeIndex));
+    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal,dmin, dmax, kmin, kmax, mean, shapeIndex));
 }
 
 void
-PointProcessing::computeDiffQuantities_Triangle(const std::string &name, const int& type, MyPointCloud &cloud) {
+PointProcessing::computeDiffQuantities_Triangle(const std::string &name, const int& type, MyPointCloud<Scalar> &cloud) {
     
     int nvert = tree.index_data().size();
 
     // Allocate memory
-    Eigen::VectorXd mean ( nvert ), kmin ( nvert ), kmax ( nvert ), shapeIndex( nvert );;
-    Eigen::MatrixXd normal( nvert, 3 ), dmin( nvert, 3 ), dmax( nvert, 3 ), proj( nvert, 3 );
+    SampleVectorType mean ( nvert ), kmin ( nvert ), kmax ( nvert ), shapeIndex( nvert );;
+    SampleMatrixType normal( nvert, 3 ), dmin( nvert, 3 ), dmax( nvert, 3 ), proj( nvert, 3 );
 
     proj.setZero();
     normal.setZero();
@@ -217,35 +217,35 @@ PointProcessing::computeDiffQuantities_Triangle(const std::string &name, const i
                     });
     
     // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities(proj, normal,dmin, dmax, kmin, kmax, mean, shapeIndex));
+    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal,dmin, dmax, kmin, kmax, mean, shapeIndex));
 }
 
 // concept ConceptFitT = requires (ConceptFitT fit, VectorType init) {
-//     { fit.primitiveGradient(init) } -> std::same_as<Eigen::MatrixXd>;
+//     { fit.primitiveGradient(init) } -> std::same_as<SampleMatrixType>;
 // };
 
 template<typename FitT>
 void
-PointProcessing::processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, Eigen::MatrixXd& normal)
+PointProcessing::processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, SampleMatrixType& normal)
 {
     normal.row(idx) = fit.primitiveGradient(init);
 }
 
 template<>
 void
-PointProcessing::processPointUniqueNormal<basket_AlgebraicShapeOperatorFit>(const int &idx, const basket_AlgebraicShapeOperatorFit& fit, const VectorType& init, Eigen::MatrixXd& normal)
+PointProcessing::processPointUniqueNormal<basket_AlgebraicShapeOperatorFit>(const int &idx, const basket_AlgebraicShapeOperatorFit& fit, const VectorType& init, SampleMatrixType& normal)
 {
     // Do nothing because ASO does not have a primitive gradient (VectorType pos) function.
 }
 
 template<typename FitT>
 void
-PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud &cloud)
+PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar> &cloud)
 {
     int nvert = cloud.getSize();
 
     // Allocate memory
-    Eigen::MatrixXd normal( nvert, 3 ), proj( nvert, 3 );
+    SampleMatrixType normal( nvert, 3 ), proj( nvert, 3 );
 
     // set Zeros 
     normal.setZero();
@@ -275,10 +275,10 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud &cloud
     cloud.setDiffQuantities(DiffQuantities(proj, normal));
 }
 
-void PointProcessing::computeUniquePoint_triangle(const std::string &name, const int& type, MyPointCloud &cloud){
+void PointProcessing::computeUniquePoint_triangle(const std::string &name, const int& type, MyPointCloud<Scalar> &cloud){
     // Used for the use of triangles
     int nb_t = 0; 
-    std::vector<std::array<double, 3>> triangles;
+    std::vector<std::array<Scalar, 3>> triangles;
 
     measureTime( "[Ponca] Compute differential quantities using " + name,
                 [this, &type, &nb_t, &triangles]() {
@@ -296,10 +296,10 @@ void PointProcessing::computeUniquePoint_triangle(const std::string &name, const
 }
 
 
-const Eigen::VectorXd PointProcessing::colorizeKnn() {
+const SampleVectorType PointProcessing::colorizeKnn() {
 
     int nvert = tree.index_data().size();
-    Eigen::VectorXd closest ( nvert );
+    SampleVectorType closest ( nvert );
     closest.setZero();
 
     closest(iVertexSource) = 2;
@@ -310,10 +310,10 @@ const Eigen::VectorXd PointProcessing::colorizeKnn() {
     return closest;
 }
 
-const Eigen::VectorXd PointProcessing::colorizeEuclideanNeighborhood() {
+const SampleVectorType PointProcessing::colorizeEuclideanNeighborhood() {
 
     int nvert = tree.index_data().size();
-    Eigen::VectorXd closest ( nvert );
+    SampleVectorType closest ( nvert );
     closest.setZero();
 
     SmoothWeightFunc w(NSize);

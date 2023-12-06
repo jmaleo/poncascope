@@ -35,10 +35,10 @@ public:
     using VectorType = Eigen::Matrix<Scalar, Dim, 1>;
     using MatrixType = Eigen::Matrix<Scalar, Dim, Dim>;
 
-    using InternalType = typename Eigen::Block<const Eigen::MatrixXd, 1, Eigen::Dynamic>::ConstTransposeReturnType;
+    using InternalType = typename Eigen::Block<const SampleMatrixType, 1, Eigen::Dynamic>::ConstTransposeReturnType;
 
     /// \brief Map a vector as ponca Point
-    PONCA_MULTIARCH inline BlockPointAdapter(InternalType v, InternalType n)
+    PONCA_MULTIARCH inline BlockPointAdapter(VectorType v, VectorType n)
             : m_pos (v), m_nor (n) {}
 
     PONCA_MULTIARCH inline VectorType pos()    const { return m_pos; }
@@ -53,11 +53,11 @@ private:
 
 template<typename KdTreeType>
 void
-buildKdTree(const Eigen::MatrixXd& cloudV, const Eigen::MatrixXd& cloudN, KdTreeType& tree){
+buildKdTree(const SampleMatrixType& cloudV, const SampleMatrixType& cloudN, KdTreeType& tree){
     std::vector<int> ids(cloudV.rows());
     std::iota(ids.begin(), ids.end(), 0);
 
-    using VN = std::pair<const Eigen::MatrixXd&, const Eigen::MatrixXd&>;
+    using VN = std::pair<const SampleMatrixType&, const SampleMatrixType&>;
 
     // Build KdTree: do not copy coordinate but rather store Eigen::Block
     tree.buildWithSampling(VN(cloudV, cloudN),

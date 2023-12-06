@@ -302,7 +302,7 @@ void GUI::methodForCloudComputing(const std::string& metName, bool unique){
     ImGui::SameLine();
     if (ImGui::Button(buttonName_unique.c_str())){
         // Compute the distance between points for the cube, by taking 1/50 of the maximum distance between points of the mainCloud
-        double dist = (mainCloud.getMin() - mainCloud.getMax()).norm() / 50.0;
+        Scalar dist = (mainCloud.getMin() - mainCloud.getMax()).norm() / 50.0;
         create_cube(tempCloud, pointProcessing.getVertexSourcePosition(), dist);
         methodName = metName;
         unique_computed = true;
@@ -373,20 +373,16 @@ void GUI::cloudComputing(){
 
     // methodForCloudComputing<basket_orientedWaveJets>("oriented WaveJets", false);
 
-    // methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
+    methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
     // //Same as ellipsoidFit
     // methodForCloudComputing<basket_hyperboloidFit_Diff>("Hyperboloid 3D basket Diff");
 
     // methodForCloudComputing<basket_hyperboloidFit>("Hyperboloid 3D ACP");
 
     methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit>("FO Ellipsoid2D");
-    methodForCloudComputing<basket_FullyOrientedEllipsoid2DFitTest>("FO Ellipsoid2D Test");
     methodForCloudComputing<basket_BaseOrientedEllipsoid2DFit>("B0 Ellipsoid2D");
-    methodForCloudComputing<basket_BaseOrientedEllipsoid2DFitTest>("B0 Ellipsoid2D Test");
     methodForCloudComputing<basket_BaseEllipsoid2DFit>("B Ellipsoid2D");
-    methodForCloudComputing<basket_BaseEllipsoid2DFitTest>("B Ellipsoid2D Test");
     methodForCloudComputing<basket_NearOrientedEllipsoid2DFit>("N0 Ellipsoid2D");
-    methodForCloudComputing<basket_NearOrientedEllipsoid2DFitTest>("N0 Ellipsoid2D Test");
 
     methodForCloudComputing<basket_BaseOrientedCylinderFit>("B0 Cylinder");
     methodForCloudComputing<basket_BaseCylinderFit>("B Cylinder");
@@ -425,10 +421,10 @@ void GUI::cloudComputingParameters(){
 
 }
 
-void GUI::addQuantities(polyscope::PointCloud *pc, const std::string &name, const Eigen::MatrixXd &values){
+void GUI::addQuantities(polyscope::PointCloud *pc, const std::string &name, const SampleMatrixType &values){
     if (values.cols() == 1){
         // Make values beeing a vector
-        Eigen::VectorXd valuesVec = values.col(0);
+        SampleVectorType valuesVec = values.col(0);
         auto quantity = pc->addScalarQuantity(name, valuesVec);
         // Set bound [-5, 5] for the scalar quantity
         if (name != "knn" && name != "euclidean nei"){

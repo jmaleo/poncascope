@@ -23,8 +23,6 @@ class PointProcessing {
         int   mlsIter        = 3;     /// < number of moving least squares iterations
         float NSize          = 0.25;  /// < neighborhood size (euclidean)
 
-        // Current Point Cloud Data
-
     public :
 
         PointProcessing() {
@@ -37,7 +35,7 @@ class PointProcessing {
         }
 
         // Constructor
-        PointProcessing(MyPointCloud &cloud) {
+        PointProcessing(MyPointCloud<Scalar> &cloud) {
 
             // Default values
             useKnnGraph    = false;
@@ -51,7 +49,7 @@ class PointProcessing {
         };
 
         // update the KdTree
-        void update(MyPointCloud &cloud) {
+        void update(MyPointCloud<Scalar> &cloud) {
             measureTime( "[Ponca] Build KdTree",
                  [this, &cloud]() {
                     buildKdTree(cloud.getVertices(), cloud.getNormals(), tree);
@@ -74,24 +72,24 @@ class PointProcessing {
         /// @param name Name of the method, to be displayed in the console
         /// @param cloud Point Cloud to process
         template<typename FitT>
-        void computeDiffQuantities(const std::string &name, MyPointCloud &cloud);
+        void computeDiffQuantities(const std::string &name, MyPointCloud<Scalar> &cloud);
 
         /// @brief Compute differential quantities
         /// @tparam FitT Fit Type, \see definitions.h
         /// @param name Name of the method, to be displayed in the console
         /// @param cloud Point Cloud to process
-        void computeDiffQuantities_Triangle(const std::string &name, const int& type, MyPointCloud &cloud);
+        void computeDiffQuantities_Triangle(const std::string &name, const int& type, MyPointCloud<Scalar> &cloud);
 
         /// @brief Compute differential quantities for a single point
         /// @tparam FitT Fit Type, \see definitions.h
         /// @param name Name of the method, to be displayed in the console
         /// @param cloud Point Cloud to process
         template<typename FitT>
-        void computeUniquePoint(const std::string &name, MyPointCloud &cloud);
+        void computeUniquePoint(const std::string &name, MyPointCloud<Scalar> &cloud);
 
         /// @brief Compute triangle mesh with CNC algorithm
         /// @param name Name of the method, to be displayed in the console
-        void computeUniquePoint_triangle(const std::string &name, const int& type, MyPointCloud &cloud);
+        void computeUniquePoint_triangle(const std::string &name, const int& type, MyPointCloud<Scalar> &cloud);
 
 
 
@@ -101,12 +99,12 @@ class PointProcessing {
         void mlsDryRun();
 
         /// Colorize point cloud using kNN
-        const Eigen::VectorXd colorizeKnn();
+        const SampleVectorType colorizeKnn();
 
         /// Colorize point cloud using euclidean distance
-        const Eigen::VectorXd colorizeEuclideanNeighborhood();
+        const SampleVectorType colorizeEuclideanNeighborhood();
 
-        const Eigen::VectorXd getVertexSourcePosition(){ return tree.point_data()[iVertexSource].pos(); }
+        const SampleVectorType getVertexSourcePosition(){ return tree.point_data()[iVertexSource].pos(); }
 
         Scalar getMeanNeighbors() { return m_meanNeighbors; }
 
@@ -153,7 +151,7 @@ private :
         /// @param normal output normals
         template<typename FitT>
         void
-        processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, Eigen::MatrixXd& normal);
+        processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, SampleMatrixType& normal);
         
         
 }; // class PointProcessing
