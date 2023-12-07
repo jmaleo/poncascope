@@ -1,29 +1,27 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include "definitions.h"
 
 template <typename _Scalar>
 class DiffQuantities {
 
-    using Scalar =  _Scalar;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> MatrixType;
-    typedef Eigen::Vector<Scalar, Eigen::Dynamic>                 VectorType;
-
+    using Scalar = _Scalar;
 
     public:
 
         DiffQuantities(){
-            m_vertices = MatrixType::Zero(0, 0);
-            m_normals = MatrixType::Zero(0, 0);
-            m_kMinDir = MatrixType::Zero(0, 0);
-            m_kMaxDir = MatrixType::Zero(0, 0);
-            m_kMin = VectorType::Zero(0);
-            m_kMax = VectorType::Zero(0);
-            m_kMean = VectorType::Zero(0);
-            m_shapeIndex = VectorType::Zero(0);
+            m_vertices = SampleMatrixType::Zero(0, 0);
+            m_normals = SampleMatrixType::Zero(0, 0);
+            m_kMinDir = SampleMatrixType::Zero(0, 0);
+            m_kMaxDir = SampleMatrixType::Zero(0, 0);
+            m_kMin = SampleVectorType::Zero(0);
+            m_kMax = SampleVectorType::Zero(0);
+            m_kMean = SampleVectorType::Zero(0);
+            m_shapeIndex = SampleVectorType::Zero(0);
         }
 
-        DiffQuantities(const MatrixType &vertices, const MatrixType &normals, const MatrixType &kMinDir, const MatrixType &kMaxDir, const VectorType &kMin, const VectorType &kMax, const VectorType &kMean, const VectorType &shapeIndex){
+        DiffQuantities(const SampleMatrixType &vertices, const SampleMatrixType &normals, const SampleMatrixType &kMinDir, const SampleMatrixType &kMaxDir, const SampleVectorType &kMin, const SampleVectorType &kMax, const SampleVectorType &kMean, const SampleVectorType &shapeIndex){
             m_vertices = vertices;
             m_normals = normals;
             m_kMinDir = kMinDir;
@@ -34,7 +32,7 @@ class DiffQuantities {
             m_shapeIndex = shapeIndex;
         }
 
-        DiffQuantities(const MatrixType &vertices, const MatrixType &normals){
+        DiffQuantities(const SampleMatrixType &vertices, const SampleMatrixType &normals){
             m_vertices = vertices;
             m_normals = normals;
         }
@@ -61,39 +59,39 @@ class DiffQuantities {
             m_shapeIndex.resize(0);
         }
     
-        const MatrixType & getVertices(){
+        const SampleMatrixType & getVertices(){
             return m_vertices;
         }
 
-        const MatrixType & getNormals(){
+        const SampleMatrixType & getNormals(){
             return m_normals;
         }
 
-        const MatrixType & getKMinDir(){
+        const SampleMatrixType & getKMinDir(){
             return m_kMinDir;
         }
 
-        const MatrixType & getKMaxDir(){
+        const SampleMatrixType & getKMaxDir(){
             return m_kMaxDir;
         }
 
-        const VectorType & getKMin(){
+        const SampleVectorType & getKMin(){
             return m_kMin;
         }
 
-        const VectorType & getKMax(){
+        const SampleVectorType & getKMax(){
             return m_kMax;
         }
 
-        const VectorType & getKMean(){
+        const SampleVectorType & getKMean(){
             return m_kMean;
         }
 
-        const VectorType & getShapeIndex(){
+        const SampleVectorType & getShapeIndex(){
             return m_shapeIndex;
         }
 
-        const MatrixType getByName (const std::string &name){
+        const SampleMatrixType getByName (const std::string &name){
             if (name == "Projections") return m_vertices;
             if (name == "Normals") return m_normals;
             if (name == "Min curvature direction") return m_kMinDir;
@@ -107,14 +105,14 @@ class DiffQuantities {
 
     private:
 
-        MatrixType m_vertices;
-        MatrixType m_normals;
-        MatrixType m_kMinDir;
-        MatrixType m_kMaxDir;
-        VectorType m_kMin;
-        VectorType m_kMax;
-        VectorType m_kMean;
-        VectorType m_shapeIndex;
+        SampleMatrixType m_vertices;
+        SampleMatrixType m_normals;
+        SampleMatrixType m_kMinDir;
+        SampleMatrixType m_kMaxDir;
+        SampleVectorType m_kMin;
+        SampleVectorType m_kMax;
+        SampleVectorType m_kMean;
+        SampleVectorType m_shapeIndex;
 
 }; // class DiffQuantities
 
@@ -122,18 +120,16 @@ template <typename _Scalar>
 class MyPointCloud {
 
     using Scalar = _Scalar;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> MatrixType;
-    typedef Eigen::Vector<Scalar, Eigen::Dynamic>                 VectorType;
 
     public:
 
         MyPointCloud(){
-            m_vertices = MatrixType::Zero(0, 0);
-            m_normals = MatrixType::Zero(0, 0);
+            m_vertices = SampleMatrixType::Zero(0, 0);
+            m_normals = SampleMatrixType::Zero(0, 0);
             m_size = 0;
         }
 
-        MyPointCloud(MatrixType & vertices, MatrixType & normals){
+        MyPointCloud(SampleMatrixType & vertices, SampleMatrixType & normals){
             // Assert for the size of the matrix
             assert(vertices.rows() == normals.rows());
             assert(vertices.cols() == 3);
@@ -160,7 +156,7 @@ class MyPointCloud {
             m_diffQuantities = quantities;
         }
 
-        void setVertices(MatrixType &points){
+        void setVertices(SampleMatrixType &points){
             // Assert for the size of the matrix
             assert(points.rows() == m_size);
             assert(points.cols() == 3);
@@ -168,7 +164,7 @@ class MyPointCloud {
             updateBoundingBox();
         }
 
-        void setNormals(MatrixType &normals){
+        void setNormals(SampleMatrixType &normals){
             // Assert for the size of the matrix
             assert(normals.rows() == m_size);
             assert(normals.cols() == 3);
@@ -187,11 +183,11 @@ class MyPointCloud {
             return m_triangles;
         }
 
-        MatrixType getVertices(){
+        SampleMatrixType getVertices(){
             return m_vertices;
         }
 
-        MatrixType getNormals(){
+        SampleMatrixType getNormals(){
             return m_normals;
         }
 
@@ -214,23 +210,23 @@ class MyPointCloud {
             }
         }
 
-        VectorType getMin(){
+        SampleVectorType getMin(){
             return m_min;
         }
 
-        VectorType getMax(){
+        SampleVectorType getMax(){
             return m_max;
         }
 
     private:
 
-        MatrixType m_vertices;
-        MatrixType m_normals;
+        SampleMatrixType m_vertices;
+        SampleMatrixType m_normals;
         DiffQuantities<Scalar>  m_diffQuantities;
         int m_size;
 
-        VectorType m_min;
-        VectorType m_max;
+        SampleVectorType m_min;
+        SampleVectorType m_max;
 
         std::vector<std::array<Scalar, 3>> m_triangles;
 

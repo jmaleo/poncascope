@@ -1,7 +1,7 @@
 #pragma once
 
-#include "definitions.h"
 #include "MyPointCloud.h"
+#include "definitions.h"
 
 #include <iostream>
 #include <utility>

@@ -27,7 +27,7 @@ class GUI {
             dialogInfo.directoryPath = std::filesystem::current_path();
 
             // Initialize polyscope
-            selectedQuantities.resize(6, 1);
+            selectedQuantities.resize(6, 0);
 
             // Initialize the point cloud
             selectedFile = assetsDir + "armadillo.obj";
@@ -132,6 +132,16 @@ class GUI {
         bool all_computed = false;
         bool unique_computed = false;
         bool displayProjectedPointCloud = false;
+
+        int weightFuncType = 0;
+
+        // template<typename WeightFunc>
+        // void
+        // methodWithKernel(){
+
+        //     methodForCloudComputing<FittingMethods<WeightFunc>::basket_test>("test FO", false);
+
+        // }
 
         void cloudComputing();
 

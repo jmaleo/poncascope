@@ -397,6 +397,21 @@ void GUI::cloudComputing(){
 
     // methodForCloudComputing_OnlyTriangle("CNC AvgHexagramGeneration", 4);
 
+    // switch (weightFuncType){
+    //     case 0 : 
+    //         methodWithKernel<SmoothWeightFunc>();
+    //         break;
+    //     case 1 : 
+    //         methodWithKernel<ConstWeightFunc>();
+    //         break;
+    //     case 2 : 
+    //         methodWithKernel<WendlandWeightFunc>();
+    //         break;
+    //     default : 
+    //         methodWithKernel<SmoothWeightFunc>();
+    //         break;
+    // }
+
     cloudComputingUpdateAll();
     cloudComputingUpdateUnique();
 }
@@ -416,6 +431,13 @@ void GUI::cloudComputingParameters(){
     if (ImGui::Button("show knn")) addQuantities(polyscope_mainCloud, "knn", pointProcessing.colorizeKnn());
     ImGui::SameLine();
     if (ImGui::Button("show euclidean nei")) addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood());
+
+    // Add radio buttons to select the weight function
+    ImGui::RadioButton("Constant", &weightFuncType, 0);
+    ImGui::SameLine();
+    ImGui::RadioButton("Smooth", &weightFuncType, 1);
+    ImGui::SameLine();
+    ImGui::RadioButton("Wendland", &weightFuncType, 2);
 
     ImGui::Separator();
 

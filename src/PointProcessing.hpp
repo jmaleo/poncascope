@@ -272,7 +272,7 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar
                                 });
                     });
     // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities(proj, normal));
+    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal));
 }
 
 void PointProcessing::computeUniquePoint_triangle(const std::string &name, const int& type, MyPointCloud<Scalar> &cloud){

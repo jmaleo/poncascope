@@ -4,6 +4,7 @@
 #include <igl/readOBJ.h>
 #include <igl/readPLY.h>
 #include <igl/per_vertex_normals.h>
+
 #include "MyPointCloud.h"
 #include "definitions.h"
 
@@ -80,7 +81,7 @@ void loadPTSObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar si
 
     std::cout << "cloudV: " << cloudV.rows() << " " << cloudV.cols() << std::endl;
 
-    cloud = MyPointCloud(cloudV, cloudN);
+    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
     cloud.addNoise(sigma_pos, sigma_normal);
 }
 
@@ -122,7 +123,7 @@ void loadObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma
     }
 
     SampleMatrixType resca = rescalePoints(cloudV);
-    cloud = MyPointCloud(resca, cloudN);
+    cloud = MyPointCloud<Scalar>(resca, cloudN);
 
     cloud.addNoise(sigma_pos, sigma_normal);
 }
@@ -153,7 +154,7 @@ void create_tube(MyPointCloud<Scalar> &cloud) {
         cloudN.row(i) = cloudN.row(i) / cloudN.row(i).norm();
     }
 
-    cloud = MyPointCloud(cloudV, cloudN);
+    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
 }
 
 void create_sphere(MyPointCloud<Scalar> &cloud) {
@@ -181,7 +182,7 @@ void create_sphere(MyPointCloud<Scalar> &cloud) {
         cloudN.row(i) = cloudV.row(i) / r; // since the sphere is centered at origin, the normal is the position vector normalized
     }
 
-    cloud = MyPointCloud(cloudV, cloudN);
+    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
 }
 
 void create_cube (MyPointCloud<Scalar> &cloud, const SampleVectorType &pos, const Scalar &dist = 0.1) {
@@ -200,7 +201,7 @@ void create_cube (MyPointCloud<Scalar> &cloud, const SampleVectorType &pos, cons
         }
     }
 
-    cloud = MyPointCloud(cloudV, cloudN);
+    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
 }
 
 class CylinderGenerator {
@@ -231,7 +232,7 @@ class CylinderGenerator {
                     parabolic_norms(i * z_cylinder + j, 2) =  bz_cylinder  + 2 * c_a * (cz_cylinder * cz_cylinder * z + cx_cylinder * cz_cylinder * x);
                 }
             }
-            cloud = MyPointCloud(parabolic_verts, parabolic_norms);
+            cloud = MyPointCloud<Scalar>(parabolic_verts, parabolic_norms);
             cloud.addNoise(sigma_pos, sigma_normal);
         }
 

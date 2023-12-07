@@ -24,7 +24,7 @@
 /// \author Nicolas Mellado <nmellado0@gmail.com>
 
 #include <Eigen/Core>
-
+#include "definitions.h"
 
 /// Map a block to a Ponca point
 template <typename _Scalar>
@@ -35,7 +35,7 @@ public:
     using VectorType = Eigen::Matrix<Scalar, Dim, 1>;
     using MatrixType = Eigen::Matrix<Scalar, Dim, Dim>;
 
-    using InternalType = typename Eigen::Block<const SampleMatrixType, 1, Eigen::Dynamic>::ConstTransposeReturnType;
+    // using InternalType = typename Eigen::Block<const SampleMatrixType, 1, Eigen::Dynamic>::ConstTransposeReturnType;
 
     /// \brief Map a vector as ponca Point
     PONCA_MULTIARCH inline BlockPointAdapter(VectorType v, VectorType n)
@@ -51,7 +51,7 @@ private:
 
 
 
-template<typename KdTreeType>
+template<typename KdTreeType, typename SampleMatrixType>
 void
 buildKdTree(const SampleMatrixType& cloudV, const SampleMatrixType& cloudN, KdTreeType& tree){
     std::vector<int> ids(cloudV.rows());
