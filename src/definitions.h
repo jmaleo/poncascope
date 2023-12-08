@@ -7,8 +7,8 @@
 
 // Types definition
 
-using Scalar             = double;
-// using Scalar             = float;
+// using Scalar             = double;
+using Scalar             = float;
 
 using VectorType         = Eigen::Matrix<Scalar, 3,1>;
 using PPAdapter          = BlockPointAdapter<Scalar>;
