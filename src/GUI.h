@@ -133,15 +133,39 @@ class GUI {
         bool unique_computed = false;
         bool displayProjectedPointCloud = false;
 
-        int weightFuncType = 0;
+        int weightFuncType = 1;
 
-        // template<typename WeightFunc>
-        // void
-        // methodWithKernel(){
+        template<typename WeightFunc>
+        void
+        methodWithKernel(){
 
-        //     methodForCloudComputing<FittingMethods<WeightFunc>::basket_test>("test FO", false);
+            methodForCloudComputing<basket_planeFit<WeightFunc >>("Plane (PCA)");
 
-        // }
+            methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit<WeightFunc >>("APSS");
+
+            methodForCloudComputing<basket_AlgebraicShapeOperatorFit<WeightFunc >>("ASO", false);
+
+            // methodForCloudComputing<basket_waveJets<WeightFunc >>("WaveJets", false);
+
+            methodForCloudComputing<basket_orientedWaveJets<WeightFunc >>("oriented WaveJets", false);
+
+            methodForCloudComputing<basket_ellipsoidFit<WeightFunc >>("Ellipsoid 3D");
+            // //Same as ellipsoidFit
+            // methodForCloudComputing<basket_hyperboloidFit_Diff<WeightFunc >>("Hyperboloid 3D basket Diff");
+
+            // methodForCloudComputing<basket_hyperboloidFit<WeightFunc >>("Hyperboloid 3D ACP");
+
+            methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit<WeightFunc >>("FO Ellipsoid2D");
+            methodForCloudComputing<basket_BaseOrientedEllipsoid2DFit<WeightFunc >>("B0 Ellipsoid2D");
+            methodForCloudComputing<basket_BaseEllipsoid2DFit<WeightFunc >>("B Ellipsoid2D");
+            methodForCloudComputing<basket_NearOrientedEllipsoid2DFit<WeightFunc >>("N0 Ellipsoid2D");
+
+            // methodForCloudComputing<basket_BaseOrientedCylinderFit<WeightFunc >>("B0 Cylinder");
+            // methodForCloudComputing<basket_BaseCylinderFit<WeightFunc >>("B Cylinder");
+            // methodForCloudComputing<basket_NearOrientedCylinderFit<WeightFunc >>("NO Cylinder");
+            // methodForCloudComputing<basket_FullyOrientedCylinderFit<WeightFunc >>("FO Cylinder");
+
+        }
 
         void cloudComputing();
 

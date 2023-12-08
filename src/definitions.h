@@ -7,8 +7,8 @@
 
 // Types definition
 
-// using Scalar             = double;
-using Scalar             = float;
+using Scalar             = double;
+// using Scalar             = float;
 
 using VectorType         = Eigen::Matrix<Scalar, 3,1>;
 using PPAdapter          = BlockPointAdapter<Scalar>;
@@ -24,69 +24,81 @@ using SmoothWeightFunc     = Ponca::DistWeightFunc<PPAdapter, Ponca::SmoothWeigh
 using ConstWeightFunc      = Ponca::DistWeightFunc<PPAdapter, Ponca::ConstantWeightKernel<Scalar> >;
 using WendlandWeightFunc   = Ponca::DistWeightFunc<PPAdapter, Ponca::WendlandWeightKernel<Scalar> >;
 using SingularWeightFunc   = Ponca::DistWeightFunc<PPAdapter, Ponca::SingularWeightKernel<Scalar> >;
-using CompactExpWeightFunc = Ponca::DistWeightFunc<PPAdapter, Ponca::CompactExpWeightKernel<Scalar> >;
 
-// Fitting methods
+// Don't use in global to avoid the case where scale2D requires a ddf valide for the mlsSphereFit derivative
+// using CompactExpWeightFunc = Ponca::DistWeightFunc<PPAdapter, Ponca::CompactExpWeightKernel<Scalar> >;
+
+
+// No templated Fitting methods
+
+using basket_triangleGeneration          =  Ponca::Basket<PPAdapter, ConstWeightFunc, Ponca::TriangleGeneration>; 
 using basket_dryFit                      =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::DryFit>;
 
-using basket_FullyOrientedCylinderFit    =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedParabolicCylinderFit>;
-using basket_BaseCylinderFit             =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseParabolicCylinderFit>;
-using basket_BaseOrientedCylinderFit     =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseOrientedParabolicCylinderFit>;
-using basket_NearOrientedCylinderFit     =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::NearOrientedParabolicCylinderFit>;
 
-using basket_FullyOrientedEllipsoid2DFit =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::FullyOrientedEllipsoid2DFit>;
-using basket_BaseEllipsoid2DFit          =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseEllipsoid2DFit>;
-using basket_BaseOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::BaseOrientedEllipsoid2DFit>;
-using basket_NearOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::NearOrientedEllipsoid2DFit>;
+// Templated ( for the weight kernel ) Fitting methods
+template <typename WeightFunc>
+using basket_FullyOrientedCylinderFit    =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::FullyOrientedParabolicCylinderFit>;
 
+template <typename WeightFunc>
+using basket_BaseCylinderFit             =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::BaseParabolicCylinderFit>;
+
+template <typename WeightFunc>
+using basket_BaseOrientedCylinderFit     =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::BaseOrientedParabolicCylinderFit>;
+
+template <typename WeightFunc>
+using basket_NearOrientedCylinderFit     =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::NearOrientedParabolicCylinderFit>;
+
+template <typename WeightFunc>
+using basket_FullyOrientedEllipsoid2DFit =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::FullyOrientedEllipsoid2DFit>;
+
+template <typename WeightFunc>
+using basket_BaseEllipsoid2DFit          =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::BaseEllipsoid2DFit>;
+
+template <typename WeightFunc>
+using basket_BaseOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::BaseOrientedEllipsoid2DFit>;
+
+template <typename WeightFunc>
+using basket_NearOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::NearOrientedEllipsoid2DFit>;
+
+template <typename WeightFunc>
 using basket_AlgebraicShapeOperatorFit   =  Ponca::BasketDiff<
-                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedSphereFit>,
+                                            Ponca::Basket<PPAdapter, WeightFunc, Ponca::OrientedSphereFit>,
                                             Ponca::DiffType::FitSpaceDer,
                                             Ponca::OrientedSphereDer, Ponca::MlsSphereFitDer,
                                             Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
-// using basket_AlgebraicShapeOperatorFit   =  Ponca::BasketDiff<
-//                                             Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedSphereFit>,
-//                                             Ponca::DiffType::FitSpaceDer,
-//                                             Ponca::OrientedSphereDer, Ponca::MlsSphereFitDerTest>;
-
+template <typename WeightFunc>
 using basket_AlgebraicPointSetSurfaceFit =  Ponca::BasketDiff<
-                                            Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedSphereFit>,
+                                            Ponca::Basket<PPAdapter, WeightFunc, Ponca::OrientedSphereFit>,
                                             Ponca::DiffType::FitSpaceDer,
                                             Ponca::OrientedSphereDer,
                                             Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+
+template <typename WeightFunc>
 using basket_planeFit                    =  Ponca::BasketDiff<
-                                                Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::CovariancePlaneFit>,
+                                                Ponca::Basket<PPAdapter, WeightFunc, Ponca::CovariancePlaneFit>,
                                                 Ponca::DiffType::FitSpaceDer,
                                                 Ponca::CovariancePlaneDer,
                                                 Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+
+template <typename WeightFunc>
 using basket_ellipsoidFit                =  Ponca::BasketDiff<
-                                                Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedEllipsoidFit>,
+                                                Ponca::Basket<PPAdapter, WeightFunc, Ponca::OrientedEllipsoidFit>,
                                                 Ponca::DiffType::FitSpaceDer, Ponca::OrientedEllipsoidDer,
                                                 Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
-// using basket_ellipsoidFit                =  Ponca::BasketDiff<
-//                                                 Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedEllipsoidFit>,
-//                                                 Ponca::DiffType::FitSpaceDer, Ponca::OrientedEllipsoidDer>;
+                                                
+template <typename WeightFunc>
+using basket_hyperboloidFit              =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::OrientedHyperboloid_ACP_Fit>;
 
-
-using basket_hyperboloidFit              =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedHyperboloid_ACP_Fit>;
-// Same as ellipsoidFit
+template <typename WeightFunc>
 using basket_hyperboloidFit_Diff         =  Ponca::BasketDiff<
-                                                Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedHyperboloid_ACP_Fit>,
+                                                Ponca::Basket<PPAdapter, WeightFunc, Ponca::OrientedHyperboloid_ACP_Fit>,
                                                 Ponca::DiffType::FitSpaceDer, Ponca::OrientedEllipsoidDer,
                                                 Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
-// Trying to generate triangles
-using basket_orientedWaveJets            =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::OrientedWaveJetsFit>;
-using basket_waveJets                    =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::WaveJetsFit>;
 
-using basket_triangleGeneration          =  Ponca::Basket<PPAdapter, ConstWeightFunc, Ponca::TriangleGeneration>; 
+template <typename WeightFunc>
+using basket_orientedWaveJets            =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::OrientedWaveJetsFit>;
 
-
-// // Fitting methods
-// template <typename WeightFunc>
-// struct FittingMethods{
-//     // Define the type of the fitting method in order to use it in the main
-//     typedef  Ponca::Basket<PPAdapter, WeightFunc, Ponca::FullyOrientedParabolicCylinderFit>  basket_test  ;
-
-// }; // end of struct FittingMethods
+template <typename WeightFunc>
+using basket_waveJets                    =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::WaveJetsFit>;

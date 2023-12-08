@@ -363,32 +363,6 @@ void GUI::cloudComputing(){
     ImGui::SameLine();
     ImGui::Text(lastDryRun.c_str());
 
-    // methodForCloudComputing<basket_planeFit>("Plane (PCA)");
-
-    // methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit>("APSS");
-
-    // methodForCloudComputing<basket_AlgebraicShapeOperatorFit>("ASO", false);
-
-    // methodForCloudComputing<basket_waveJets>("WaveJets", false);
-
-    // methodForCloudComputing<basket_orientedWaveJets>("oriented WaveJets", false);
-
-    methodForCloudComputing<basket_ellipsoidFit>("Ellipsoid 3D");
-    // //Same as ellipsoidFit
-    // methodForCloudComputing<basket_hyperboloidFit_Diff>("Hyperboloid 3D basket Diff");
-
-    // methodForCloudComputing<basket_hyperboloidFit>("Hyperboloid 3D ACP");
-
-    methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit>("FO Ellipsoid2D");
-    methodForCloudComputing<basket_BaseOrientedEllipsoid2DFit>("B0 Ellipsoid2D");
-    methodForCloudComputing<basket_BaseEllipsoid2DFit>("B Ellipsoid2D");
-    methodForCloudComputing<basket_NearOrientedEllipsoid2DFit>("N0 Ellipsoid2D");
-
-    methodForCloudComputing<basket_BaseOrientedCylinderFit>("B0 Cylinder");
-    methodForCloudComputing<basket_BaseCylinderFit>("B Cylinder");
-    methodForCloudComputing<basket_NearOrientedCylinderFit>("NO Cylinder");
-    methodForCloudComputing<basket_FullyOrientedCylinderFit>("FO Cylinder");
-
     // methodForCloudComputing_OnlyTriangle("CNC uniform", 1);
 
     // methodForCloudComputing_OnlyTriangle("CNC independent", 2);
@@ -397,20 +371,23 @@ void GUI::cloudComputing(){
 
     // methodForCloudComputing_OnlyTriangle("CNC AvgHexagramGeneration", 4);
 
-    // switch (weightFuncType){
-    //     case 0 : 
-    //         methodWithKernel<SmoothWeightFunc>();
-    //         break;
-    //     case 1 : 
-    //         methodWithKernel<ConstWeightFunc>();
-    //         break;
-    //     case 2 : 
-    //         methodWithKernel<WendlandWeightFunc>();
-    //         break;
-    //     default : 
-    //         methodWithKernel<SmoothWeightFunc>();
-    //         break;
-    // }
+    switch (weightFuncType){
+        case 0 : 
+            methodWithKernel<SmoothWeightFunc>();
+            break;
+        case 1 : 
+            methodWithKernel<ConstWeightFunc>();
+            break;
+        case 2 : 
+            methodWithKernel<WendlandWeightFunc>();
+            break;
+        case 3 : 
+            methodWithKernel<SingularWeightFunc>();
+            break;
+        default : 
+            methodWithKernel<SmoothWeightFunc>();
+            break;
+    }
 
     cloudComputingUpdateAll();
     cloudComputingUpdateUnique();
@@ -430,7 +407,25 @@ void GUI::cloudComputingParameters(){
     ImGui::SameLine();
     if (ImGui::Button("show knn")) addQuantities(polyscope_mainCloud, "knn", pointProcessing.colorizeKnn());
     ImGui::SameLine();
-    if (ImGui::Button("show euclidean nei")) addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood());
+    if (ImGui::Button("show euclidean nei")) {
+        switch (weightFuncType){
+            case 0 : 
+                addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<ConstWeightFunc>());
+                break;
+            case 1 :
+                addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
+                break;
+            case 2 :
+                addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<WendlandWeightFunc>());
+                break;
+            case 3 :
+                addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>());
+                break;
+            default : 
+                addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
+                break;
+        }
+    }
 
     // Add radio buttons to select the weight function
     ImGui::RadioButton("Constant", &weightFuncType, 0);
@@ -438,6 +433,8 @@ void GUI::cloudComputingParameters(){
     ImGui::RadioButton("Smooth", &weightFuncType, 1);
     ImGui::SameLine();
     ImGui::RadioButton("Wendland", &weightFuncType, 2);
+    ImGui::SameLine();
+    ImGui::RadioButton("Singular", &weightFuncType, 3);
 
     ImGui::Separator();
 

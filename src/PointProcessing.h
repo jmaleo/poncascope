@@ -102,6 +102,7 @@ class PointProcessing {
         const SampleVectorType colorizeKnn();
 
         /// Colorize point cloud using euclidean distance
+        template <typename WeightFunc>
         const SampleVectorType colorizeEuclideanNeighborhood();
 
         const SampleVectorType getVertexSourcePosition(){ return tree.point_data()[iVertexSource].pos(); }
@@ -143,15 +144,15 @@ private :
         template<typename Functor>
         void processPointCloud_Triangle(const bool &unique, const int& type, Functor f);
 
-        /// @brief Used to compute the normal of a single point and to avoid compilation errors
-        /// @tparam FitT Fit Type, \see definitions.h
-        /// @param idx index of the point to process
-        /// @param fit fitting method
-        /// @param init initial point
-        /// @param normal output normals
-        template<typename FitT>
-        void
-        processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, SampleMatrixType& normal);
+        // /// @brief Used to compute the normal of a single point and to avoid compilation errors
+        // /// @tparam FitT Fit Type, \see definitions.h
+        // /// @param idx index of the point to process
+        // /// @param fit fitting method
+        // /// @param init initial point
+        // /// @param normal output normals
+        // template<typename FitT, typename WeightFunc>
+        // void
+        // processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, SampleMatrixType& normal);
         
         
 }; // class PointProcessing

@@ -11,6 +11,7 @@ PointProcessing::measureTime( const std::string &actionName, Functor F ){
 
 template <typename Functor>
 void PointProcessing::processRangeNeighbors(const int &idx, const Functor f){
+    // VectorType pos = tree.point_data()[idx].pos(); // Use idx instead of pos to avoid duplicates on the same point
     if(useKnnGraph)
         for (int j : knnGraph->range_neighbors(idx, NSize)){
             f(j);
@@ -143,7 +144,7 @@ void PointProcessing::processPointCloud(const bool &unique, const typename FitT:
         int nvert = tree.index_data().size();
         std::cout << "nvert: " << nvert << std::endl;
         // Traverse point cloud
-        #pragma omp parallel for
+        // #pragma omp parallel for
         for (int i = 0; i < nvert; ++i) {
             processOnePoint<FitT, Functor>(i, w, f);
         }
@@ -154,6 +155,8 @@ template<typename FitT>
 void
 PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Scalar> &cloud) {
     
+    using weightFunc = typename FitT::WeightFunction;
+
     int nvert = tree.index_data().size();
 
     // Allocate memory
@@ -162,7 +165,7 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Sca
 
     measureTime( "[Ponca] Compute differential quantities using " + name,
                  [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj, &shapeIndex]() {
-                    processPointCloud<FitT>(false, SmoothWeightFunc(NSize),
+                    processPointCloud<FitT>(false, weightFunc(NSize),
                                 [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj, &shapeIndex]
                                 ( int i, const FitT& fit, const VectorType& mlsPos){
 
@@ -224,24 +227,25 @@ PointProcessing::computeDiffQuantities_Triangle(const std::string &name, const i
 //     { fit.primitiveGradient(init) } -> std::same_as<SampleMatrixType>;
 // };
 
-template<typename FitT>
-void
-PointProcessing::processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, SampleMatrixType& normal)
-{
-    normal.row(idx) = fit.primitiveGradient(init);
-}
+// template<typename FitT>
+// void PointProcessing::processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, SampleMatrixType& normal)
+// {
+//         normal.row(idx) = fit.primitiveGradient(init);
+// }
 
-template<>
-void
-PointProcessing::processPointUniqueNormal<basket_AlgebraicShapeOperatorFit>(const int &idx, const basket_AlgebraicShapeOperatorFit& fit, const VectorType& init, SampleMatrixType& normal)
-{
-    // Do nothing because ASO does not have a primitive gradient (VectorType pos) function.
-}
+// template <>
+// void PointProcessing::processPointUniqueNormal<basket_AlgebraicShapeOperatorFit>(const int &idx, const basket_AlgebraicShapeOperatorFit<WeightFunc>& fit, const VectorType& init, SampleMatrixType& normal)
+// {
+//     // Do nothing for ASO
+// }
+
 
 template<typename FitT>
 void
 PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar> &cloud)
 {
+    using weightFunc = typename FitT::WeightFunction;
+
     int nvert = cloud.getSize();
 
     // Allocate memory
@@ -254,7 +258,7 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar
 
     measureTime( "[Ponca] Compute differential quantities using " + name,
                 [this, &cloud, &nvert, &normal, &proj]() {
-                    processPointCloud<FitT>(true, SmoothWeightFunc(NSize),
+                    processPointCloud<FitT>(true, weightFunc(NSize),
                                 [this, &cloud, &nvert, &normal, &proj]
                                 ( int i, const FitT& fit, const VectorType& mlsPos){
                                     
@@ -263,7 +267,9 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar
                                         VectorType init = cloud.getVertices().row(k);
                                         VectorType projPoint = fit.project(init);
                                         if (projPoint != init) {
-                                            processPointUniqueNormal<FitT>(k, fit, init, normal);
+                                            if ( ! std::is_same<FitT, basket_AlgebraicShapeOperatorFit<weightFunc>>::value)
+                                                normal.row( k ) = fit.primitiveGradient();
+                                            // processPointUniqueNormal<FitT>(k, fit, init, normal);
                                             proj.row( k )   = projPoint;
                                         }
                                     }
@@ -310,13 +316,14 @@ const SampleVectorType PointProcessing::colorizeKnn() {
     return closest;
 }
 
+template <typename WeightFunc>
 const SampleVectorType PointProcessing::colorizeEuclideanNeighborhood() {
 
     int nvert = tree.index_data().size();
     SampleVectorType closest ( nvert );
     closest.setZero();
 
-    SmoothWeightFunc w(NSize);
+    WeightFunc w(NSize);
 
     closest(iVertexSource) = 2;
     const auto &p = tree.point_data()[iVertexSource];
@@ -338,17 +345,23 @@ void PointProcessing::recomputeKnnGraph() {
 
 void PointProcessing::mlsDryRun() {
     int nvert = tree.index_data().size();
-    m_meanNeighbors = Scalar(0);
 
+    Eigen::VectorX<int> numNeighbors(nvert);
+    numNeighbors.setZero();
+
+
+    m_meanNeighbors = Scalar(0);
     // Allocate memory
     measureTime( "[Ponca] Compute differential quantities using dry fit",
-                 [this]() {
+                 [this, &numNeighbors]() {
                     processPointCloud<basket_dryFit>(false, SmoothWeightFunc(NSize),
-                                [this]
-                                ( int, const basket_dryFit& fit, const VectorType&){
-                                    m_meanNeighbors += fit.getNumNeighbors();
+                                [this, &numNeighbors]
+                                ( int i, const basket_dryFit& fit, const VectorType&){
+                                    numNeighbors[i] = fit.getNumNeighbors();
                     });
                 });
 
+    for (int i = 0; i < nvert; ++i)
+        m_meanNeighbors += numNeighbors[i];
     m_meanNeighbors /= nvert;    
 }
