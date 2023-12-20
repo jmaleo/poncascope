@@ -279,6 +279,8 @@ void GUI::cloudComputingUpdateUnique (){
             polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, tempCloud.getDiffQuantities().getVertices());
             polyscope_uniqueClouds.push_back(newCloud);
             addQuantities(newCloud, "normals", tempCloud.getDiffQuantities().getNormals());
+            addQuantities(newCloud, "d1", tempCloud.getDiffQuantities().getKMinDir());
+            addQuantities(newCloud, "d2", tempCloud.getDiffQuantities().getKMaxDir());
         } 
     });
 

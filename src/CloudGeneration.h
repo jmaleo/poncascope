@@ -187,11 +187,14 @@ void create_sphere(MyPointCloud<Scalar> &cloud) {
 
 void create_cube (MyPointCloud<Scalar> &cloud, const SampleVectorType &pos, const Scalar &dist = 0.1) {
     int size = 20 * 20 * 20;
-    SampleMatrixType cloudV(size, 3);
-    SampleMatrixType cloudN(size, 3);
+    SampleMatrixType cloudV(size+1, 3);
+    SampleMatrixType cloudN(size+1, 3);
     cloudN.setZero();
 
-    int index = 0;
+    cloudV.row(0) = pos;
+    cloudN.row(0) = VectorType(0, 0, 1);
+
+    int index = 1;
     for (int i = -10 ; i < 10; i++ ){
         for (int j = -10; j < 10; j++){
             for (int k = -10; k < 10; k ++){

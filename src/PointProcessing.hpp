@@ -11,7 +11,7 @@ PointProcessing::measureTime( const std::string &actionName, Functor F ){
 
 template <typename Functor>
 void PointProcessing::processRangeNeighbors(const int &idx, const Functor f){
-    VectorType pos = tree.point_data()[idx].pos(); // Use idx instead of pos to avoid duplicates on the same point
+    VectorType pos = tree.point_data()[idx].pos();
     if(useKnnGraph)
         for (int j : knnGraph->range_neighbors(idx, NSize)){
             f(j);
@@ -249,26 +249,33 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar
     int nvert = cloud.getSize();
 
     // Allocate memory
-    SampleMatrixType normal( nvert, 3 ), proj( nvert, 3 );
+    SampleMatrixType normal( nvert, 3 ), proj( nvert, 3 ), D1 (nvert, 3), D2 (nvert, 3);
 
     // set Zeros 
     normal.setZero();
     proj.setZero();
+    D1.setZero();
+    D2.setZero();
 
 
     measureTime( "[Ponca] Compute differential quantities using " + name,
-                [this, &cloud, &nvert, &normal, &proj]() {
+                [this, &cloud, &nvert, &normal, &proj, &D1, &D2]() {
                     processPointCloud<FitT>(true, weightFunc(NSize),
-                                [this, &cloud, &nvert, &normal, &proj]
+                                [this, &cloud, &nvert, &normal, &proj, &D1, &D2]
                                 ( int i, const FitT& fit, const VectorType& mlsPos){
                                     
+                                    D1.row( 0 ) = fit.kminDirection();
+                                    D2.row( 0 ) = fit.kmaxDirection();
+                                    if ( ! std::is_same<FitT, basket_AlgebraicShapeOperatorFit<weightFunc>>::value)
+                                        normal.row( 0 ) = fit.primitiveGradient();
+                                            
                         
                                     for (int k = 0; k < nvert; k++){
                                         VectorType init = cloud.getVertices().row(k);
                                         VectorType projPoint = fit.project(init);
                                         if (projPoint != init) {
-                                            if ( ! std::is_same<FitT, basket_AlgebraicShapeOperatorFit<weightFunc>>::value)
-                                                normal.row( k ) = fit.primitiveGradient();
+                                            // if ( ! std::is_same<FitT, basket_AlgebraicShapeOperatorFit<weightFunc>>::value)
+                                            //     normal.row( k ) = fit.primitiveGradient();
                                             // processPointUniqueNormal<FitT>(k, fit, init, normal);
                                             proj.row( k )   = projPoint;
                                         }
@@ -278,7 +285,14 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar
                                 });
                     });
     // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal));
+    
+    /////////////////////// TEST ///////////////////////
+    DiffQuantities<Scalar> test (proj, normal);
+    test.setD1(D1);
+    test.setD2(D2);
+    cloud.setDiffQuantities(test);
+
+    // cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal));
 }
 
 void PointProcessing::computeUniquePoint_triangle(const std::string &name, const int& type, MyPointCloud<Scalar> &cloud){
