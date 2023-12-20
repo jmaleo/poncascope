@@ -11,13 +11,13 @@ PointProcessing::measureTime( const std::string &actionName, Functor F ){
 
 template <typename Functor>
 void PointProcessing::processRangeNeighbors(const int &idx, const Functor f){
-    // VectorType pos = tree.point_data()[idx].pos(); // Use idx instead of pos to avoid duplicates on the same point
+    VectorType pos = tree.point_data()[idx].pos(); // Use idx instead of pos to avoid duplicates on the same point
     if(useKnnGraph)
         for (int j : knnGraph->range_neighbors(idx, NSize)){
             f(j);
         }
     else
-        for (int j : tree.range_neighbors(idx, NSize)){
+        for (int j : tree.range_neighbors(pos, NSize)){
             f(j);
         }
 }
