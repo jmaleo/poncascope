@@ -102,7 +102,7 @@ class GUI {
         PointProcessing pointProcessing;
 
         int item_selected_method = 0;
-        const char* methods[18] = { "Plane (PCA)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "NO2D", "B0 Cylinder", "B Cylinder", "NO Cylinder", "FO Cylinder" };
+        const char* methods[21] = { "Plane (PCA)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "NO2D", "B0 Cylinder", "B Cylinder", "NO Cylinder", "FO Cylinder", "Varifold", "Monge patch", "Oriented Monge patch" };
 
     
         float pointNoise = 0.0f;
@@ -167,6 +167,9 @@ class GUI {
                 case (15) : methodForCloudComputing<basket_BaseCylinderFit<WeightFunc >>("B Cylinder"); break;
                 case (16) : methodForCloudComputing<basket_NearOrientedCylinderFit<WeightFunc >>("NO Cylinder"); break;
                 case (17) : methodForCloudComputing<basket_FullyOrientedCylinderFit<WeightFunc >>("FO Cylinder"); break;
+                case (18) : methodForCloudComputing<basket_varifold>("Varifold", false); break;
+                case (19) : methodForCloudComputing<basket_mongePatchFit<WeightFunc>>("Monge patch"); break;
+                case (20) : methodForCloudComputing<basket_orientedMongePatchFit<WeightFunc>>("Oriented Monge patch"); break;
                 default : break; 
             }
 

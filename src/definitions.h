@@ -24,6 +24,7 @@ using SmoothWeightFunc     = Ponca::DistWeightFunc<PPAdapter, Ponca::SmoothWeigh
 using ConstWeightFunc      = Ponca::DistWeightFunc<PPAdapter, Ponca::ConstantWeightKernel<Scalar> >;
 using WendlandWeightFunc   = Ponca::DistWeightFunc<PPAdapter, Ponca::WendlandWeightKernel<Scalar> >;
 using SingularWeightFunc   = Ponca::DistWeightFunc<PPAdapter, Ponca::SingularWeightKernel<Scalar> >;
+using varifoldWeightFunc   = Ponca::DistWeightFunc<PPAdapter, Ponca::VarifoldWeightKernel<Scalar> >;
 
 // Don't use in global to avoid the case where scale2D requires a ddf valide for the mlsSphereFit derivative
 // using CompactExpWeightFunc = Ponca::DistWeightFunc<PPAdapter, Ponca::CompactExpWeightKernel<Scalar> >;
@@ -102,3 +103,11 @@ using basket_orientedWaveJets            =  Ponca::Basket<PPAdapter, WeightFunc,
 
 template <typename WeightFunc>
 using basket_waveJets                    =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::WaveJetsFit>;
+
+template <typename WeightFunc>
+using basket_mongePatchFit               =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::MongePatchFit>;
+
+template <typename WeightFunc>
+using basket_orientedMongePatchFit       =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::OrientedMongePatchFit>;
+
+using basket_varifold                    =  Ponca::Basket<PPAdapter, varifoldWeightFunc, Ponca::Varifold>;
