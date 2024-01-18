@@ -171,12 +171,20 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Sca
 
                                     mean(i) = fit.kMean();
                                     
-                                    kmax(i) = fit.kmax();
-                                    kmin(i) = fit.kmin();
+                                    if (fit.kmax() < fit.kmin()){
+                                        kmax(i) = fit.kmin();
+                                        kmin(i) = fit.kmax();
+                                        dmax.row( i )   = fit.kminDirection();
+                                        dmin.row( i )   = fit.kmaxDirection();
+                                    }
+                                    else {
+                                        kmax(i) = fit.kmax();
+                                        kmin(i) = fit.kmin();
+                                        dmin.row( i )   = fit.kminDirection();
+                                        dmax.row( i )   = fit.kmaxDirection();
+                                    }
 
                                     normal.row( i ) = fit.primitiveGradient();
-                                    dmin.row( i )   = fit.kminDirection();
-                                    dmax.row( i )   = fit.kmaxDirection();
 
                                     // proj.row( i )   = mlsPos - tree.point_data()[i].pos();
                                     proj.row( i )   = mlsPos;
