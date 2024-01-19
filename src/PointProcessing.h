@@ -91,6 +91,10 @@ class PointProcessing {
         /// @param name Name of the method, to be displayed in the console
         void computeUniquePoint_triangle(const std::string &name, const int& type, MyPointCloud<Scalar> &cloud);
 
+        /// @brief Evaluate scalar field for generit FitType
+        /// @tparam FitT Fit Type, \see definitions.h
+        template<typename FitT, bool isSigned = true>
+        SampleVectorType evalScalarField_impl(const std::string &name, const SampleMatrixType& input_pos);
 
 
         /// Dry run: loop over all vertices + run MLS loops without computation
@@ -120,6 +124,13 @@ private :
         template <typename Functor>
         void processRangeNeighbors(const int &idx, const Functor f);
 
+        /// @brief Loop over all points to compute differential quantities, the method differ depending on the used spatial data structure
+        /// @tparam Functor type of the function
+        /// @param pos pos of the point to process
+        /// @param f function to apply on the neighbors
+        template <typename Functor>
+        void processRangeNeighbors(const VectorType &pos, const Functor f);
+
         /// @brief Process one point, compute fitting, and use functor to process fitting output
         /// @tparam FitT Fit Type, \see definitions.h
         /// @tparam Functor type of the function
@@ -129,6 +140,21 @@ private :
         template<typename FitT, typename Functor>
         void processOnePoint(const int &idx, const typename FitT::WeightFunction& w, Functor f);
 
+        /// @brief Process one point, compute fitting, and use functor to process fitting output
+        /// @tparam FitT Fit Type, \see definitions.h
+        /// @tparam Functor type of the function
+        /// @param pos pos of the point to process
+        /// @param w weight function
+        /// @param f function to apply on the fitting
+        template<typename FitT, typename Functor>
+        void processOnePoint(const VectorType &init_pos, const typename FitT::WeightFunction& w, Functor f);
+
+        /// @brief Process one point for CNC methods, compute fitting, and use functor to process fitting output
+        /// \see definitions.h
+        /// @tparam Functor type of the function
+        /// @param idx index of the point to process
+        /// @param w weight function
+        /// @param f function to apply on the fitting
         template <typename Functor>
         void processOnePoint_Triangle(const int& idx, const int& type, Functor f);
 

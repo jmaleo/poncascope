@@ -52,10 +52,12 @@ class GUI {
                 // delete the point cloud
                 polyscope::removeStructure(pc->name, false);
             }
+            
             for (polyscope::PointCloud* pc : polyscope_uniqueClouds){
                 // delete the point cloud
                 polyscope::removeStructure(pc->name, false);
             }
+
             polyscope_projectionClouds.clear();
             polyscope_uniqueClouds.clear();
         }
@@ -66,6 +68,12 @@ class GUI {
                 polyscope::removeStructure(sm->name, false);
             }
             polyscope_meshs.clear();
+            
+            for (polyscope::SurfaceMesh* sm : polyscope_slices){
+                // delete the surface mesh
+                polyscope::removeStructure(sm->name, false);
+            }
+            polyscope_slices.clear();
         }
 
 
@@ -88,12 +96,19 @@ class GUI {
         std::string selectedFile = "";
         int selectedFileIndex = -1;
 
+        // Slicer Informations
+        std::string slicerName = "slicer";
+        bool isHDSlicer = false;
+        float slice = 0.0f;
+        int axis = 0;
+
         Scalar pointRadius    = 0.005; /// < display radius of the point cloud
         
         polyscope::PointCloud* polyscope_mainCloud;
         std::vector<polyscope::PointCloud*> polyscope_projectionClouds;
         std::vector<polyscope::PointCloud*> polyscope_uniqueClouds;
         std::vector<polyscope::SurfaceMesh*> polyscope_meshs;
+        std::vector<polyscope::SurfaceMesh*> polyscope_slices;
 
         CylinderGenerator cylinderGenerator;
         MyPointCloud<Scalar> mainCloud;
@@ -149,16 +164,16 @@ class GUI {
             //  { "Plane (PCA)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "NO2D", "B0 Cylinder", "B Cylinder", "NO Cylinder", "FO Cylinder" };
             
             switch (item_selected_method) {
-                case (0) : methodForCloudComputing<basket_planeFit<WeightFunc >>("Plane (PCA)"); break;
-                case (1) : methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit<WeightFunc >>("APSS"); break;
-                case (2) : methodForCloudComputing<basket_AlgebraicShapeOperatorFit<WeightFunc >>("ASO", false); break;
-                // case (3) : methodForCloudComputing<basket_CNC_uniform<WeightFunc >>("CNC uniform"); break;
-                // case (4) : methodForCloudComputing<basket_CNC_independent<WeightFunc >>("CNC independent"); break;
-                // case (5) : methodForCloudComputing<basket_CNC_hexa<WeightFunc >>("CNC hexa"); break;
-                // case (6) : methodForCloudComputing<basket_CNC_avg_hexa<WeightFunc >>("CNC avg hexa"); break;
-                case (7) : methodForCloudComputing<basket_waveJets<WeightFunc >>("WaveJets", false); break;
-                case (8) : methodForCloudComputing<basket_orientedWaveJets<WeightFunc >>("oriented WaveJets", false); break;
-                case (9) : methodForCloudComputing<basket_ellipsoidFit<WeightFunc >>("Ellipsoid 3D"); break;
+                case (0)  : methodForCloudComputing<basket_planeFit<WeightFunc >>("Plane (PCA)"); break;
+                case (1)  : methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit<WeightFunc >>("APSS"); break;
+                case (2)  : methodForCloudComputing<basket_AlgebraicShapeOperatorFit<WeightFunc >>("ASO", false); break;
+                // case (3)  : methodForCloudComputing<basket_CNC_uniform<WeightFunc >>("CNC uniform"); break;
+                // case (4)  : methodForCloudComputing<basket_CNC_independent<WeightFunc >>("CNC independent"); break;
+                // case (5)  : methodForCloudComputing<basket_CNC_hexa<WeightFunc >>("CNC hexa"); break;
+                // case (6)  : methodForCloudComputing<basket_CNC_avg_hexa<WeightFunc >>("CNC avg hexa"); break;
+                case (7)  : methodForCloudComputing<basket_waveJets<WeightFunc >>("WaveJets", false); break;
+                case (8)  : methodForCloudComputing<basket_orientedWaveJets<WeightFunc >>("oriented WaveJets", false); break;
+                case (9)  : methodForCloudComputing<basket_ellipsoidFit<WeightFunc >>("Ellipsoid 3D"); break;
                 case (10) : methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit<WeightFunc >>("FO Ellipsoid2D"); break;
                 case (11) : methodForCloudComputing<basket_BaseOrientedEllipsoid2DFit<WeightFunc >>("BO Ellipsoid2D"); break;
                 case (12) : methodForCloudComputing<basket_BaseEllipsoid2DFit<WeightFunc >>("B Ellipsoid2D"); break;
@@ -172,32 +187,39 @@ class GUI {
                 case (20) : methodForCloudComputing<basket_orientedMongePatchFit<WeightFunc>>("Oriented Monge patch"); break;
                 default : break; 
             }
+        }
 
-            // methodForCloudComputing<basket_planeFit<WeightFunc >>("Plane (PCA)");
+        template<typename WeightFunc>
+        SampleVectorType
+        sliceWithKernel(const SampleMatrixType& vertices){
 
-            // methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit<WeightFunc >>("APSS");
-
-            // methodForCloudComputing<basket_AlgebraicShapeOperatorFit<WeightFunc >>("ASO", false);
-
-            // methodForCloudComputing<basket_waveJets<WeightFunc >>("WaveJets", false);
-
-            // methodForCloudComputing<basket_orientedWaveJets<WeightFunc >>("oriented WaveJets", false);
-
-            // methodForCloudComputing<basket_ellipsoidFit<WeightFunc >>("Ellipsoid 3D");
-            // //Same as ellipsoidFit
-            // methodForCloudComputing<basket_hyperboloidFit_Diff<WeightFunc >>("Hyperboloid 3D basket Diff");
-
-            // methodForCloudComputing<basket_hyperboloidFit<WeightFunc >>("Hyperboloid 3D ACP");
-
-            // methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit<WeightFunc >>("FO Ellipsoid2D");
-            // methodForCloudComputing<basket_BaseOrientedEllipsoid2DFit<WeightFunc >>("B0 Ellipsoid2D");
-            // methodForCloudComputing<basket_BaseEllipsoid2DFit<WeightFunc >>("B Ellipsoid2D");
-            // methodForCloudComputing<basket_NearOrientedEllipsoid2DFit<WeightFunc >>("N0 Ellipsoid2D");
-
-            // methodForCloudComputing<basket_BaseOrientedCylinderFit<WeightFunc >>("B0 Cylinder");
-            // methodForCloudComputing<basket_BaseCylinderFit<WeightFunc >>("B Cylinder");
-            // methodForCloudComputing<basket_NearOrientedCylinderFit<WeightFunc >>("NO Cylinder");
-            // methodForCloudComputing<basket_FullyOrientedCylinderFit<WeightFunc >>("FO Cylinder");
+            //  { "Plane (PCA)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "NO2D", "B0 Cylinder", "B Cylinder", "NO Cylinder", "FO Cylinder" };
+            
+            switch (item_selected_method) {
+                case (0)  : return pointProcessing.evalScalarField_impl<basket_planeFit<WeightFunc >, false>("Plane (PCA)", vertices);
+                case (1)  : return pointProcessing.evalScalarField_impl<basket_AlgebraicPointSetSurfaceFit<WeightFunc >>("APSS", vertices);
+                case (2)  : return pointProcessing.evalScalarField_impl<basket_AlgebraicShapeOperatorFit<WeightFunc >>("ASO", vertices);
+                case (3)  : return SampleVectorType::Zero(vertices.rows()); // CNC uniform
+                case (4)  : return SampleVectorType::Zero(vertices.rows()); // CNC independent
+                case (5)  : return SampleVectorType::Zero(vertices.rows()); // CNC hexa
+                case (6)  : return SampleVectorType::Zero(vertices.rows()); // CNC avg hexa
+                case (7)  : return SampleVectorType::Zero(vertices.rows()); // WaveJets
+                case (8)  : return SampleVectorType::Zero(vertices.rows()); // oriented WaveJets
+                case (9)  : return pointProcessing.evalScalarField_impl<basket_ellipsoidFit<WeightFunc >>("Ellipsoid 3D", vertices);
+                case (10) : return pointProcessing.evalScalarField_impl<basket_FullyOrientedEllipsoid2DFit<WeightFunc >>("FO Ellipsoid2D", vertices);
+                case (11) : return pointProcessing.evalScalarField_impl<basket_BaseOrientedEllipsoid2DFit<WeightFunc >>("BO Ellipsoid2D", vertices);
+                case (12) : return pointProcessing.evalScalarField_impl<basket_BaseEllipsoid2DFit<WeightFunc >, false>("B Ellipsoid2D", vertices);
+                case (13) : return pointProcessing.evalScalarField_impl<basket_NearOrientedEllipsoid2DFit<WeightFunc >>("NO Ellipsoid2D", vertices);
+                case (14) : return pointProcessing.evalScalarField_impl<basket_BaseOrientedCylinderFit<WeightFunc >>("BO Cylinder", vertices);
+                case (15) : return pointProcessing.evalScalarField_impl<basket_BaseCylinderFit<WeightFunc >, false>("B Cylinder", vertices);
+                case (16) : return pointProcessing.evalScalarField_impl<basket_NearOrientedCylinderFit<WeightFunc >>("NO Cylinder", vertices);
+                case (17) : return pointProcessing.evalScalarField_impl<basket_FullyOrientedCylinderFit<WeightFunc >>("FO Cylinder", vertices);
+                case (18) : return SampleVectorType::Zero(vertices.rows()); // Varifold
+                case (19) : return pointProcessing.evalScalarField_impl<basket_mongePatchFit<WeightFunc>, false>("Monge patch", vertices);
+                case (20) : return pointProcessing.evalScalarField_impl<basket_orientedMongePatchFit<WeightFunc>>("Oriented Monge patch", vertices);
+                default : break; 
+            }
+            return SampleVectorType::Zero(vertices.rows());
         }
 
         void cloudComputing();
@@ -205,6 +227,8 @@ class GUI {
         void cloudComputingUpdateAll();
 
         void cloudComputingUpdateUnique();
+
+        void cloudComputingSlices();
 
         template <typename FitT>
         void methodForCloudComputing(const std::string &metName, bool unique=true);
@@ -216,6 +240,7 @@ class GUI {
         void cloudComputingParameters();
 
         void addQuantities(polyscope::PointCloud *pc, const std::string &name, const SampleMatrixType &values);
+
 
 
 }; // class GUI

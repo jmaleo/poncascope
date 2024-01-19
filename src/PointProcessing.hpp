@@ -22,42 +22,84 @@ void PointProcessing::processRangeNeighbors(const int &idx, const Functor f){
         }
 }
 
+template <typename Functor>
+void PointProcessing::processRangeNeighbors(const VectorType &pos, const Functor f){
+    for (int j : tree.range_neighbors(pos, NSize)){
+        f(j);
+    }
+}
+
+template<typename FitT, typename Functor>
+void PointProcessing::processOnePoint (const VectorType &init_pos, const typename FitT::WeightFunction& w, Functor f){
+    
+    VectorType pos = init_pos;
+    
+    for( int mm = 0; mm < mlsIter; ++mm) {
+        FitT fit;
+        fit.setWeightFunc(w);
+        fit.init( pos );
+        
+        // Ponca::FIT_RESULT res = fit.computeWithIds(tree.range_neighbors(idx, NSize), tree.point_data() );
+        
+        // Loop until fit not need other pass, same process as fit.computeWithIds
+        Ponca::FIT_RESULT res;
+        do {
+            fit.startNewPass();
+            processRangeNeighbors(init_pos, [this, &fit](int j) {
+                fit.addNeighbor(tree.point_data()[j]);
+            });
+            res = fit.finalize();
+        } while (res == Ponca::NEED_OTHER_PASS);
+        
+        if (res == Ponca::STABLE){
+
+            pos = fit.project( pos );
+            if ( mm == mlsIter -1 ) // last mls step, calling functor
+                f(init_pos, fit, pos);
+        }
+        // else {
+        //     std::cerr << "[Ponca][Warning] fit on pos " << init_pos(0) << " " <<  init_pos(1) << " " <<  init_pos(2) << " is not stable" << std::endl;
+        // }
+    }
+}
+
 template<typename FitT, typename Functor>
 void PointProcessing::processOnePoint(const int &idx, const typename FitT::WeightFunction& w, Functor f){
-        VectorType pos = tree.point_data()[idx].pos();
-        for( int mm = 0; mm < mlsIter; ++mm) {
-            FitT fit;
-            fit.setWeightFunc(w);
-            fit.init( pos );
-            
-            // Ponca::FIT_RESULT res = fit.computeWithIds(tree.range_neighbors(idx, NSize), tree.point_data() );
-            
-            // Loop until fit not need other pass, same process as fit.computeWithIds
-            Ponca::FIT_RESULT res;
-            do {
-                fit.startNewPass();
-                processRangeNeighbors(idx, [this, &fit](int j) {
-                    fit.addNeighbor(tree.point_data()[j]);
-                });
-                res = fit.finalize();
-            } while (res == Ponca::NEED_OTHER_PASS);
-            
-            if (res == Ponca::STABLE){
+    
+    VectorType pos = tree.point_data()[idx].pos();
+    
+    for( int mm = 0; mm < mlsIter; ++mm) {
+    FitT fit;
+    fit.setWeightFunc(w);
+    fit.init( pos );
+    
+    // Ponca::FIT_RESULT res = fit.computeWithIds(tree.range_neighbors(idx, NSize), tree.point_data() );
+    
+    // Loop until fit not need other pass, same process as fit.computeWithIds
+    Ponca::FIT_RESULT res;
+    do {
+        fit.startNewPass();
+        processRangeNeighbors(idx, [this, &fit](int j) {
+            fit.addNeighbor(tree.point_data()[j]);
+        });
+        res = fit.finalize();
+    } while (res == Ponca::NEED_OTHER_PASS);
+    
+    if (res == Ponca::STABLE){
 
-                pos = fit.project( pos );
-                if ( mm == mlsIter -1 ) // last mls step, calling functor
-                    f(idx, fit, pos);
-            }
-            else {
-                std::cerr << "[Ponca][Warning] fit " << idx << " is not stable" << std::endl;
-            }
-        }
+        pos = fit.project( pos );
+        if ( mm == mlsIter -1 ) // last mls step, calling functor
+            f(idx, fit, pos);
+    }
+    else {
+        std::cerr << "[Ponca][Warning] fit " << idx << " is not stable" << std::endl;
+    }
+    }
 }
 
 template <typename Functor>
 void 
 PointProcessing::processOnePoint_Triangle(const int& idx, const int& type, Functor f){
-
     VectorType pos = tree.point_data()[idx].pos();
     basket_triangleGeneration fit;
     // use a ptr of m_randomG for the init
@@ -378,4 +420,29 @@ void PointProcessing::mlsDryRun() {
     for (int i = 0; i < nvert; ++i)
         m_meanNeighbors += numNeighbors[i];
     m_meanNeighbors /= nvert;    
+}
+
+template<typename FitT, bool isSigned = true>
+SampleVectorType PointProcessing::evalScalarField_impl(const std::string &name, const SampleMatrixType& input_pos)
+{
+    using weightFunc = typename FitT::WeightFunction;
+
+    int nvert = input_pos.rows();
+
+    // Allocate memory
+    SampleVectorType potential = SampleVectorType::Zero( nvert );
+
+    measureTime( "[Ponca] Compute potentials quantities using " + name,
+        [this, &nvert, &input_pos, &potential]() {
+            #pragma omp parallel for
+            for (int i = 0; i < nvert; ++i) {
+                processOnePoint<FitT>(input_pos.row(i), weightFunc(NSize),
+                            [this, &i, &potential]
+                            ( const VectorType& pos, const FitT& fit, const VectorType& mlsPos){
+                                potential(i) = isSigned ? fit.potential(pos) : std::abs(fit.potential(pos));
+                });
+            }
+        });
+
+    return potential;
 }

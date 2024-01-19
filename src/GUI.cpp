@@ -288,6 +288,52 @@ void GUI::cloudComputingUpdateUnique (){
     methodName = "";
 }
 
+void GUI::cloudComputingSlices(){
+    ImGui::Text("Potential slices");
+
+    ImGui::Checkbox("HD", &isHDSlicer); ImGui::SameLine();
+    ImGui::Text("Axis :"); ImGui::SameLine();
+    ImGui::RadioButton("X", &axis, 0); ImGui::SameLine();
+    ImGui::RadioButton("Y", &axis, 1); ImGui::SameLine();
+    ImGui::RadioButton("Z", &axis, 2);
+
+    if (ImGui::SliderFloat("Slice", &slice, 0.0f, 1.0f)){
+
+        VectorType min = mainCloud.getMin();
+        VectorType max = mainCloud.getMax();
+        Scalar dist = (min - max).norm();
+        min -= 0.1*dist*VectorType::Ones();
+        max += 0.1*dist*VectorType::Ones();
+
+        std::pair<SampleMatrixType, std::vector<std::array<size_t,4>>> pair_slice = create_frame(min, max, isHDSlicer?256:64, axis, slice);
+
+        // SampleVectorType values = SampleVectorType::Zero(pair_slice.first.rows());
+        SampleVectorType values;
+        switch (weightFuncType){
+        case 0 : 
+            values = sliceWithKernel<SmoothWeightFunc>(pair_slice.first);
+            break;
+        case 1 : 
+            values = sliceWithKernel<ConstWeightFunc>(pair_slice.first);
+            break;
+        case 2 : 
+            values = sliceWithKernel<WendlandWeightFunc>(pair_slice.first);
+            break;
+        case 3 : 
+            values = sliceWithKernel<SingularWeightFunc>(pair_slice.first);
+            break;
+        default : 
+            values = sliceWithKernel<SmoothWeightFunc>(pair_slice.first);
+            break;
+        }
+
+        // display the slices as default for now
+        polyscope::SurfaceMesh* mesh = polyscope::registerSurfaceMesh(slicerName, pair_slice.first, pair_slice.second);
+        mesh->addVertexScalarQuantity("Potential", values)->setEnabled(true);
+        polyscope_slices.push_back(mesh);
+    }
+
+}
 
 template <typename FitT>
 void GUI::methodForCloudComputing(const std::string& metName, bool unique){
@@ -407,6 +453,10 @@ void GUI::cloudComputing(){
 
     cloudComputingUpdateAll();
     cloudComputingUpdateUnique();
+
+    ImGui::Separator();
+
+    cloudComputingSlices();
 }
 
 void GUI::cloudComputingParameters(){

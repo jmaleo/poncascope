@@ -207,6 +207,53 @@ void create_cube (MyPointCloud<Scalar> &cloud, const SampleVectorType &pos, cons
     cloud = MyPointCloud<Scalar>(cloudV, cloudN);
 }
 
+std::pair<SampleMatrixType, std::vector<std::array<size_t,4>>> create_frame(const VectorType &lowerBound, const VectorType &upperBound, size_t nbSteps, size_t axis, Scalar slice=0.0){
+    size_t sliceid = static_cast<size_t>(std::floor(slice*nbSteps));
+  
+    auto dim1 = (axis+1)%3;
+    auto dim2 = (axis+2)%3;
+    
+    Scalar du = (upperBound[dim1]-lowerBound[dim1])/Scalar(nbSteps);
+    Scalar dv = (upperBound[dim2]-lowerBound[dim2])/Scalar(nbSteps);
+    Scalar dw = (upperBound[axis]-lowerBound[axis])/Scalar(nbSteps);
+    
+    Scalar u = lowerBound[dim1];
+    Scalar v = lowerBound[dim2];
+    Scalar w = lowerBound[axis] + sliceid*dw;
+    
+    VectorType p;
+    VectorType vu,vv;
+    switch (axis) {
+        case 0: p=VectorType(w,u,v); vu=VectorType(0,du,0); vv=VectorType(0,0,dv);break;
+        case 1: p=VectorType(u,w,v); vu=VectorType(du,0,0); vv=VectorType(0,0,dv);break;
+        case 2: p=VectorType(u,v,w); vu=VectorType(du,0,0); vv=VectorType(0,dv,0);break;
+    }
+    
+    //   std::vector<VectorType> vertices(nbSteps*nbSteps);
+    
+    SampleMatrixType vertices (nbSteps*nbSteps,3);
+
+    SampleVectorType values = SampleVectorType::Zero(nbSteps*nbSteps);
+
+    std::vector<std::array<size_t,4>> faces;
+    faces.reserve(nbSteps*nbSteps);
+    std::array<size_t,4> face;
+    
+    //Regular grid construction
+    for(size_t id=0; id < nbSteps*nbSteps; ++id)
+    {
+        auto i = id % nbSteps;
+        auto j = id / nbSteps;
+        p = lowerBound + i*vu + j*vv;
+        p[axis] += sliceid*dw;
+        vertices.row(id) = p;
+        face = { id, id+1, id+1+nbSteps, id+nbSteps };
+        if (((i+1) < nbSteps) && ((j+1)<nbSteps))
+        faces.push_back(face);
+    }
+    return std::make_pair(vertices, faces);
+}
+
 class CylinderGenerator {
 
     public:
