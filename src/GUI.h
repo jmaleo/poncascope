@@ -65,15 +65,16 @@ class GUI {
         void remove_meshs(){
             for (polyscope::SurfaceMesh* sm : polyscope_meshs){
                 // delete the point cloud
-                polyscope::removeStructure(sm->name, false);
+                polyscope::removeStructure(sm, false);
             }
             polyscope_meshs.clear();
-            
-            for (polyscope::SurfaceMesh* sm : polyscope_slices){
-                // delete the surface mesh
-                polyscope::removeStructure(sm->name, false);
-            }
-            polyscope_slices.clear();
+
+            // for (std::string slice_struct_name : polyscope_slices){
+            //     // delete the surface mesh
+            //     polyscope::removeStructure(slice_struct_name, false);
+            // }
+            polyscope::removeStructure(slicerName, false);
+            // polyscope_slices.clear();
         }
 
 
@@ -108,7 +109,7 @@ class GUI {
         std::vector<polyscope::PointCloud*> polyscope_projectionClouds;
         std::vector<polyscope::PointCloud*> polyscope_uniqueClouds;
         std::vector<polyscope::SurfaceMesh*> polyscope_meshs;
-        std::vector<polyscope::SurfaceMesh*> polyscope_slices;
+        // std::vector<polyscope::SurfaceMesh*> polyscope_slices;
 
         CylinderGenerator cylinderGenerator;
         MyPointCloud<Scalar> mainCloud;

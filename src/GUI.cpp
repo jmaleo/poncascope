@@ -330,7 +330,8 @@ void GUI::cloudComputingSlices(){
         // display the slices as default for now
         polyscope::SurfaceMesh* mesh = polyscope::registerSurfaceMesh(slicerName, pair_slice.first, pair_slice.second);
         mesh->addVertexScalarQuantity("Potential", values)->setEnabled(true);
-        polyscope_slices.push_back(mesh);
+        // polyscope_slices.push_back(mesh);
+        // polyscope_slices.push_back(slicerName);
     }
 
 }
