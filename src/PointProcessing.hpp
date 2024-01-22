@@ -29,6 +29,16 @@ void PointProcessing::processRangeNeighbors(const VectorType &pos, const Functor
     }
 }
 
+template<typename FitT>
+void PointProcessing::initUseNormal (FitT &fit){
+    // Nothing if not a plane fit
+}
+
+// template<>
+// void PointProcessing::initUseNormal(basket_planeFit<SmoothWeightFunc> &fit){
+//     fit.setUseNormal(false);
+// }
+
 template<typename FitT, typename Functor>
 void PointProcessing::processOnePoint (const VectorType &init_pos, const typename FitT::WeightFunction& w, Functor f){
     
@@ -38,6 +48,7 @@ void PointProcessing::processOnePoint (const VectorType &init_pos, const typenam
         FitT fit;
         fit.setWeightFunc(w);
         fit.init( pos );
+        // initUseNormal(fit);
         
         // Ponca::FIT_RESULT res = fit.computeWithIds(tree.range_neighbors(idx, NSize), tree.point_data() );
         
@@ -69,31 +80,33 @@ void PointProcessing::processOnePoint(const int &idx, const typename FitT::Weigh
     VectorType pos = tree.point_data()[idx].pos();
     
     for( int mm = 0; mm < mlsIter; ++mm) {
-    FitT fit;
-    fit.setWeightFunc(w);
-    fit.init( pos );
-    
-    // Ponca::FIT_RESULT res = fit.computeWithIds(tree.range_neighbors(idx, NSize), tree.point_data() );
-    
-    // Loop until fit not need other pass, same process as fit.computeWithIds
-    Ponca::FIT_RESULT res;
-    do {
-        fit.startNewPass();
-        processRangeNeighbors(idx, [this, &fit](int j) {
-            fit.addNeighbor(tree.point_data()[j]);
-        });
-        res = fit.finalize();
-    } while (res == Ponca::NEED_OTHER_PASS);
-    
-    if (res == Ponca::STABLE){
+        FitT fit;
+        fit.setWeightFunc(w);
+        fit.init( pos );
 
-        pos = fit.project( pos );
-        if ( mm == mlsIter -1 ) // last mls step, calling functor
-            f(idx, fit, pos);
-    }
-    else {
-        std::cerr << "[Ponca][Warning] fit " << idx << " is not stable" << std::endl;
-    }
+        // initUseNormal(fit);
+        
+        // Ponca::FIT_RESULT res = fit.computeWithIds(tree.range_neighbors(idx, NSize), tree.point_data() );
+        
+        // Loop until fit not need other pass, same process as fit.computeWithIds
+        Ponca::FIT_RESULT res;
+        do {
+            fit.startNewPass();
+            processRangeNeighbors(idx, [this, &fit](int j) {
+                fit.addNeighbor(tree.point_data()[j]);
+            });
+            res = fit.finalize();
+        } while (res == Ponca::NEED_OTHER_PASS);
+        
+        if (res == Ponca::STABLE){
+
+            pos = fit.project( pos );
+            if ( mm == mlsIter -1 ) // last mls step, calling functor
+                f(idx, fit, pos);
+        }
+        else {
+            std::cerr << "[Ponca][Warning] fit " << idx << " is not stable" << std::endl;
+        }
     }
 }
 

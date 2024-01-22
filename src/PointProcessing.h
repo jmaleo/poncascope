@@ -180,6 +180,10 @@ private :
         // void
         // processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init, SampleMatrixType& normal);
         
+
+        /// @brief Used to init the way to use computeCurvature into the fit / to dissociate classic fits and plane fits
+        template<typename FitT>
+        void initUseNormal (FitT &fit);
         
 }; // class PointProcessing
 

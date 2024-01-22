@@ -420,10 +420,10 @@ void GUI::cloudComputing(){
     ImGui::Combo ("Fitting Methods", &item_selected_method, methods, IM_ARRAYSIZE(methods));
 
     switch (item_selected_method){
-        case (3) : methodForCloudComputing_OnlyTriangle("CNC uniform", 1); break;
-        case (4) : methodForCloudComputing_OnlyTriangle("CNC independent", 2); break;
-        case (5) : methodForCloudComputing_OnlyTriangle("CNC HexagramGeneration", 3); break;
-        case (6) : methodForCloudComputing_OnlyTriangle("CNC AvgHexagramGeneration", 4); break;
+        case (4) : methodForCloudComputing_OnlyTriangle("CNC uniform", 1); break;
+        case (5) : methodForCloudComputing_OnlyTriangle("CNC independent", 2); break;
+        case (6) : methodForCloudComputing_OnlyTriangle("CNC HexagramGeneration", 3); break;
+        case (7) : methodForCloudComputing_OnlyTriangle("CNC AvgHexagramGeneration", 4); break;
     }
 
     // methodForCloudComputing_OnlyTriangle("CNC uniform", 1);

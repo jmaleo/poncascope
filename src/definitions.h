@@ -83,6 +83,13 @@ using basket_planeFit                    =  Ponca::BasketDiff<
                                                 Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
 template <typename WeightFunc>
+using basket_meanPlaneFit                    =  Ponca::BasketDiff<
+                                                Ponca::Basket<PPAdapter, WeightFunc, Ponca::MeanPlaneFit>,
+                                                Ponca::DiffType::FitSpaceDer,
+                                                Ponca::MeanPlaneDer,
+                                                Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+
+template <typename WeightFunc>
 using basket_ellipsoidFit                =  Ponca::BasketDiff<
                                                 Ponca::Basket<PPAdapter, WeightFunc, Ponca::OrientedEllipsoidFit>,
                                                 Ponca::DiffType::FitSpaceDer, Ponca::OrientedEllipsoidDer,
