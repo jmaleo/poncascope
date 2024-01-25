@@ -71,7 +71,7 @@ class PointProcessing {
         /// @tparam FitT Fit Type, \see definitions.h
         /// @param name Name of the method, to be displayed in the console
         /// @param cloud Point Cloud to process
-        template<typename FitT>
+        template<typename FitT, bool isSigned = true>
         void computeDiffQuantities(const std::string &name, MyPointCloud<Scalar> &cloud);
 
         /// @brief Compute differential quantities

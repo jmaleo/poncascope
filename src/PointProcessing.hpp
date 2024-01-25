@@ -206,7 +206,7 @@ void PointProcessing::processPointCloud(const bool &unique, const typename FitT:
     }
 }
 
-template<typename FitT>
+template<typename FitT, bool isSigned = true>
 void
 PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Scalar> &cloud) {
     
@@ -224,10 +224,10 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Sca
                                 [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj, &shapeIndex]
                                 ( int i, const FitT& fit, const VectorType& mlsPos){
 
-                                    mean(i) = fit.kMean();
+                                    mean(i) = isSigned ? fit.kMean() : std::abs(fit.kMean());
                                     
-                                    kmax(i) = fit.kmax();
-                                    kmin(i) = fit.kmin();
+                                    kmax(i) = isSigned ? fit.kmax() : std::abs(fit.kmax());
+                                    kmin(i) = isSigned ? fit.kmin() : std::abs(fit.kmin());
 
                                     normal.row( i ) = fit.primitiveGradient();
                                     dmin.row( i )   = fit.kminDirection();
@@ -236,7 +236,7 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Sca
                                     // proj.row( i )   = mlsPos - tree.point_data()[i].pos();
                                     proj.row( i )   = mlsPos;
 
-                                    shapeIndex(i) = (2.0 / M_PI) * std::atan( ( fit.kmin() + fit.kmax() ) / ( fit.kmin() - fit.kmax() ) );
+                                    shapeIndex(i) = (2.0 / M_PI) * std::atan( ( kmin(i) + kmax(i) ) / ( kmin(i) - kmax(i) ) );
                                 });
                     });
     

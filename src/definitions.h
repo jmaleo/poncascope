@@ -76,6 +76,13 @@ using basket_AlgebraicPointSetSurfaceFit =  Ponca::BasketDiff<
                                             Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
 
 template <typename WeightFunc>
+using basket_UnorientedSphereFit =  Ponca::BasketDiff<
+                                            Ponca::Basket<PPAdapter, WeightFunc, Ponca::UnorientedSphereFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::UnorientedSphereDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+
+template <typename WeightFunc>
 using basket_planeFit                    =  Ponca::BasketDiff<
                                                 Ponca::Basket<PPAdapter, WeightFunc, Ponca::CovariancePlaneFit>,
                                                 Ponca::DiffType::FitSpaceDer,

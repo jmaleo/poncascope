@@ -336,7 +336,7 @@ void GUI::cloudComputingSlices(){
 
 }
 
-template <typename FitT>
+template <typename FitT, bool isSigned = true>
 void GUI::methodForCloudComputing(const std::string& metName, bool unique){
     // std::string buttonName_all = "Compute " + metName;
     // std::string buttonName_unique = metName + " for selected";
@@ -346,7 +346,7 @@ void GUI::methodForCloudComputing(const std::string& metName, bool unique){
     if (ImGui::Button(buttonName_all.c_str())){
         methodName = metName;
         all_computed = true;
-        pointProcessing.computeDiffQuantities<FitT>(metName, mainCloud);
+        pointProcessing.computeDiffQuantities<FitT, isSigned>(metName, mainCloud);
     }
     
     if (!unique) return;

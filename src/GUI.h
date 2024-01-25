@@ -118,7 +118,7 @@ class GUI {
         PointProcessing pointProcessing;
 
         int item_selected_method = 0;
-        const char* methods[22] = { "Plane (PCA)", "Plane (mean)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "NO2D", "B0 Cylinder", "B Cylinder", "NO Cylinder", "FO Cylinder", "Varifold", "Monge patch", "Oriented Monge patch" };
+        const char* methods[23] = { "Plane (PCA)", "Plane (mean)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "NO2D", "B0 Cylinder", "B Cylinder", "NO Cylinder", "FO Cylinder", "Varifold", "Monge patch", "Oriented Monge patch", "Unoriented sphere" };
 
     
         float pointNoise = 0.0f;
@@ -165,7 +165,7 @@ class GUI {
             //  { "Plane (PCA)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "NO2D", "B0 Cylinder", "B Cylinder", "NO Cylinder", "FO Cylinder" };
             
             switch (item_selected_method) {
-                case (0)  : methodForCloudComputing<basket_planeFit<WeightFunc >>("Plane (PCA)"); break;
+                case (0)  : methodForCloudComputing<basket_planeFit<WeightFunc >, false>("Plane (PCA)"); break;
                 case (1)  : methodForCloudComputing<basket_meanPlaneFit<WeightFunc >>("Plane (mean)"); break;
                 case (2)  : methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit<WeightFunc >>("APSS"); break;
                 case (3)  : methodForCloudComputing<basket_AlgebraicShapeOperatorFit<WeightFunc >>("ASO", false); break;
@@ -173,20 +173,21 @@ class GUI {
                 // case (5)  : methodForCloudComputing<basket_CNC_independent<WeightFunc >>("CNC independent"); break;
                 // case (6)  : methodForCloudComputing<basket_CNC_hexa<WeightFunc >>("CNC hexa"); break;
                 // case (7)  : methodForCloudComputing<basket_CNC_avg_hexa<WeightFunc >>("CNC avg hexa"); break;
-                case (8)  : methodForCloudComputing<basket_waveJets<WeightFunc >>("WaveJets", false); break;
+                case (8)  : methodForCloudComputing<basket_waveJets<WeightFunc >, false>("WaveJets", false); break;
                 case (9)  : methodForCloudComputing<basket_orientedWaveJets<WeightFunc >>("oriented WaveJets", false); break;
                 case (10)  : methodForCloudComputing<basket_ellipsoidFit<WeightFunc >>("Ellipsoid 3D"); break;
                 case (11) : methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit<WeightFunc >>("FO Ellipsoid2D"); break;
                 case (12) : methodForCloudComputing<basket_BaseOrientedEllipsoid2DFit<WeightFunc >>("BO Ellipsoid2D"); break;
-                case (13) : methodForCloudComputing<basket_BaseEllipsoid2DFit<WeightFunc >>("B Ellipsoid2D"); break;
+                case (13) : methodForCloudComputing<basket_BaseEllipsoid2DFit<WeightFunc >, false>("B Ellipsoid2D"); break;
                 case (14) : methodForCloudComputing<basket_NearOrientedEllipsoid2DFit<WeightFunc >>("NO Ellipsoid2D"); break;
                 case (15) : methodForCloudComputing<basket_BaseOrientedCylinderFit<WeightFunc >>("BO Cylinder"); break;
-                case (16) : methodForCloudComputing<basket_BaseCylinderFit<WeightFunc >>("B Cylinder"); break;
+                case (16) : methodForCloudComputing<basket_BaseCylinderFit<WeightFunc >, false>("B Cylinder"); break;
                 case (17) : methodForCloudComputing<basket_NearOrientedCylinderFit<WeightFunc >>("NO Cylinder"); break;
                 case (18) : methodForCloudComputing<basket_FullyOrientedCylinderFit<WeightFunc >>("FO Cylinder"); break;
                 case (19) : methodForCloudComputing<basket_varifold>("Varifold", false); break;
-                case (20) : methodForCloudComputing<basket_mongePatchFit<WeightFunc>>("Monge patch"); break;
+                case (20) : methodForCloudComputing<basket_mongePatchFit<WeightFunc>, false>("Monge patch"); break;
                 case (21) : methodForCloudComputing<basket_orientedMongePatchFit<WeightFunc>>("Oriented Monge patch"); break;
+                case (22) : methodForCloudComputing<basket_UnorientedSphereFit<WeightFunc>, false>("Unoriented sphere"); break;
                 default : break; 
             }
         }
@@ -220,6 +221,7 @@ class GUI {
                 case (19) : return SampleVectorType::Zero(vertices.rows()); // Varifold
                 case (20) : return pointProcessing.evalScalarField_impl<basket_mongePatchFit<WeightFunc>, false>("Monge patch", vertices);
                 case (21) : return pointProcessing.evalScalarField_impl<basket_orientedMongePatchFit<WeightFunc>>("Oriented Monge patch", vertices);
+                case (22) : return pointProcessing.evalScalarField_impl<basket_UnorientedSphereFit<WeightFunc>, false>("Unoriented sphere", vertices);
                 default : break; 
             }
             return SampleVectorType::Zero(vertices.rows());
@@ -233,7 +235,7 @@ class GUI {
 
         void cloudComputingSlices();
 
-        template <typename FitT>
+        template <typename FitT, bool isSigned = true>
         void methodForCloudComputing(const std::string &metName, bool unique=true);
 
         void methodForCloudComputing_OnlyTriangle(const std::string &metName, const int& type);
