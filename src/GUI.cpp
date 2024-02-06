@@ -5,6 +5,9 @@ void GUI::mainCallBack(){
     // The size of the window, the position is set by default
     ImGui::SetNextWindowSize(ImVec2(300, 600), ImGuiCond_FirstUseEver);
 
+    // Camera settings :
+    saveCameraSettings();
+
     cloudGeneration();
     if (isCylinder){
         cylinderParameters();
@@ -31,6 +34,25 @@ void GUI::mainCallBack(){
 
     cloudComputing();
 
+}
+
+//////////////////////////////////////////////////////////////////////
+////                           SETTINGS                           ////
+//////////////////////////////////////////////////////////////////////
+
+void GUI::saveCameraSettings(){
+    // Save the camera settings
+    if (ImGui::Button("Save camera settings")){
+        std::string base_name = "cameraSettings";
+        std::string num = "0";
+        std::string extension = ".json";
+        std::string view = polyscope::view::getViewAsJson();
+        // While it exists a file with the same name, add a number at the end of the name
+        while (std::filesystem::exists(base_name + num + extension)) num = std::to_string(std::stoi(num) + 1);
+        std::ofstream file(base_name + num + extension);
+        file << view;
+        file.close();
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -343,13 +365,13 @@ void GUI::methodForCloudComputing(const std::string& metName, bool unique){
 
     std::string buttonName_all = "Compute quantities";
     std::string buttonName_unique = "Only for the selected";
-    if (ImGui::Button(buttonName_all.c_str())){
+    if ( offline_computing || ImGui::Button(buttonName_all.c_str()) ){
         methodName = metName;
         all_computed = true;
         pointProcessing.computeDiffQuantities<FitT, isSigned>(metName, mainCloud);
     }
     
-    if (!unique) return;
+    if (!unique || offline_computing) return;
 
     ImGui::SameLine();
     if (ImGui::Button(buttonName_unique.c_str())){
@@ -370,11 +392,13 @@ void GUI::methodForCloudComputing_OnlyTriangle(const std::string &metName, const
     std::string buttonName_all = "Compute quantities";
     std::string buttonName_unique = "Only for the selected";
 
-    if (ImGui::Button (buttonName_all.c_str())){
+    if ( offline_computing || ImGui::Button (buttonName_all.c_str()) ){
         methodName = metName;
         all_computed = true;
         pointProcessing.computeDiffQuantities_Triangle(metName,type, mainCloud);
     }
+
+    if (offline_computing) return;
 
     ImGui::SameLine();
 
@@ -418,21 +442,6 @@ void GUI::cloudComputing(){
     ImGui::SetItemDefaultFocus();
     ImGui::SetNextItemWidth(200);
     ImGui::Combo ("Fitting Methods", &item_selected_method, methods, IM_ARRAYSIZE(methods));
-
-    switch (item_selected_method){
-        case (4) : methodForCloudComputing_OnlyTriangle("CNC uniform", 1); break;
-        case (5) : methodForCloudComputing_OnlyTriangle("CNC independent", 2); break;
-        case (6) : methodForCloudComputing_OnlyTriangle("CNC HexagramGeneration", 3); break;
-        case (7) : methodForCloudComputing_OnlyTriangle("CNC AvgHexagramGeneration", 4); break;
-    }
-
-    // methodForCloudComputing_OnlyTriangle("CNC uniform", 1);
-
-    // methodForCloudComputing_OnlyTriangle("CNC independent", 2);
-
-    // methodForCloudComputing_OnlyTriangle("CNC HexagramGeneration", 3);
-
-    // methodForCloudComputing_OnlyTriangle("CNC AvgHexagramGeneration", 4);
 
     switch (weightFuncType){
         case 0 : 

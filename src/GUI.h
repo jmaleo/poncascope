@@ -9,12 +9,14 @@
 #include "polyscope/messages.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/view.h"
 #include "MyPointCloud.h"
 #include "CloudGeneration.h"
 #include "PointProcessing.h"
 #include "imgui_filedialog.h"
 #include <Eigen/Dense>
 #include "imgui_filedialog.h"
+#include <string>
 
 class GUI {
 
@@ -43,6 +45,72 @@ class GUI {
 
             // Initialize the item selected method
             item_selected_method = 0;
+        }
+
+        GUI(const std::string& input_file){
+            // Initialize fileDialogue
+            dialogInfo.title = "Choose File";
+            dialogInfo.type = ImGuiFileDialogType_OpenFile;
+            dialogInfo.directoryPath = std::filesystem::current_path();
+
+            // Initialize polyscope
+            selectedQuantities.resize(6, 0);
+
+            // Initialize the point cloud
+            selectedFile = input_file;
+
+            pointProcessing.measureTime("[Generation] Load object", [this](){
+                loadObject(mainCloud, selectedFile, 0.0f, 0.0f);
+            });
+            
+            pointProcessing.update(mainCloud);
+            polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.getVertices());
+            addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
+            remove_clouds();
+
+            // Initialize the item selected method
+            item_selected_method = 0;
+        }
+
+        void setCategory(const std::string& cat){
+            for (int i = 0; i < quantityNames.size(); i++){
+                if (quantityNames[i] == cat)
+                    selectedQuantities[i] = 1;
+                else
+                    selectedQuantities[i] = 0;
+            }
+        }
+
+        void setMethod(const std::string& met){
+            int i = 0;
+            for (const auto& method : methods){
+                if (method == met){
+                    item_selected_method = i;
+                    break;
+                }
+                i++;
+            }
+        }
+
+        void setRadius (const float& r){
+            pointProcessing.NSize = r;
+        }
+
+        void setMLSIter (const int& mls){
+            pointProcessing.mlsIter = mls;
+        }
+
+        void setKernel (const std::string& kernel){
+            if ( kernel == "Constant" )
+                weightFuncType = 0;
+            else if ( kernel == "Smooth" )
+                weightFuncType = 1; 
+            else if ( kernel == "Wendland" )
+                weightFuncType = 2;
+            else if ( kernel == "Singular" )
+                weightFuncType = 3;
+            else
+                weightFuncType = 1;
         }
 
         void mainCallBack();
@@ -77,8 +145,50 @@ class GUI {
             // polyscope_slices.clear();
         }
 
+        void oneShotCallBack(const std::string& output_file, const std::string& catName = "Mean curvature"){
+            // one shot computing : 
+            offline_computing = true;
+
+            switch (weightFuncType){
+                case 0 : 
+                    methodWithKernel<ConstWeightFunc>(); break;
+                case 1 : 
+                    methodWithKernel<SmoothWeightFunc>(); break;
+                case 2 : 
+                    methodWithKernel<WendlandWeightFunc>(); break;
+                case 3 : 
+                    methodWithKernel<SingularWeightFunc>(); break;
+                default : 
+                    methodWithKernel<SmoothWeightFunc>(); break;
+            }
+
+            const SampleMatrixType& values = mainCloud.getDiffQuantities().getByName(catName);
+
+            if (values.cols() == 1){
+                // Make values beeing a vector
+                SampleVectorType valuesVec = values.col(0);
+                auto quantity = polyscope_mainCloud->addScalarQuantity(catName, valuesVec);
+                // Set bound [-5, 5] for the scalar quantity
+                quantity->setMapRange(std::pair<double,double>(-5,5));
+                quantity->setColorMap("coolwarm");
+                quantity->setEnabled(true);
+            }
+            else { 
+                auto quantity = polyscope_mainCloud->addVectorQuantity(catName, values);
+                quantity->setEnabled(true);
+            }
+            // take a screenshot
+            polyscope::screenshot(output_file);
+            exit(0);
+        }
+
+    private:
+
+        // ArgParser
 
     private: 
+
+        bool offline_computing = false;
 
         bool cloudNeedsUpdate = false;
 
@@ -134,6 +244,10 @@ class GUI {
 
         void cylinderParameters();
 
+        /// Save the camera settings to a file called "camera_settings.txt"
+        /// in the current working directory
+        void saveCameraSettings();
+
     private:
 
         // Point Cloud Processing 
@@ -169,13 +283,13 @@ class GUI {
                 case (1)  : methodForCloudComputing<basket_meanPlaneFit<WeightFunc >>("Plane (mean)"); break;
                 case (2)  : methodForCloudComputing<basket_AlgebraicPointSetSurfaceFit<WeightFunc >>("APSS"); break;
                 case (3)  : methodForCloudComputing<basket_AlgebraicShapeOperatorFit<WeightFunc >>("ASO", false); break;
-                // case (4)  : methodForCloudComputing<basket_CNC_uniform<WeightFunc >>("CNC uniform"); break;
-                // case (5)  : methodForCloudComputing<basket_CNC_independent<WeightFunc >>("CNC independent"); break;
-                // case (6)  : methodForCloudComputing<basket_CNC_hexa<WeightFunc >>("CNC hexa"); break;
-                // case (7)  : methodForCloudComputing<basket_CNC_avg_hexa<WeightFunc >>("CNC avg hexa"); break;
+                case (4)  : methodForCloudComputing_OnlyTriangle("CNC uniform", 1); break;
+                case (5)  : methodForCloudComputing_OnlyTriangle("CNC independent", 2); break;
+                case (6)  : methodForCloudComputing_OnlyTriangle("CNC HexagramGeneration", 3); break;
+                case (7)  : methodForCloudComputing_OnlyTriangle("CNC AvgHexagramGeneration", 4); break;
                 case (8)  : methodForCloudComputing<basket_waveJets<WeightFunc >, false>("WaveJets", false); break;
                 case (9)  : methodForCloudComputing<basket_orientedWaveJets<WeightFunc >>("oriented WaveJets", false); break;
-                case (10)  : methodForCloudComputing<basket_ellipsoidFit<WeightFunc >>("Ellipsoid 3D"); break;
+                case (10) : methodForCloudComputing<basket_ellipsoidFit<WeightFunc >>("Ellipsoid 3D"); break;
                 case (11) : methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit<WeightFunc >>("FO Ellipsoid2D"); break;
                 case (12) : methodForCloudComputing<basket_BaseOrientedEllipsoid2DFit<WeightFunc >>("BO Ellipsoid2D"); break;
                 case (13) : methodForCloudComputing<basket_BaseEllipsoid2DFit<WeightFunc >, false>("B Ellipsoid2D"); break;
