@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
     polyscope::view::windowWidth = 1024;
     polyscope::view::windowHeight = 1024;
     polyscope::options::groundPlaneEnabled = false;
-    polyscope::view::bgColor = std::array<float, 4> {0.185, 0.185, 0.185, 0};
+    polyscope::view::bgColor = std::array<float, 4> {0.053, 0.053, 0.053, 0};
 
     CLI::App app{"Poncascope"};
 
@@ -51,6 +51,12 @@ int main(int argc, char **argv) {
 
     float mlsIter = 1;
     app.add_option("--mls", mlsIter, "Number of iterations for the moving least squares, default 1.");   
+
+    float minBound = -5.0;
+    app.add_option("--minBound", minBound, "Minimum bound of the visualization, default -5.");
+
+    float maxBound = 5.0;
+    app.add_option("--maxBound", maxBound, "Maximum bound of the visualization, default 5.");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -91,7 +97,7 @@ int main(int argc, char **argv) {
     gui->setCategory(metric);
 
     if (output_file != "")
-        gui->oneShotCallBack(output_file, metric);
+        gui->oneShotCallBack(output_file, metric, minBound, maxBound);
 
     // Show the gui
     polyscope::show();

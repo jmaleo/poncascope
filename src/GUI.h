@@ -145,7 +145,7 @@ class GUI {
             // polyscope_slices.clear();
         }
 
-        void oneShotCallBack(const std::string& output_file, const std::string& catName = "Mean curvature"){
+        void oneShotCallBack(const std::string& output_file, const std::string& catName, float minBound, float maxBound){
             // one shot computing : 
             offline_computing = true;
 
@@ -169,7 +169,7 @@ class GUI {
                 SampleVectorType valuesVec = values.col(0);
                 auto quantity = polyscope_mainCloud->addScalarQuantity(catName, valuesVec);
                 // Set bound [-5, 5] for the scalar quantity
-                quantity->setMapRange(std::pair<double,double>(-5,5));
+                quantity->setMapRange(std::pair<double,double>(minBound,maxBound));
                 quantity->setColorMap("coolwarm");
                 quantity->setEnabled(true);
             }
