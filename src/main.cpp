@@ -28,6 +28,9 @@ int main(int argc, char **argv) {
 
     CLI::App app{"Poncascope"};
 
+    bool fastRender = false;
+    app.add_flag("--fast", fastRender, "Fast mode, render the point cloud as quads.");
+
     std::string cam_file = "";
     app.add_option("-c,--camera", cam_file, "Enter the view settings of a camera, stored as a json file");
 
@@ -43,8 +46,8 @@ int main(int argc, char **argv) {
     std::string kernel = "Smooth";
     app.add_option("-k, --kernel", kernel, "Kernel to use, default Smooth. Available kernels : Smooth, Constant, Wendland, Singular");
 
-    std::string metric = "Mean curvature";
-    app.add_option("--metric", metric, "Metric to use, default Mean curvature => ( Projections, Normals, Mean curvature, Min curvature, Max curvature, Min curvature direction, Max curvature direction, Shape index )");
+    std::string property = "Mean curvature";
+    app.add_option("--property", property, "Property to display, default Mean curvature => ( Projections, Normals, Mean curvature, Min curvature, Max curvature, Min curvature direction, Max curvature direction, Shape index )");
 
     float radius = 0.1;
     app.add_option("-r, --radius", radius, "Radius of the neighborhood, default 0.1.");
@@ -90,14 +93,18 @@ int main(int argc, char **argv) {
             polyscope::view::setViewFromJson(cam_json, false);
     }
 
+    // if fast mode, set the render mode to quad
+    if (fastRender)
+        gui->setFastMode();
+
     gui->setRadius (radius);
     gui->setMLSIter(mlsIter);
     gui->setKernel(kernel);
     gui->setMethod(method);
-    gui->setCategory(metric);
+    gui->setProperty(property);
 
     if (output_file != "")
-        gui->oneShotCallBack(output_file, metric, minBound, maxBound);
+        gui->oneShotCallBack(output_file, property, minBound, maxBound);
 
     // Show the gui
     polyscope::show();

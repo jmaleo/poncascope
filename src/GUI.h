@@ -72,9 +72,9 @@ class GUI {
             item_selected_method = 0;
         }
 
-        void setCategory(const std::string& cat){
+        void setProperty(const std::string& prop){
             for (int i = 0; i < quantityNames.size(); i++){
-                if (quantityNames[i] == cat)
+                if (quantityNames[i] == prop)
                     selectedQuantities[i] = 1;
                 else
                     selectedQuantities[i] = 0;
@@ -113,6 +113,10 @@ class GUI {
                 weightFuncType = 1;
         }
 
+        void setFastMode(){
+            polyscope_mainCloud->setPointRenderMode(polyscope::PointRenderMode::Quad);
+        }
+
         void mainCallBack();
 
         void remove_clouds(){
@@ -145,7 +149,7 @@ class GUI {
             // polyscope_slices.clear();
         }
 
-        void oneShotCallBack(const std::string& output_file, const std::string& catName, float minBound, float maxBound){
+        void oneShotCallBack(const std::string& output_file, const std::string& propertyName, float minBound, float maxBound){
             // one shot computing : 
             offline_computing = true;
 
@@ -162,19 +166,19 @@ class GUI {
                     methodWithKernel<SmoothWeightFunc>(); break;
             }
 
-            const SampleMatrixType& values = mainCloud.getDiffQuantities().getByName(catName);
+            const SampleMatrixType& values = mainCloud.getDiffQuantities().getByName(propertyName);
 
             if (values.cols() == 1){
                 // Make values beeing a vector
                 SampleVectorType valuesVec = values.col(0);
-                auto quantity = polyscope_mainCloud->addScalarQuantity(catName, valuesVec);
+                auto quantity = polyscope_mainCloud->addScalarQuantity(propertyName, valuesVec);
                 // Set bound [-5, 5] for the scalar quantity
                 quantity->setMapRange(std::pair<double,double>(minBound,maxBound));
                 quantity->setColorMap("coolwarm");
                 quantity->setEnabled(true);
             }
             else { 
-                auto quantity = polyscope_mainCloud->addVectorQuantity(catName, values);
+                auto quantity = polyscope_mainCloud->addVectorQuantity(propertyName, values);
                 quantity->setEnabled(true);
             }
             // take a screenshot
