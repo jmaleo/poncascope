@@ -52,6 +52,9 @@ int main(int argc, char **argv) {
     float radius = 0.1;
     app.add_option("-r, --radius", radius, "Radius of the neighborhood, default 0.1.");
 
+    int kNN = 10; 
+    app.add_option("--kNN", kNN, "Number of nearest neighbors, default 10.");
+
     float mlsIter = 1;
     app.add_option("--mls", mlsIter, "Number of iterations for the moving least squares, default 1.");   
 
@@ -98,6 +101,7 @@ int main(int argc, char **argv) {
         gui->setFastMode();
 
     gui->setRadius (radius);
+    gui->setkNN(kNN);
     gui->setMLSIter(mlsIter);
     gui->setKernel(kernel);
     gui->setMethod(method);

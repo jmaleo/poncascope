@@ -96,6 +96,10 @@ class GUI {
             pointProcessing.NSize = r;
         }
 
+        void setkNN (const int& k){
+            pointProcessing.kNN = k;
+        }
+
         void setMLSIter (const int& mls){
             pointProcessing.mlsIter = mls;
         }
@@ -181,6 +185,10 @@ class GUI {
                 auto quantity = polyscope_mainCloud->addVectorQuantity(propertyName, values);
                 quantity->setEnabled(true);
             }
+
+            // Set SSAA anti-aliasing
+            polyscope::options::ssaaFactor = 4;
+
             // take a screenshot
             polyscope::screenshot(output_file);
 
