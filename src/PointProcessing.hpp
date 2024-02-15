@@ -230,6 +230,9 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Sca
                                     kmin(i) = isSigned ? fit.kmin() : std::abs(fit.kmin());
 
                                     normal.row( i ) = fit.primitiveGradient();
+                                    // normalize normal
+                                    normal.row( i ) /= normal.row( i ).norm();
+
                                     dmin.row( i )   = fit.kminDirection();
                                     dmax.row( i )   = fit.kmaxDirection();
 

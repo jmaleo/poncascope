@@ -445,10 +445,10 @@ void GUI::cloudComputing(){
 
     switch (weightFuncType){
         case 0 : 
-            methodWithKernel<SmoothWeightFunc>();
+            methodWithKernel<ConstWeightFunc>();
             break;
         case 1 : 
-            methodWithKernel<ConstWeightFunc>();
+            methodWithKernel<SmoothWeightFunc>();
             break;
         case 2 : 
             methodWithKernel<WendlandWeightFunc>();

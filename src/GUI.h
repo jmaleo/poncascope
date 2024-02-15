@@ -183,6 +183,7 @@ class GUI {
             }
             // take a screenshot
             polyscope::screenshot(output_file);
+
             exit(0);
         }
 
