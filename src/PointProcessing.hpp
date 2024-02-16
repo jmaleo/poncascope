@@ -230,7 +230,6 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Sca
                                     kmin(i) = isSigned ? fit.kmin() : std::abs(fit.kmin());
 
                                     normal.row( i ) = fit.primitiveGradient();
-                                    // normalize normal
                                     normal.row( i ) /= normal.row( i ).norm();
 
                                     dmin.row( i )   = fit.kminDirection();
@@ -244,7 +243,7 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Sca
                     });
     
     // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal,dmin, dmax, kmin, kmax, mean, shapeIndex));
+    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal, dmin, dmax, kmin, kmax, mean, shapeIndex));
 }
 
 void
@@ -260,9 +259,9 @@ PointProcessing::computeDiffQuantities_Triangle(const std::string &name, const i
     normal.setZero();
 
     measureTime( "[Ponca] Compute differential quantities using " + name,
-                 [this, &type, &mean, &kmin, &kmax, &dmin, &dmax, &shapeIndex]() {
+                 [this, &type, &mean, &kmin, &kmax, &dmin, &dmax, &normal, &shapeIndex]() {
                     processPointCloud_Triangle(false, type,
-                                [this, &mean, &kmin, &kmax, &dmin, &dmax, &shapeIndex]
+                                [this, &mean, &kmin, &kmax, &dmin, &dmax, &normal, &shapeIndex]
                                 ( int i, basket_triangleGeneration& fit, const VectorType& mlsPos){
 
                                     mean(i) = fit.kMean();
@@ -273,12 +272,15 @@ PointProcessing::computeDiffQuantities_Triangle(const std::string &name, const i
                                     dmin.row( i )   = fit.kminDirection();
                                     dmax.row( i )   = fit.kmaxDirection();
                                     
+                                    normal.row( i ) = fit.primitiveGradient();
+                                    normal.row( i ) /= normal.row( i ).norm();
+                                    
                                     shapeIndex(i) = (2.0 / M_PI) * std::atan( ( fit.kmin() + fit.kmax() ) / ( fit.kmin() - fit.kmax() ) );
                                 });
                     });
     
     // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal,dmin, dmax, kmin, kmax, mean, shapeIndex));
+    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal, dmin, dmax, kmin, kmax, mean, shapeIndex));
 }
 
 // concept ConceptFitT = requires (ConceptFitT fit, VectorType init) {
