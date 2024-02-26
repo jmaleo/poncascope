@@ -11,7 +11,11 @@ camera_file=$3
 
 im_dir="./saved_images/"
 
-method_list=("Plane (mean)" "Ellipsoid 3D" "FO2D" "CNC avg hexa")
+method_list=("Plane (mean)" "Ellipsoid 3D" "FO2D" "CNC avg hexa" "ASO")
+property_list=("Mean curvature" "Normals" "Shape index")
+
+radius=0.028
+kNN=15
 
 # create the directory if it does not exist
 mkdir -p $im_dir
@@ -43,7 +47,10 @@ fi
 cd "${build_dir}/bin"
 
 # compute the images
-for method in "${method_list[@]}" ; do
-    echo "Computing images for method: $method"
-    ./poncascope -i "${input_file}" -c "${camera_file}" -m "${method}" -o "${im_dir}/${method}.png" -r 0.05 --kNN 15 # --property Normals
+for property in "${property_list[@]}" ; do
+    for method in "${method_list[@]}" ; do
+        echo "Computing images for method: $method"
+        # if property is Shape index, then we put the minBound and maxBound to -1 and 1
+        ./poncascope -i "${input_file}" -c "${camera_file}" -m "${method}" -o "${im_dir}/${method}_${property}.png" -r ${radius} --kNN ${kNN} --minBound "-10" --maxBound 10 --property "${property}"
+    done
 done

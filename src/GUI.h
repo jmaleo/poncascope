@@ -172,13 +172,17 @@ class GUI {
 
             const SampleMatrixType& values = mainCloud.getDiffQuantities().getByName(propertyName);
 
+            std::string colormap = (propertyName == "Shape index") ? "viridis" : "coolwarm";
+            minBound = (propertyName == "Shape index") ? -1.0f : minBound;
+            maxBound = (propertyName == "Shape index") ? 1.0f : maxBound;
+
             if (values.cols() == 1){
                 // Make values beeing a vector
                 SampleVectorType valuesVec = values.col(0);
                 auto quantity = polyscope_mainCloud->addScalarQuantity(propertyName, valuesVec);
                 // Set bound [-5, 5] for the scalar quantity
                 quantity->setMapRange(std::pair<double,double>(minBound,maxBound));
-                quantity->setColorMap("coolwarm");
+                quantity->setColorMap(colormap);
                 quantity->setEnabled(true);
             }
             else { 
