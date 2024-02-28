@@ -245,7 +245,7 @@ class GUI {
         PointProcessing pointProcessing;
 
         int item_selected_method = 0;
-        const char* methods[23] = { "Plane (PCA)", "Plane (mean)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "NO2D", "B0 Cylinder", "B Cylinder", "NO Cylinder", "FO Cylinder", "Varifold", "Monge patch", "Oriented Monge patch", "Unoriented sphere" };
+        const char* methods[24] = { "Plane (PCA)", "Plane (mean)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "NO2D", "B0 Cylinder", "B Cylinder", "NO Cylinder", "FO Cylinder", "Varifold", "Monge patch", "Oriented Monge patch", "Unoriented sphere", "Sphere fit" };
 
     
         float pointNoise = 0.0f;
@@ -319,6 +319,7 @@ class GUI {
                 case (20) : methodForCloudComputing<basket_mongePatchFit<WeightFunc>, false>("Monge patch"); break;
                 case (21) : methodForCloudComputing<basket_orientedMongePatchFit<WeightFunc>>("Oriented Monge patch"); break;
                 case (22) : methodForCloudComputing<basket_UnorientedSphereFit<WeightFunc>, false>("Unoriented sphere"); break;
+                case (23) : methodForCloudComputing<basket_SphereFit<WeightFunc>, false>("Sphere fit"); break;
                 default : break; 
             }
         }
@@ -353,6 +354,7 @@ class GUI {
                 case (20) : return pointProcessing.evalScalarField_impl<basket_mongePatchFit<WeightFunc>, false>("Monge patch", vertices);
                 case (21) : return pointProcessing.evalScalarField_impl<basket_orientedMongePatchFit<WeightFunc>>("Oriented Monge patch", vertices);
                 case (22) : return pointProcessing.evalScalarField_impl<basket_UnorientedSphereFit<WeightFunc>, false>("Unoriented sphere", vertices);
+                case (23) : return pointProcessing.evalScalarField_impl<basket_SphereFit<WeightFunc>, false>("Sphere fit", vertices);
                 default : break; 
             }
             return SampleVectorType::Zero(vertices.rows());
