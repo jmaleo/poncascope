@@ -223,17 +223,24 @@ PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Sca
                     processPointCloud<FitT>(false, weightFunc(NSize),
                                 [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj, &shapeIndex]
                                 ( int i, const FitT& fit, const VectorType& mlsPos){
-
-                                    mean(i) = isSigned ? fit.kMean() : std::abs(fit.kMean());
                                     
+                                    mean(i) = isSigned ? fit.kMean() : std::abs(fit.kMean());
+
                                     kmax(i) = isSigned ? fit.kmax() : std::abs(fit.kmax());
                                     kmin(i) = isSigned ? fit.kmin() : std::abs(fit.kmin());
+
 
                                     normal.row( i ) = fit.primitiveGradient();
                                     normal.row( i ) /= normal.row( i ).norm();
 
                                     dmin.row( i )   = fit.kminDirection();
                                     dmax.row( i )   = fit.kmaxDirection();
+
+                                    if ( kmax(i) < kmin(i) ){
+                                        std::swap( kmax(i), kmin(i) );
+                                        dmin.row( i ) = fit.kmaxDirection();
+                                        dmax.row( i ) = fit.kminDirection();
+                                    }
 
                                     // proj.row( i )   = mlsPos - tree.point_data()[i].pos();
                                     proj.row( i )   = mlsPos;
@@ -326,14 +333,15 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar
                                     
                                     D1.row( 0 ) = fit.kminDirection();
                                     D2.row( 0 ) = fit.kmaxDirection();
+                                    proj.row( 0 )   = getVertexSourcePosition();
                                     if ( ! std::is_same<FitT, basket_AlgebraicShapeOperatorFit<weightFunc>>::value)
                                         normal.row( 0 ) = fit.primitiveGradient();
                                             
                         
                                     for (int k = 0; k < nvert; k++){
                                         VectorType init = cloud.getVertices().row(k);
-                                        VectorType projPoint = fit.project(init);
-                                        if (projPoint != init) {
+                                        if (k != 0) {
+                                            VectorType projPoint = fit.project(init);
                                             // if ( ! std::is_same<FitT, basket_AlgebraicShapeOperatorFit<weightFunc>>::value)
                                             //     normal.row( k ) = fit.primitiveGradient();
                                             // processPointUniqueNormal<FitT>(k, fit, init, normal);
