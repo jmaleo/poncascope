@@ -18,20 +18,26 @@ class PointProcessing {
 
         // Options for algorithms
         bool  useKnnGraph    = false; /// < use k-neighbor graph instead of kdtree
+        int   kNN_for_graph  = 6;     /// < neighborhood size (knn) for the graph
         int   iVertexSource  = 7;     /// < id of the selected point
         int   kNN            = 10;    /// < neighborhood size (knn)
         int   mlsIter        = 3;     /// < number of moving least squares iterations
         float NSize          = 0.25;  /// < neighborhood size (euclidean)
+
+        int researchType = 1; // 0 : k Nearest Neighbors, 1 : Euclidian Nearest Neighbors
 
     public :
 
         PointProcessing() {
             // Default values
             useKnnGraph    = false;
+            kNN_for_graph  = 6;
             iVertexSource  = 7;
             kNN            = 10;
             mlsIter        = 3;
             NSize          = 0.25;
+
+            researchType = 1;
         }
 
         // Constructor
@@ -39,10 +45,13 @@ class PointProcessing {
 
             // Default values
             useKnnGraph    = false;
+            kNN_for_graph  = 6;
             iVertexSource  = 7;
             kNN            = 10;
             mlsIter        = 3;
             NSize          = 0.25;
+
+            researchType = 1;
 
             // build kdtree and knn graph
             update(cloud);
@@ -117,19 +126,33 @@ private :
 
         Scalar m_meanNeighbors = 0;
 
-        /// @brief Loop over all points to compute differential quantities, the method differ depending on the used spatial data structure
-        /// @tparam Functor type of the function
-        /// @param idx index of the point to process
-        /// @param f function to apply on the neighbors
-        template <typename Functor>
-        void processRangeNeighbors(const int &idx, const Functor f);
+        // /// @brief Loop over all points to compute differential quantities, the method differ depending on the used spatial data structure
+        // /// @tparam Functor type of the function
+        // /// @param idx index of the point to process
+        // /// @param f function to apply on the neighbors
+        // template <typename Functor>
+        // void processRangeNeighbors(const int &idx, const Functor f);
+
+        // /// @brief Loop over all points to compute differential quantities, the method differ depending on the used spatial data structure
+        // /// @tparam Functor type of the function
+        // /// @param pos pos of the point to process
+        // /// @param f function to apply on the neighbors
+        // template <typename Functor>
+        // void processRangeNeighbors(const VectorType &pos, const Functor f);
 
         /// @brief Loop over all points to compute differential quantities, the method differ depending on the used spatial data structure
         /// @tparam Functor type of the function
         /// @param pos pos of the point to process
         /// @param f function to apply on the neighbors
         template <typename Functor>
-        void processRangeNeighbors(const VectorType &pos, const Functor f);
+        void processNeighbors(const int &idx, const Functor f);
+
+        /// @brief Loop over all points to compute differential quantities, the method differ depending on the used spatial data structure
+        /// @tparam Functor type of the function
+        /// @param idx index of the point to process
+        /// @param f function to apply on the neighbors
+        template <typename Functor>
+        void processNeighbors(const VectorType &pos, const Functor f);
 
         /// @brief Process one point, compute fitting, and use functor to process fitting output
         /// @tparam FitT Fit Type, \see definitions.h

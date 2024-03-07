@@ -287,7 +287,7 @@ class GUI {
         bool unique_computed = false;
         bool displayProjectedPointCloud = false;
 
-        int weightFuncType = 1;
+        int weightFuncType = 1; // 0 : constant, 1 : smooth, 2 : wendland, 3 : singular 
 
         template<typename WeightFunc>
         void

@@ -295,6 +295,20 @@ void GUI::cloudComputingUpdateUnique (){
         // check if the methodName contains "CNC"
         if (methodName.find("CNC") != std::string::npos){
             // Create a new surface mesh
+            
+            // std::vector for indices
+            std::vector<std::array<size_t, 3>> indices(tempCloud.getTriangles().size());
+            for (size_t i = 0; i < tempCloud.getTriangles().size()/3; ++i){
+                indices[i] = {3*i, 3*i+1, 3*i+2};
+            }
+            // Create a new surface mesh
+            std::string meshName = "[" + methodName + "] " + "mesh";
+            polyscope::SurfaceMesh* mesh = polyscope::registerSurfaceMesh(meshName, tempCloud.getTriangles(), indices);
+            // Add quantities to the mesh
+            mesh->addVertexVectorQuantity("normals", tempCloud.getDiffQuantities().getNormals());
+            mesh->addVertexVectorQuantity("d1", tempCloud.getDiffQuantities().getKMinDir());
+            mesh->addVertexVectorQuantity("d2", tempCloud.getDiffQuantities().getKMaxDir());
+            polyscope_meshs.push_back(mesh);
         }
         else {
             // Create a new point cloud
@@ -379,8 +393,8 @@ void GUI::methodForCloudComputing(const std::string& metName, bool unique){
         Scalar dist = (mainCloud.getMin() - mainCloud.getMax()).norm() / 50.0;
         create_cube(tempCloud, pointProcessing.getVertexSourcePosition(), dist);
         methodName = metName;
-        unique_computed = true;
         pointProcessing.computeUniquePoint<FitT>(metName, tempCloud);
+        unique_computed = true;
     }
 
 }
@@ -404,25 +418,14 @@ void GUI::methodForCloudComputing_OnlyTriangle(const std::string &metName, const
 
     if (ImGui::Button(buttonName_unique.c_str())){
         methodName = metName;
-        unique_computed = true;
 
-        mainCloud.getTriangles().clear();
-        pointProcessing.computeUniquePoint_triangle(metName, type, mainCloud);
+        pointProcessing.computeUniquePoint_triangle(metName, type, tempCloud);
 
-        if (mainCloud.getTriangles().size() == 0) {
+        if (tempCloud.getTriangles().size() == 0) {
             std::cerr << "Error: computeUniquePointTriangle returned an empty matrix" << std::endl;
             return;
         }
-
-        // std::vector for indices
-        std::vector<std::array<size_t, 3>> indices(mainCloud.getTriangles().size());
-        for (size_t i = 0; i < mainCloud.getTriangles().size()/3; ++i){
-            indices[i] = {3*i, 3*i+1, 3*i+2};
-        }
-        // Create a new surface mesh
-        std::string meshName = "[" + methodName + "] " + "mesh";
-        polyscope::SurfaceMesh* mesh = polyscope::registerSurfaceMesh(meshName, mainCloud.getTriangles(), indices);
-        polyscope_meshs.push_back(mesh);
+        unique_computed = true;
     }
 }
 
@@ -475,33 +478,49 @@ void GUI::cloudComputingParameters(){
     ImGui::SameLine();
     if(ImGui::Checkbox("Use KnnGraph", &pointProcessing.useKnnGraph))
         pointProcessing.recomputeKnnGraph();
+    if ( ImGui::InputInt("kNN for graph", &pointProcessing.kNN_for_graph) ) 
+        pointProcessing.recomputeKnnGraph();
 
-    ImGui::InputInt("k-neighborhood size", &pointProcessing.kNN);
-    ImGui::InputFloat("neighborhood size", &pointProcessing.NSize);
-    ImGui::InputInt("source vertex", &pointProcessing.iVertexSource);
-    ImGui::InputInt("Nb MLS Iterations", &pointProcessing.mlsIter);
+    // Add radio buttons to select the research type
+    ImGui::RadioButton("kNN", &pointProcessing.researchType, 0);
     ImGui::SameLine();
-    if (ImGui::Button("show knn")) addQuantities(polyscope_mainCloud, "knn", pointProcessing.colorizeKnn());
+    ImGui::RadioButton("Euclidian Nearest", &pointProcessing.researchType, 1);
+
     ImGui::SameLine();
-    if (ImGui::Button("show euclidean nei")) {
-        switch (weightFuncType){
-            case 0 : 
-                addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<ConstWeightFunc>());
-                break;
-            case 1 :
-                addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
-                break;
-            case 2 :
-                addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<WendlandWeightFunc>());
-                break;
-            case 3 :
-                addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>());
-                break;
-            default : 
-                addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
-                break;
+    if (pointProcessing.researchType == 0){
+        if (ImGui::Button("show neighbors")) addQuantities(polyscope_mainCloud, "knn", pointProcessing.colorizeKnn());
+    }
+    else {
+        if (ImGui::Button("show neighbors")) {
+            switch (weightFuncType){
+                case 0 : 
+                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<ConstWeightFunc>());
+                    break;
+                case 1 :
+                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
+                    break;
+                case 2 :
+                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<WendlandWeightFunc>());
+                    break;
+                case 3 :
+                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>());
+                    break;
+                default : 
+                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
+                    break;
+            }
         }
     }
+
+    if ( pointProcessing.researchType == 0 ) {
+        ImGui::InputInt("k-neighborhood size", &pointProcessing.kNN);
+    }
+    else {
+        ImGui::InputFloat("neighborhood size", &pointProcessing.NSize);
+    }
+
+    ImGui::InputInt("source vertex", &pointProcessing.iVertexSource);
+    ImGui::InputInt("Nb MLS Iterations", &pointProcessing.mlsIter);
 
     // Add radio buttons to select the weight function
     ImGui::RadioButton("Constant", &weightFuncType, 0);
@@ -528,6 +547,7 @@ void GUI::addQuantities(polyscope::PointCloud *pc, const std::string &name, cons
         }
         else {
             quantity->setColorMap("turbo");
+            quantity->setEnabled(true);
         }
     }
     else 
