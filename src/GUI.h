@@ -9,6 +9,7 @@
 #include "polyscope/messages.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/volume_mesh.h"
 #include "polyscope/view.h"
 #include "MyPointCloud.h"
 #include "CloudGeneration.h"
@@ -151,6 +152,10 @@ class GUI {
             // }
             polyscope::removeStructure(slicerName, false);
             // polyscope_slices.clear();
+
+            // Remove std::string meshName = "Current Cell"; a VolumeMesh if exists
+            polyscope::removeStructure("Current Cell", false);
+
         }
 
         void oneShotCallBack(const std::string& output_file, const std::string& propertyName, float minBound, float maxBound){
@@ -203,7 +208,11 @@ class GUI {
 
         // ArgParser
 
-    private: 
+    private:
+
+        // TEST
+        int nb_neighbors_for_unique = 10;
+        int cellIdx = 0;
 
         bool offline_computing = false;
 
@@ -217,6 +226,7 @@ class GUI {
         int radioButtonCloudGeneration = 0;
         bool displayImplicitParameters = false;
         bool isCylinder = 0;
+
 
         // Point Cloud Informations
         std::string mainCloudName = "mainCloud";

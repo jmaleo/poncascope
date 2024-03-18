@@ -3,6 +3,7 @@
 #include "Ponca/Fitting"
 #include "Ponca/SpatialPartitioning"
 #include "poncaAdapters.hpp"
+#include "mlods/mlods.h"
 
 
 // Types definition
@@ -14,6 +15,10 @@ using VectorType         = Eigen::Matrix<Scalar, 3,1>;
 using PPAdapter          = BlockPointAdapter<Scalar>;
 using KdTree             = Ponca::KdTree<PPAdapter>;
 using KnnGraph           = Ponca::KnnGraph<PPAdapter>;
+
+template <typename FitT>
+using MlodsTree          = Ponca::KdTreeCustom<Ponca::MyKdTreeTraits<PPAdapter, FitT>>; 
+// using MlodsTree          = Ponca::KdTreeCustom<Ponca::MyKdTreeTraits<PPAdapter, FitT, Ponca::MyKdTreeNode>>; 
 
 typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>  SampleMatrixType;
 typedef Eigen::Vector<Scalar, Eigen::Dynamic>                  SampleVectorType;

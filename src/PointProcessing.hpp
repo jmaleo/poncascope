@@ -107,6 +107,80 @@ void PointProcessing::initUseNormal (FitT &fit){
 //     fit.setUseNormal(false);
 // }
 
+///////////////////////////////////////////////////
+//                     TEST                      //
+///////////////////////////////////////////////////
+
+template<typename WeightFunc>
+void
+PointProcessing::computeUniquePoint_aggregation(const std::string &name, MyPointCloud<Scalar> &cloud, int nbNei)
+{
+    int nvert = cloud.getSize();
+    using FitT = basket_FullyOrientedEllipsoid2DFit<WeightFunc>;
+
+    // Allocate memory
+    SampleMatrixType normal( nvert, 3 ), proj( nvert, 3 ), D1 (nvert, 3), D2 (nvert, 3);
+
+    // set Zeros 
+    normal.setZero();
+    proj.setZero();
+    D1.setZero();
+    D2.setZero();
+
+    measureTime( "[Ponca] Compute differential quantities using " + name,
+                [this, &cloud, &nvert, &normal, &proj, &D1, &D2, &nbNei]() {
+                    processPointCloud<FitT>(true, WeightFunc(NSize),
+                                [this, &cloud, &nvert, &normal, &proj, &D1, &D2, &nbNei]
+                                ( int i, FitT& fit, const VectorType& mlsPos){
+                                    VectorType pos = cloud.getVertices().row(i);
+                                    for (int j : tree.k_nearest_neighbors(pos, nbNei)){
+                                        if (i != j)
+                                            processOnePoint<FitT>(j, WeightFunc(NSize),
+                                            [this, &fit](int , const FitT& fit_nei, const VectorType& ){
+                                                fit += fit_nei.getParabolicCylinder();
+                                            });
+                                    }
+
+                                    fit /= Scalar(nbNei);
+
+                                    D1.row( 0 ) = fit.kminDirection();
+                                    D2.row( 0 ) = fit.kmaxDirection();
+                                    proj.row( 0 )   = getVertexSourcePosition();
+                                    normal.row( 0 ) = fit.primitiveGradient();
+                                            
+                                    for (int k = 1; k < nvert; k++){
+                                        VectorType init = cloud.getVertices().row(k);
+                                        VectorType projPoint = fit.project(init);
+                                        if ( ( init - projPoint ).norm() > 1e-6 ) {
+                                            // if ( ! std::is_same<FitT, basket_AlgebraicShapeOperatorFit<weightFunc>>::value)
+                                            //     normal.row( k ) = fit.primitiveGradient();
+                                            // processPointUniqueNormal<FitT>(k, fit, init, normal);
+                                            proj.row( k )   = projPoint;
+                                        }
+                                        else {
+                                            proj.row( k )   = proj.row( 0 );
+                                        }
+                                    }
+
+                                    
+                                });
+                    });
+    // Add differential quantities to the cloud
+    
+    /////////////////////// TEST ///////////////////////
+    DiffQuantities<Scalar> test (proj, normal);
+    test.setD1(D1);
+    test.setD2(D2);
+    cloud.setDiffQuantities(test);
+
+    // cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal));
+}
+
+///////////////////////////////////////////////////
+//                     TEST                      //
+///////////////////////////////////////////////////
+
+
 template<typename FitT, typename Functor>
 void PointProcessing::processOnePoint (const VectorType &init_pos, const typename FitT::WeightFunction& w, Functor f){
     
@@ -590,4 +664,42 @@ SampleVectorType PointProcessing::evalScalarField_impl(const std::string &name, 
         });
 
     return potential;
+}
+
+
+// Using to test the cell computation
+Eigen::AlignedBox<Scalar, 3> PointProcessing::computeCell(MyPointCloud<Scalar> &cloud, int cellIdx){
+
+    const auto& fit = mlodsTree.node_data()[cellIdx].getFit();
+
+    int nvert = cloud.getSize();
+
+    // Allocate memory
+    SampleMatrixType normal( nvert, 3 ), proj( nvert, 3 ), dmin (nvert, 3), dmax (nvert, 3);
+    SampleVectorType mean ( nvert ), kmin ( nvert ), kmax ( nvert ), shapeIndex( nvert );
+
+    // set Zeros 
+    normal.setZero();
+    proj.setZero();
+    dmin.setZero();
+    dmax.setZero();
+    mean.setZero();
+    kmin.setZero();
+    kmax.setZero();
+    shapeIndex.setZero();
+
+    for (int i = 0; i < nvert; ++i){
+        VectorType pos = cloud.getVertices().row(i);
+        VectorType projPoint = fit.project( pos );
+        if ( ( pos - proj ).norm() > 1e-6 ) {
+            proj.row( i )   = projPoint;
+            normal.row( i ) = fit.primitiveGradient();
+        }
+        else {
+            proj.row( i )   =  proj.row( 0 );
+        }
+    }
+
+    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal, dmin, dmax, kmin, kmax, mean, shapeIndex));
+    return mlodsTree.node_data()[cellIdx].getAabb();
 }

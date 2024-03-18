@@ -14,6 +14,7 @@ class PointProcessing {
     public:
 
         KdTree tree;                   /// < kdtree for nearest neighbors search
+        MlodsTree<basket_FullyOrientedEllipsoid2DFit<ConstWeightFunc>> mlodsTree;           /// < kdtree for MLoDs for nearest neighbors search
         KnnGraph *knnGraph = nullptr;  /// < k-neighbor graph
 
         // Options for algorithms
@@ -64,6 +65,12 @@ class PointProcessing {
                     buildKdTree(cloud.getVertices(), cloud.getNormals(), tree);
                 });
             recomputeKnnGraph();
+
+            // build MLoDs
+            measureTime( "[Ponca] Build MLoDs",
+                 [this, &cloud]() {
+                    buildKdTree(cloud.getVertices(), cloud.getNormals(), mlodsTree);
+                });
         }
 
         /// @brief Measure time of a function
@@ -121,6 +128,19 @@ class PointProcessing {
         const SampleVectorType getVertexSourcePosition(){ return tree.point_data()[iVertexSource].pos(); }
 
         Scalar getMeanNeighbors() { return m_meanNeighbors; }
+
+        //////////////////////
+        // test : 
+        //////////////////////
+
+        template<typename WeightFunc>
+        void computeUniquePoint_aggregation(const std::string &name, MyPointCloud<Scalar> &cloud, int nbNei);
+
+        // Using to test mlodsTree
+        const SampleVectorType colorizeCell(int cellIdx);
+
+        // Using to test the cell computation
+        Eigen::AlignedBox<Scalar, 3> computeCell(MyPointCloud<Scalar> &cloud, int cellIdx);
 
 private :
 

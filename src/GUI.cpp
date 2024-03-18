@@ -397,6 +397,32 @@ void GUI::methodForCloudComputing(const std::string& metName, bool unique){
         unique_computed = true;
     }
 
+    std::string buttonName_unique_aggregation = "Test aggregation";
+
+    if (metName == "FO Ellipsoid2D"){
+        ImGui::InputInt("Number of neighbors", &nb_neighbors_for_unique);
+        ImGui::SameLine();
+        if (ImGui::Button(buttonName_unique_aggregation.c_str())){
+            Scalar dist = (mainCloud.getMin() - mainCloud.getMax()).norm() / 50.0;
+            create_cube(tempCloud, pointProcessing.getVertexSourcePosition(), dist);
+            methodName = metName + " aggregation";
+            switch (weightFuncType){
+                case 0 : 
+                    pointProcessing.computeUniquePoint_aggregation<ConstWeightFunc>(metName, tempCloud, nb_neighbors_for_unique); break;
+                case 1 : 
+                    pointProcessing.computeUniquePoint_aggregation<SmoothWeightFunc>(metName, tempCloud,nb_neighbors_for_unique); break;
+                case 2 : 
+                    pointProcessing.computeUniquePoint_aggregation<WendlandWeightFunc>(metName, tempCloud,nb_neighbors_for_unique); break;
+                case 3 : 
+                    pointProcessing.computeUniquePoint_aggregation<SingularWeightFunc>(metName, tempCloud,nb_neighbors_for_unique); break;
+                default : 
+                    pointProcessing.computeUniquePoint_aggregation<SmoothWeightFunc>(metName, tempCloud,nb_neighbors_for_unique); break;
+            }
+            unique_computed = true;
+
+        }
+    }
+
 }
 
 void GUI::methodForCloudComputing_OnlyTriangle(const std::string &metName, const int& type){
@@ -532,6 +558,46 @@ void GUI::cloudComputingParameters(){
     ImGui::RadioButton("Singular", &weightFuncType, 3);
 
     ImGui::Separator();
+
+    ///////// 
+    // TEST
+    /////////
+
+    ImGui::InputInt("Cell try",&cellIdx);
+    if (cellIdx > pointProcessing.mlodsTree.node_count()) cellIdx = pointProcessing.mlodsTree.node_count();
+
+    ImGui::SameLine();
+    if (ImGui::Button("Test cell")){
+        // Get cell Aabb
+        Eigen::AlignedBox<Scalar, 3> aabb = pointProcessing.computeCell(mainCloud, cellIdx);
+
+        // Create a new mesh using the Aabb to show the bounding box
+        std::vector<VectorType> vertices;
+        std::vector<std::array<size_t, 8>> edges;
+        // Vertices.push_back corner by corner
+        vertices.push_back(aabb.corner(Eigen::AlignedBox<Scalar, 3>::BottomLeftFloor));
+        vertices.push_back(aabb.corner(Eigen::AlignedBox<Scalar, 3>::BottomRightFloor));
+        vertices.push_back(aabb.corner(Eigen::AlignedBox<Scalar, 3>::TopRightFloor));
+        vertices.push_back(aabb.corner(Eigen::AlignedBox<Scalar, 3>::TopLeftFloor));
+        vertices.push_back(aabb.corner(Eigen::AlignedBox<Scalar, 3>::BottomLeftCeil));
+        vertices.push_back(aabb.corner(Eigen::AlignedBox<Scalar, 3>::BottomRightCeil));
+        vertices.push_back(aabb.corner(Eigen::AlignedBox<Scalar, 3>::TopRightCeil));
+        vertices.push_back(aabb.corner(Eigen::AlignedBox<Scalar, 3>::TopLeftCeil));
+        
+        edges.push_back({0,1,2,3,4,5,6,7});
+        // Create a new surface mesh
+        std::string meshName = "Current Cell";
+        auto mesh = polyscope::registerHexMesh(meshName, vertices, edges);
+        mesh->setTransparency(0.15);
+        mesh->setEdgeWidth(2);
+
+        methodName = "Cell test";
+        all_computed = true;
+
+    }
+    ///////// 
+    // TEST
+    /////////
 
 }
 
