@@ -2,6 +2,7 @@
 
 // #include "../definitions.h"
 #include "mlodsTraits.h"
+#include "Query/mlodsRangeQuery.h"
 
 #include <memory>
 #include <numeric>
@@ -34,6 +35,8 @@ public:
     using Scalar     = typename DataPoint::Scalar; ///< Scalar given by user via DataPoint
     using VectorType = typename DataPoint::VectorType; ///< VectorType given by user via DataPoint
     using AabbType   = typename NodeType::AabbType; ///< Bounding box type given by user via NodeType
+
+    using FitT = typename Traits::FitT; ///< Fit type given by user via Traits
 
     using Base = KdTreeBase<Traits>;
 
@@ -127,6 +130,15 @@ protected:
     /// @brief  Compute the fitting for the node using it's children's fitting. 
     /// The leaf are computed in the first pass, here we compute the node's fitting by combining it's children's fitting.
     inline void build_fit_rec(NodeIndexType node_id);
+
+public:
+
+    FitT fit_request(const VectorType& point, Scalar radiusFactor) const
+    {
+        MLODSTreeRangePointQuery<Traits> query(this, radiusFactor, point);
+
+        return query.search();
+    }
 
 };
 

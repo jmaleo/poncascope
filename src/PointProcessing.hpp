@@ -700,6 +700,8 @@ Eigen::AlignedBox<Scalar, 3> PointProcessing::computeCell(MyPointCloud<Scalar> &
         }
     }
 
+    mlodsTree.fit_request(cloud.getVertices().row(iVertexSource), Scalar(1));
+
     cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal, dmin, dmax, kmin, kmax, mean, shapeIndex));
     return mlodsTree.node_data()[cellIdx].getAabb();
 }
