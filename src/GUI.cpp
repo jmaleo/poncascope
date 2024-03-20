@@ -593,8 +593,20 @@ void GUI::cloudComputingParameters(){
 
         methodName = "Cell test";
         all_computed = true;
-
     }
+
+    ImGui::InputFloat("radius factor", &pointProcessing.radiusFactor);
+    if (pointProcessing.radiusFactor < 1.0) pointProcessing.radiusFactor = 1.0;
+
+    ImGui::SameLine();
+    
+    if (ImGui::Button("Test MLODS on selected")){
+        pointProcessing.computeMLODS(mainCloud);
+        methodName = "MLODS";
+        all_computed = true;
+    }
+
+    ImGui::Separator();
     ///////// 
     // TEST
     /////////

@@ -700,8 +700,50 @@ Eigen::AlignedBox<Scalar, 3> PointProcessing::computeCell(MyPointCloud<Scalar> &
         }
     }
 
-    mlodsTree.fit_request(cloud.getVertices().row(iVertexSource), Scalar(1));
-
     cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal, dmin, dmax, kmin, kmax, mean, shapeIndex));
     return mlodsTree.node_data()[cellIdx].getAabb();
+}
+
+void PointProcessing::computeMLODS (MyPointCloud<Scalar> &cloud) {
+
+    auto fit = mlodsTree.fit_request(cloud.getVertices().row(iVertexSource), radiusFactor);
+    
+    std::cout << "\nRESULT ================" << std::endl;
+    fit.to_string();
+    int nvert = cloud.getSize();
+
+    // Allocate memory
+    SampleMatrixType normal( nvert, 3 ), proj( nvert, 3 ), dmin (nvert, 3), dmax (nvert, 3);
+    SampleVectorType mean ( nvert ), kmin ( nvert ), kmax ( nvert ), shapeIndex( nvert );
+
+    // set Zeros 
+    normal.setZero();
+    proj.setZero();
+    dmin.setZero();
+    dmax.setZero();
+    mean.setZero();
+    kmin.setZero();
+    kmax.setZero();
+    shapeIndex.setZero();
+
+    for (int i = 0; i < nvert; ++i){
+        VectorType pos = cloud.getVertices().row(i);
+        VectorType projPoint = fit.project( pos );
+        // if ( ( pos - proj ).norm() > 1e-6 ) {
+            proj.row( i )   = projPoint;
+            normal.row( i ) = fit.primitiveGradient();
+            mean (i) = fit.kMean();
+            kmax (i) = fit.kmax();
+            kmin (i) = fit.kmin();
+            shapeIndex(i) = (2.0 / M_PI) * std::atan( ( kmin(i) + kmax(i) ) / ( kmin(i) - kmax(i) ) );
+            dmin.row (i) = fit.kminDirection();
+            dmax.row (i) = fit.kmaxDirection();
+        // }
+        // else {
+        //     proj.row( i )   =  proj.row( 0 );
+        // }
+    }
+
+    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal, dmin, dmax, kmin, kmax, mean, shapeIndex));
+
 }

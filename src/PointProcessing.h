@@ -10,11 +10,16 @@
 
 class PointProcessing {
 
+    protected:
+        
+        using FitTemp = basket_FullyOrientedEllipsoid2DFit<ConstWeightFunc>;
+
+
     // Variables
     public:
-
+        
         KdTree tree;                   /// < kdtree for nearest neighbors search
-        MlodsTree<basket_FullyOrientedEllipsoid2DFit<ConstWeightFunc>> mlodsTree;           /// < kdtree for MLoDs for nearest neighbors search
+        MlodsTree<FitTemp> mlodsTree;           /// < kdtree for MLoDs for nearest neighbors search
         // MlodsTree<basket_ellipsoidFit<ConstWeightFunc>> mlodsTree;           /// < kdtree for MLoDs for nearest neighbors search
         KnnGraph *knnGraph = nullptr;  /// < k-neighbor graph
 
@@ -25,6 +30,8 @@ class PointProcessing {
         int   kNN            = 10;    /// < neighborhood size (knn)
         int   mlsIter        = 3;     /// < number of moving least squares iterations
         float NSize          = 0.25;  /// < neighborhood size (euclidean)
+
+        float radiusFactor   = 1.2;   /// < radius factor for the MLODS tree
 
         int researchType = 1; // 0 : k Nearest Neighbors, 1 : Euclidian Nearest Neighbors
 
@@ -142,6 +149,9 @@ class PointProcessing {
 
         // Using to test the cell computation
         Eigen::AlignedBox<Scalar, 3> computeCell(MyPointCloud<Scalar> &cloud, int cellIdx);
+
+        // Using to test the MLODS computation
+        void computeMLODS (MyPointCloud<Scalar> &cloud);
 
 private :
 
