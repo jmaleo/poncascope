@@ -12,7 +12,8 @@ class PointProcessing {
 
     protected:
         
-        using FitTemp = basket_FullyOrientedEllipsoid2DFit<ConstWeightFunc>;
+        // using FitTemp = basket_FullyOrientedEllipsoid2DFit<ConstWeightFunc>;
+        using FitTemp = basket_ellipsoidFit<ConstWeightFunc>;
 
 
     // Variables
@@ -150,8 +151,11 @@ class PointProcessing {
         // Using to test the cell computation
         Eigen::AlignedBox<Scalar, 3> computeCell(MyPointCloud<Scalar> &cloud, int cellIdx);
 
+        template <typename Functor>
+        void processTestMLODS (MyPointCloud<Scalar> &cloud, const int& idx, Functor f);
+
         // Using to test the MLODS computation
-        void computeMLODS (MyPointCloud<Scalar> &cloud);
+        void computeMLODS (MyPointCloud<Scalar> &cloud, bool all = false);
 
 private :
 

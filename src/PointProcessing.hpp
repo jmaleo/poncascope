@@ -704,12 +704,20 @@ Eigen::AlignedBox<Scalar, 3> PointProcessing::computeCell(MyPointCloud<Scalar> &
     return mlodsTree.node_data()[cellIdx].getAabb();
 }
 
-void PointProcessing::computeMLODS (MyPointCloud<Scalar> &cloud) {
+template <typename Functor>
+void PointProcessing::processTestMLODS (MyPointCloud<Scalar> &cloud, const int& idx, Functor f){
+    auto fit = mlodsTree.fit_request(cloud.getVertices().row(idx), radiusFactor);
+    VectorType pos = cloud.getVertices().row(idx);
+    f(fit, pos);
 
-    auto fit = mlodsTree.fit_request(cloud.getVertices().row(iVertexSource), radiusFactor);
+}
+
+void PointProcessing::computeMLODS (MyPointCloud<Scalar> &cloud, bool all) {
+
     
-    std::cout << "\nRESULT ================" << std::endl;
-    fit.to_string();
+    // Take the FitT type from the mlodsTree
+    using FitT = typename decltype(mlodsTree)::FitT;
+
     int nvert = cloud.getSize();
 
     // Allocate memory
@@ -726,24 +734,44 @@ void PointProcessing::computeMLODS (MyPointCloud<Scalar> &cloud) {
     kmax.setZero();
     shapeIndex.setZero();
 
-    for (int i = 0; i < nvert; ++i){
-        VectorType pos = cloud.getVertices().row(i);
-        VectorType projPoint = fit.project( pos );
-        // if ( ( pos - proj ).norm() > 1e-6 ) {
-            proj.row( i )   = projPoint;
-            normal.row( i ) = fit.primitiveGradient();
-            mean (i) = fit.kMean();
-            kmax (i) = fit.kmax();
-            kmin (i) = fit.kmin();
-            shapeIndex(i) = (2.0 / M_PI) * std::atan( ( kmin(i) + kmax(i) ) / ( kmin(i) - kmax(i) ) );
-            dmin.row (i) = fit.kminDirection();
-            dmax.row (i) = fit.kmaxDirection();
-        // }
-        // else {
-        //     proj.row( i )   =  proj.row( 0 );
-        // }
+    if ( ! all ){
+        processTestMLODS(cloud, iVertexSource,
+        [this, &nvert, &normal, &proj, &dmin, &dmax, &mean, &kmin, &kmax, &shapeIndex]( const FitT& fit, const VectorType& pos ){
+            for (int i = 0; i < nvert; ++i){
+                VectorType projPoint = fit.project( pos );
+                if ( ( pos - proj ).norm() > 1e-6 ) {
+                    proj.row( i )   = projPoint;
+                    normal.row( i ) = fit.primitiveGradient();
+                    mean (i) = fit.kMean();
+                    kmax (i) = fit.kmax();
+                    kmin (i) = fit.kmin();
+                    shapeIndex(i) = (2.0 / M_PI) * std::atan( ( kmin(i) + kmax(i) ) / ( kmin(i) - kmax(i) ) );
+                    dmin.row (i) = fit.kminDirection();
+                    dmax.row (i) = fit.kmaxDirection();
+                }
+                else {
+                    proj.row( i )   =  proj.row( 0 );
+                }
+            }
+        });
     }
-
+    else {
+        for ( int idx = 0 ; idx < nvert ; idx++ ){
+            processTestMLODS(cloud, idx,
+            [this, &idx, &normal, &proj, &dmin, &dmax, &mean, &kmin, &kmax, &shapeIndex]( const FitT& fit, const VectorType& pos ){
+                VectorType projPoint = fit.project( pos );
+                proj.row( idx )   = projPoint;
+                normal.row( idx ) = fit.primitiveGradient();
+                mean (idx) = fit.kMean();
+                kmax (idx) = fit.kmax();
+                kmin (idx) = fit.kmin();
+                shapeIndex(idx) = (2.0 / M_PI) * std::atan( ( kmin(idx) + kmax(idx) ) / ( kmin(idx) - kmax(idx) ) );
+                dmin.row (idx) = fit.kminDirection();
+                dmax.row (idx) = fit.kmaxDirection();
+            });
+        }
+    }
+    
     cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal, dmin, dmax, kmin, kmax, mean, shapeIndex));
 
 }

@@ -31,6 +31,7 @@ public:
     using IndexType  = typename Traits::IndexType;
     using Scalar     = typename DataPoint::Scalar;
     using VectorType = typename DataPoint::VectorType;
+
     using FitT       = typename Traits::FitT;
 
     explicit inline MlodsQueryBase(const KdTreeCustom<Traits>* kdtree) : m_kdtree( kdtree ), m_stack() {
@@ -50,17 +51,18 @@ protected:
     template<typename NodeFunctor,
             typename DescentDistanceThresholdFunctor,
             typename WeightFunctor>
-    FitT search_internal_rec(const VectorType& point,
+    // FitT
+    std::vector<DataPoint> 
+    search_internal_rec(const VectorType& point,
                              const IndexDistance<IndexType, Scalar>& nodeInfo,
                              NodeFunctor nodeFunctor,
                              DescentDistanceThresholdFunctor descentDistanceThreshold,
                              WeightFunctor weightFunctor
                             )
     {
-        FitT fit;
-        fit.init(point);
-        std::cout << "\n===================== Node =====================\n";
-        std::cout << "Node index : " << nodeInfo.index << std::endl;
+        std::vector <DataPoint> res;
+        // FitT fit;
+        // fit.init(point);
 
         const auto& node = m_kdtree->node_data()[nodeInfo.index];
 
@@ -72,23 +74,23 @@ protected:
             {
                 weight += weightFunctor( m_kdtree->point_data()[m_kdtree->index_data()[i]].pos() );
             }
-            auto algebraic = node.getFit().getParabolicCylinder();
-            algebraic *= weight;
-            fit += algebraic;
-            std::cout << "Leaf" << std::endl;
-            fit.to_string();
-            return fit;
+            // auto algebraic = node.getFit().getParabolicCylinder();
+            // algebraic *= weight;
+            // fit += algebraic;
+            // return fit;
+            DataPoint current {weight * node.getFit().barycenter(), weight * node.getFit().meanNormalVector()};
+            res.push_back( current );
+            return res;
         }
 
         Scalar weight = weightFunctor ( node.getFit().barycenter() );
 
         if ( ! ( nodeInfo.distance <= distance ) ){
-            fit *= weight;
-            std::cout << "Outside" << std::endl;
-            std::cout << "Distance to node : " << nodeInfo.distance << std::endl;
-            std::cout << "Distance threshold : " << distance << std::endl;
-            fit.to_string();
-            return fit;
+            // fit *= weight;
+            // return fit;
+            DataPoint current {weight * node.getFit().barycenter(), weight * node.getFit().meanNormalVector()};
+            res.push_back( current );
+            return res;
         }
 
         for (IndexType i = node.inner_first_child_id(); i < node.inner_first_child_id() + 2; ++i)
@@ -96,16 +98,23 @@ protected:
             IndexDistance<IndexType, Scalar> childInfo{i, (point - m_kdtree->node_data()[i].getAabb().center()).norm()};
             Scalar gamma = nodeFunctor( nodeInfo, childInfo );
             Scalar total_weight = weight * gamma;
-            FitT fitChild = search_internal_rec(point, childInfo, nodeFunctor, descentDistanceThreshold, weightFunctor);
-            FitT fitCurrent = node.getFit();
-            fitChild *= ( Scalar( 1) - gamma );
-            fitCurrent *= total_weight;
-            fit += fitChild;
-            fit += fitCurrent;
+            // FitT fitChild = search_internal_rec(point, childInfo, nodeFunctor, descentDistanceThreshold, weightFunctor);
+            // FitT fitCurrent = node.getFit();
+            // fitChild *= ( Scalar( 1) - gamma );
+            // fitCurrent *= total_weight;
+            // fit += fitChild;
+            // fit += fitCurrent;
+            std::vector<DataPoint> fitChild = search_internal_rec(point, childInfo, nodeFunctor, descentDistanceThreshold, weightFunctor);
+            for (auto& v : fitChild) {
+                v.pos() *= ( Scalar( 1) - gamma );
+                v.normal() *= ( Scalar( 1) - gamma );   
+            }
+            res.insert(res.end(), fitChild.begin(), fitChild.end());
+            DataPoint current {total_weight * node.getFit().barycenter(), total_weight * node.getFit().meanNormalVector()};
+            res.push_back( current );
         }
-        std::cout << "Inside" << std::endl;
-        fit.to_string();
-        return fit;
+        // return fit;
+        return res;
 
     }
 
@@ -153,8 +162,9 @@ protected:
         };
 
 
-        FitT res = search_internal_rec(point, m_stack.top(), nodeFunctor, descentDistanceThreshold, weightFunctor);
-        res.to_string();
+        // FitT res = search_internal_rec(point, m_stack.top(), nodeFunctor, descentDistanceThreshold, weightFunctor);
+        std::vector<DataPoint> res = search_internal_rec(point, m_stack.top(), nodeFunctor, descentDistanceThreshold, weightFunctor);
+
         processFitFunctor( res, Scalar(1) );
         return true;
         // while(!m_stack.empty())

@@ -601,7 +601,13 @@ void GUI::cloudComputingParameters(){
     ImGui::SameLine();
     
     if (ImGui::Button("Test MLODS on selected")){
-        pointProcessing.computeMLODS(mainCloud);
+        pointProcessing.computeMLODS(mainCloud, false);
+        methodName = "MLODS";
+        all_computed = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("on all")){
+        pointProcessing.computeMLODS(mainCloud, true);
         methodName = "MLODS";
         all_computed = true;
     }

@@ -24,7 +24,7 @@ public:
     using Scalar         = typename DataPoint::Scalar;
     using VectorType     = typename DataPoint::VectorType;
     using QueryAccelType = MlodsQueryBase<Traits>;
-    
+
     using FitT           = typename Traits::FitT;
 
 public:
@@ -44,11 +44,26 @@ public:
         // Especially "DescentDistanceThreshold()" 
         //    which needs to take in a parameter the percentage of the bounding box for each node.
         auto descentDistanceThreshold = [this](const Scalar& diagonalNode){return QueryType::descentDistanceThreshold(diagonalNode);};
-        auto processFitFunctor        = [this, &fit](FitT nodeFit, Scalar weight)
+        // auto processFitFunctor        = [this, &fit](FitT nodeFit, Scalar weight)
+        // {   
+        //     auto algebraic = nodeFit.getParabolicCylinder(); 
+        //     algebraic *= weight;
+        //     fit += algebraic;
+        // };
+        auto processFitFunctor        = [this, &fit](std::vector<DataPoint> traversed_points, Scalar weight)
         {   
-            auto algebraic = nodeFit.getParabolicCylinder(); 
-            algebraic *= weight;
-            fit += algebraic;
+            // auto algebraic = nodeFit.getParabolicCylinder(); 
+            // algebraic *= weight;
+            // fit += algebraic;
+            FIT_RESULT res;
+            do {
+                fit.startNewPass();
+                for (const auto& p : traversed_points){
+                    fit.addNeighbor(p);
+                }
+                res = fit.finalize();
+            } while (res == NEED_OTHER_PASS);
+
         };
         auto weightFunctor            = [this, &point](const VectorType& averagePoint){ // Average point of the node
             Scalar weight = Scalar(1);
@@ -86,7 +101,6 @@ public:
             std::cout << "Success" << std::endl;
         }
             // it.m_index = static_cast<IndexType>(points.size());
-        fit.to_string();
         return fit;
     }
 };
