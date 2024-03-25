@@ -84,6 +84,7 @@ struct MyKdTreeInnerNode : public Ponca::KdTreeDefaultInnerNode<NodeIndex, Scala
         // compute the fitting process.
         Ponca::FIT_RESULT res;
         do {
+            m_fit.startNewPass();
             for( Index i=start; i<start+size; ++i ){
                 Index realIdx = tree.index_data()[i];
                 auto point = tree.point_data()[realIdx];  
@@ -146,6 +147,7 @@ struct MyKdTreeLeafNode : public Ponca::KdTreeDefaultLeafNode<Index, Size> {
         // compute the fitting process.
         Ponca::FIT_RESULT res;
         do {
+            m_fit.startNewPass();
             for( Index i=start; i<start+size; ++i ){
                 Index realIdx = tree.index_data()[i];
                 auto point = tree.point_data()[realIdx];  
@@ -219,7 +221,7 @@ struct MyKdTreeNode : Ponca::KdTreeCustomizableNode<Index, NodeIndex, DataPoint,
         return m_aabb;
     }
 
-    [[nodiscard]] inline FitT getFit() const {
+    [[nodiscard]] inline const FitT getFit() const {
         if ( Base::is_leaf() )
             return Base::getAsLeaf().m_fit;
         else
@@ -258,7 +260,7 @@ struct MyKdTreeNode : Ponca::KdTreeCustomizableNode<Index, NodeIndex, DataPoint,
  *
  * \tparam _NodeType Type used to store nodes, set by default to #KdTreeDefaultNode
  */
-template <typename _DataPoint, typename _FitT, 
+template <typename _DataPoint, typename _FitT, typename _MLODSWeightKernel, 
         template <typename /*FitT*/,
                   typename /*Index*/, 
                   typename /*NodeIndex*/,
@@ -289,6 +291,7 @@ struct MyKdTreeTraits
     using LeafSizeType = unsigned short;
 
     using FitT = _FitT;
+    using WeightKernel = _MLODSWeightKernel;
 
     // Containers
     using PointContainer = std::vector<DataPoint>;

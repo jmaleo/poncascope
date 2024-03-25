@@ -137,7 +137,7 @@ PointProcessing::computeUniquePoint_aggregation(const std::string &name, MyPoint
                                         if (i != j)
                                             processOnePoint<FitT>(j, WeightFunc(NSize),
                                             [this, &fit](int , const FitT& fit_nei, const VectorType& ){
-                                                fit += fit_nei.getParabolicCylinder();
+                                                fit += fit_nei;
                                             });
                                     }
 
@@ -671,6 +671,10 @@ SampleVectorType PointProcessing::evalScalarField_impl(const std::string &name, 
 Eigen::AlignedBox<Scalar, 3> PointProcessing::computeCell(MyPointCloud<Scalar> &cloud, int cellIdx){
 
     const auto& fit = mlodsTree.node_data()[cellIdx].getFit();
+    
+    std::cout << "Cell " << cellIdx << " has " << std::endl;
+
+    fit.to_string();
 
     int nvert = cloud.getSize();
 
@@ -706,9 +710,19 @@ Eigen::AlignedBox<Scalar, 3> PointProcessing::computeCell(MyPointCloud<Scalar> &
 
 template <typename Functor>
 void PointProcessing::processTestMLODS (MyPointCloud<Scalar> &cloud, const int& idx, Functor f){
-    auto fit = mlodsTree.fit_request(cloud.getVertices().row(idx), radiusFactor);
-    VectorType pos = cloud.getVertices().row(idx);
-    f(fit, pos);
+
+    KernelParamtersScalar kernelParams_true {Scalar(kernelParams.m_k), Scalar(kernelParams.m_epsilon)};
+    VectorType point = cloud.getVertices().row(idx);
+    int iter = 1;
+    auto fit = mlodsTree.fit_request(point, radiusFactor, kernelParams_true);
+    while (iter < mlsIter){
+        point = fit.project(point);
+        fit = mlodsTree.fit_request(point, radiusFactor, kernelParams_true);
+        iter++;
+    }
+    // auto fit = mlodsTree.fit_request(cloud.getVertices().row(idx), radiusFactor, kernelParams_true);
+    // VectorType pos = cloud.getVertices().row(idx);
+    f(fit, cloud.getVertices().row(idx));
 
 }
 

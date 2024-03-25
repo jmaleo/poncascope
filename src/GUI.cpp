@@ -612,6 +612,26 @@ void GUI::cloudComputingParameters(){
         all_computed = true;
     }
 
+    if (ImGui::Button("Kernel param")) {
+        displayMLODSKernelParameter = !displayMLODSKernelParameter;
+    }
+
+    if (displayMLODSKernelParameter){
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x/2 - 150, ImGui::GetIO().DisplaySize.y/2 - 100), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(300, 600), ImGuiCond_FirstUseEver);
+
+        // Create a window for the cylinder parameters, no close button
+        ImGui::Begin("MLODS Kernel parameters", NULL);
+
+        ImGui::Text("Parameters of the Rational Kernel");
+        ImGui::Text("R(q, p) = ( ||q-p||^2 + epsilon )^(-k/2)");
+
+        ImGui::SliderFloat("epsilon", &(pointProcessing.kernelParams.m_epsilon), 0.0, 50.0);
+        ImGui::SliderFloat("k", &(pointProcessing.kernelParams.m_k), 0.0, 10.0);
+
+        ImGui::End();
+    }
+
     ImGui::Separator();
     ///////// 
     // TEST

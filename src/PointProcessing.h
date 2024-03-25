@@ -13,7 +13,8 @@ class PointProcessing {
     protected:
         
         // using FitTemp = basket_FullyOrientedEllipsoid2DFit<ConstWeightFunc>;
-        using FitTemp = basket_ellipsoidFit<ConstWeightFunc>;
+        // using FitTemp = basket_ellipsoidFit<ConstWeightFunc>;
+        using FitTemp = basket_AlgebraicPointSetSurfaceFit<ConstWeightFunc>;
 
 
     // Variables
@@ -21,7 +22,6 @@ class PointProcessing {
         
         KdTree tree;                   /// < kdtree for nearest neighbors search
         MlodsTree<FitTemp> mlodsTree;           /// < kdtree for MLoDs for nearest neighbors search
-        // MlodsTree<basket_ellipsoidFit<ConstWeightFunc>> mlodsTree;           /// < kdtree for MLoDs for nearest neighbors search
         KnnGraph *knnGraph = nullptr;  /// < k-neighbor graph
 
         // Options for algorithms
@@ -32,9 +32,15 @@ class PointProcessing {
         int   mlsIter        = 3;     /// < number of moving least squares iterations
         float NSize          = 0.25;  /// < neighborhood size (euclidean)
 
+        int researchType = 1; // 0 : k Nearest Neighbors, 1 : Euclidian Nearest Neighbors
+
+        // TEST
+
         float radiusFactor   = 1.2;   /// < radius factor for the MLODS tree
 
-        int researchType = 1; // 0 : k Nearest Neighbors, 1 : Euclidian Nearest Neighbors
+        KernelParameters kernelParams {}; /// < parameters for the weight kernel
+
+        // TEST
 
     public :
 

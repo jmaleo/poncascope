@@ -3,6 +3,7 @@
 // #include "../definitions.h"
 #include "mlodsTraits.h"
 #include "Query/mlodsRangeQuery.h"
+#include "mlodsWeightFunc.h"
 
 #include <memory>
 #include <numeric>
@@ -138,6 +139,14 @@ public:
         MLODSTreeRangePointQuery<Traits> query(this, radiusFactor, point);
 
         return query.search();
+    }
+
+    template <typename WeightParameters>
+    FitT fit_request(const VectorType& point, Scalar radiusFactor, WeightParameters param) const
+    {
+        MLODSTreeRangePointQuery<Traits> query(this, radiusFactor, point);
+
+        return query.search(param);
     }
 
 };

@@ -16,8 +16,12 @@ using PPAdapter          = BlockPointAdapter<Scalar>;
 using KdTree             = Ponca::KdTree<PPAdapter>;
 using KnnGraph           = Ponca::KnnGraph<PPAdapter>;
 
+
+using MLODSWeightKernel  = Ponca::RationalWeightKernel<PPAdapter>;
+using KernelParameters   = Ponca::RationalWeightKernelParameters<float>;
+using KernelParamtersScalar = Ponca::RationalWeightKernelParameters<Scalar>;
 template <typename FitT>
-using MlodsTree          = Ponca::KdTreeCustom<Ponca::MyKdTreeTraits<PPAdapter, FitT>>; 
+using MlodsTree          = Ponca::KdTreeCustom<Ponca::MyKdTreeTraits<PPAdapter, FitT, MLODSWeightKernel>>; 
 // using MlodsTree          = Ponca::KdTreeCustom<Ponca::MyKdTreeTraits<PPAdapter, FitT, Ponca::MyKdTreeNode>>; 
 
 typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>  SampleMatrixType;

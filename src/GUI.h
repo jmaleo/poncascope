@@ -214,6 +214,11 @@ class GUI {
         int nb_neighbors_for_unique = 10;
         int cellIdx = 0;
 
+        bool displayMLODSKernelParameter = false;
+
+
+        // TEST
+
         bool offline_computing = false;
 
         bool cloudNeedsUpdate = false;
