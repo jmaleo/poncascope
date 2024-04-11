@@ -118,6 +118,10 @@ class PointProcessing {
         template <typename WeightFunc>
         const SampleVectorType colorizeEuclideanNeighborhood();
 
+        /// Colorize point cloud using euclidean distance for many queries
+        template <typename WeightFunc>
+        const SampleVectorType colorizeEuclideanNeighborhood(const std::vector<int> &vertexQueries, const std::vector<float> &radii);
+
         const SampleVectorType getVertexSourcePosition(){ return tree.point_data()[iVertexSource].pos(); }
 
         Scalar getMeanNeighbors() { return m_meanNeighbors; }

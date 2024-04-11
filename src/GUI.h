@@ -121,6 +121,10 @@ class GUI {
             polyscope_mainCloud->setPointRenderMode(polyscope::PointRenderMode::Quad);
         }
 
+        void setVertexSource (const int& i){
+            pointProcessing.iVertexSource = i;
+        }
+
         void mainCallBack();
 
         void remove_clouds(){
@@ -153,28 +157,52 @@ class GUI {
             // polyscope_slices.clear();
         }
 
-        void oneShotCallBack(const std::string& output_file, const std::string& propertyName, float minBound, float maxBound){
+        template <typename WeightFunc>
+        void functionWithKernel (SampleMatrixType &values, const std::string& propertyName, const std::vector<int> &vertexQueries, const std::vector<float> &radii) {
+            if (propertyName == "Neighbors") {
+                values = pointProcessing.colorizeEuclideanNeighborhood<WeightFunc>(vertexQueries, radii);
+            }
+            else { 
+                methodWithKernel<WeightFunc>();
+                values = mainCloud.getDiffQuantities().getByName(propertyName);
+            }
+            std::cout << "[Property] " << propertyName << " computed" << std::endl;
+        };
+
+        void oneShotCallBack(const std::string& output_file, const std::string& propertyName, const std::vector<int> &vertexQueries, const std::vector<float> &radii, float minBound, float maxBound){
             // one shot computing : 
-            offline_computing = true;
+            offline_computing = true; 
+
+            SampleMatrixType values;
 
             switch (weightFuncType){
-                case 0 : 
-                    methodWithKernel<ConstWeightFunc>(); break;
-                case 1 : 
-                    methodWithKernel<SmoothWeightFunc>(); break;
+                case 0 :
+                    functionWithKernel<ConstWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                    // methodWithKernel<SmoothWeightFunc>(); break;
                 case 2 : 
-                    methodWithKernel<WendlandWeightFunc>(); break;
+                    functionWithKernel<WendlandWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                    // methodWithKernel<WendlandWeightFunc>(); break;
                 case 3 : 
-                    methodWithKernel<SingularWeightFunc>(); break;
+                    functionWithKernel<SingularWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                    // methodWithKernel<SingularWeightFunc>(); break;
                 default : 
-                    methodWithKernel<SmoothWeightFunc>(); break;
+                    functionWithKernel<SmoothWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                    // methodWithKernel<SmoothWeightFunc>(); break;
             }
 
-            const SampleMatrixType& values = mainCloud.getDiffQuantities().getByName(propertyName);
+            // const SampleMatrixType& values = mainCloud.getDiffQuantities().getByName(propertyName);
 
-            std::string colormap = (propertyName == "Shape index") ? "viridis" : "coolwarm";
-            minBound = (propertyName == "Shape index") ? -1.0f : minBound;
-            maxBound = (propertyName == "Shape index") ? 1.0f : maxBound;
+            std::string colormap = "coolwarm";
+            if (propertyName == "Neighbors"){
+                colormap = "turbo";
+                minBound = 0.0f; 
+                maxBound = 1.0f; 
+            }
+            if (propertyName == "Shape index"){ 
+                colormap = "viridis"; 
+                minBound = -1.0f; 
+                maxBound = 1.0f; 
+            }
 
             if (values.cols() == 1){
                 // Make values beeing a vector

@@ -535,6 +535,35 @@ const SampleVectorType PointProcessing::colorizeEuclideanNeighborhood() {
     return closest;
 }
 
+template <typename WeightFunc>
+const SampleVectorType PointProcessing::colorizeEuclideanNeighborhood(const std::vector<int> &vertexQueries, const std::vector<float> &radii) {
+
+    int nvert = tree.index_data().size();
+    SampleVectorType closest ( nvert );
+    closest.setZero();
+
+    // check that the size of the two vectors are the same
+    if (vertexQueries.size() != radii.size()){
+        std::cerr << "[Ponca][Error] The size of the vertexQueries and radii vectors must be the same" << std::endl;
+        return closest;
+    }
+
+    for (int idx = 0; idx < vertexQueries.size(); idx ++){
+        int queryIdx = vertexQueries[idx];
+        float queryRadius = radii[idx];
+        WeightFunc w(queryRadius);
+        const auto &p = tree.point_data()[queryIdx];
+        processNeighbors(queryIdx, [this, w,p,&closest](int j){
+            const auto &q = tree.point_data()[j];
+            float weight = w.w( q.pos() - p.pos(), q ).first;
+            if (weight > closest(j))
+                closest(j) = weight;
+        });
+    }
+
+    return closest;
+}
+
 void PointProcessing::recomputeKnnGraph() {
     if(useKnnGraph) {
         measureTime("[Ponca] Build KnnGraph", [this]() {

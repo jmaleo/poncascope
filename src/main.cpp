@@ -40,6 +40,9 @@ int main(int argc, char **argv) {
     std::string output_file = "";
     app.add_option("-o, --output", output_file, "The output file to save the image.");
 
+    std::vector<int> vertexQuery = {6};
+    app.add_option("--vertexQuery", vertexQuery, "The vertices to query, default [6].");
+
     std::string method = "";
     app.add_option("-m, --method", method, "Estimator to use. Available methods : Plane (PCA), Plane (mean), APSS, ASO, CNC uniform, CNC independent, CNC hexa, CNC avg hexa, WaveJets, oriented WaveJets, Ellipsoid 3D, FO2D, B02D, B2D, NO2D, B0 Cylinder, B Cylinder, NO Cylinder, FO Cylinder, Varifold, Monge patch, Oriented Monge patch, Unoriented sphere");
 
@@ -47,10 +50,10 @@ int main(int argc, char **argv) {
     app.add_option("-k, --kernel", kernel, "Kernel to use, default Smooth. Available kernels : Smooth, Constant, Wendland, Singular");
 
     std::string property = "Mean curvature";
-    app.add_option("--property", property, "Property to display, default Mean curvature => ( Projections, Normals, Mean curvature, Min curvature, Max curvature, Min curvature direction, Max curvature direction, Shape index )");
+    app.add_option("--property", property, "Property to display, default Mean curvature => ( Projections, Normals, Mean curvature, Min curvature, Max curvature, Min curvature direction, Max curvature direction, Shape index, Neighbors )");
 
-    float radius = 0.1;
-    app.add_option("-r, --radius", radius, "Radius of the neighborhood, default 0.1.");
+    std::vector<float> radius = {0.1};
+    app.add_option("-r, --radius", radius, "Radii of the neighborhood, default [0.1].");
 
     int kNN = 10; 
     app.add_option("--kNN", kNN, "Number of nearest neighbors, default 10.");
@@ -63,6 +66,8 @@ int main(int argc, char **argv) {
 
     float maxBound = 5.0;
     app.add_option("--maxBound", maxBound, "Maximum bound of the visualization, default 5.");
+
+
 
     CLI11_PARSE(app, argc, argv);
 
@@ -100,15 +105,16 @@ int main(int argc, char **argv) {
     if (fastRender)
         gui->setFastMode();
 
-    gui->setRadius (radius);
+    gui->setRadius (radius[0]);
     gui->setkNN(kNN);
     gui->setMLSIter(mlsIter);
     gui->setKernel(kernel);
     gui->setMethod(method);
     gui->setProperty(property);
+    gui->setVertexSource(vertexQuery[0]);
 
     if (output_file != "")
-        gui->oneShotCallBack(output_file, property, minBound, maxBound);
+        gui->oneShotCallBack(output_file, property, vertexQuery, radius, minBound, maxBound);
 
     // Show the gui
     polyscope::show();
