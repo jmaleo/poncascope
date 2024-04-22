@@ -9,8 +9,11 @@ void GUI::mainCallBack(){
     saveCameraSettings();
 
     cloudGeneration();
-    if (isCylinder){
+    if (isCylinder) {
         cylinderParameters();
+    }
+    if (isSinus) {
+        sinusParameters();
     }
     ImGui::Separator();
 
@@ -152,6 +155,7 @@ void GUI::generationFromImplicit() {
     if (ImGui::Button("Cylinder")){
         displayImplicitParameters = true;
         isCylinder = true;
+        isSinus = false;
         cloudNeedsUpdate = true;
 
         pointProcessing.measureTime("[Generation] Generate cylinder", [this](){
@@ -160,9 +164,22 @@ void GUI::generationFromImplicit() {
 
     }
 
+    ImGui::SameLine();
+    if (ImGui::Button("Sinus")) {
+        displayImplicitParameters = true;
+        isCylinder = false;
+        isSinus = true;
+        cloudNeedsUpdate = true;
+
+        pointProcessing.measureTime("[Generation] Generate sinus", [this](){
+            sinusGenerator.generateSinus(mainCloud, pointNoise, normalNoise);
+        });
+    }
+
     if (ImGui::Button("Tube")){
         displayImplicitParameters = false;
         isCylinder = false;
+        isSinus = false;
         cloudNeedsUpdate = true;
 
         pointProcessing.measureTime("[Generation] Generate tube", [this](){
@@ -176,6 +193,7 @@ void GUI::generationFromImplicit() {
     if (ImGui::Button("Sphere")){
         displayImplicitParameters = false;
         isCylinder = false;
+        isSinus = false;
         cloudNeedsUpdate = true;
 
         pointProcessing.measureTime("[Generation] Generate sphere", [this](){
@@ -229,6 +247,41 @@ void GUI::cylinderParameters(){
         cloudNeedsUpdate = true;
         cylinderGenerator.generateCylinder(mainCloud, pointNoise, normalNoise);
     }
+
+    ImGui::End();
+}
+
+void GUI::sinusParameters(){
+    // Set the initial position and size of the window
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x/2 - 150, ImGui::GetIO().DisplaySize.y/2 - 100), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(300, 600), ImGuiCond_FirstUseEver);
+
+    // Create a window for the cylinder parameters, no close button
+    ImGui::Begin("Sinus parameters", NULL);
+
+    ImGui::Text("Parameters of the sinusoidal shape");
+
+    bool modification = false;
+    if (ImGui::SliderFloat("Amplitude", &sinusGenerator.h_sinus, -1.0, 1.0)) 
+        modification = true;
+
+    if (ImGui::SliderFloat("Frequency", &sinusGenerator.f_sinus, -20.0, 20.0))
+        modification = true;
+    
+    if (ImGui::SliderFloat("Phase", &sinusGenerator.p_sinus, -5.0, 5.0))
+        modification = true;
+    
+    if (ImGui::SliderInt("x_number", &sinusGenerator.x_sinus, 30, 120 )      ||
+        ImGui::SliderInt("z_number", &sinusGenerator.z_sinus, 30, 120 ))
+            modification = true;
+
+    if (modification){
+        cloudNeedsUpdate = true;
+        sinusGenerator.generateSinus(mainCloud, pointNoise, normalNoise);
+    }
+
+    // display max curvature, already stored in k_sinus
+    ImGui::Text("Max curvature : %f", sinusGenerator.k_sinus);
 
     ImGui::End();
 }

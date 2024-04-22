@@ -245,6 +245,7 @@ class GUI {
         int radioButtonCloudGeneration = 0;
         bool displayImplicitParameters = false;
         bool isCylinder = 0;
+        bool isSinus = 0;
 
         // Point Cloud Informations
         std::string mainCloudName = "mainCloud";
@@ -267,6 +268,7 @@ class GUI {
         // std::vector<polyscope::SurfaceMesh*> polyscope_slices;
 
         CylinderGenerator cylinderGenerator;
+        SinusGenerator    sinusGenerator;
         MyPointCloud<Scalar> mainCloud;
         MyPointCloud<Scalar> tempCloud;
         
@@ -288,6 +290,8 @@ class GUI {
         void generationFromImplicit();
 
         void cylinderParameters();
+
+        void sinusParameters();
 
         /// Save the camera settings to a file called "camera_settings.txt"
         /// in the current working directory

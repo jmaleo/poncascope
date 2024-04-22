@@ -304,3 +304,67 @@ class CylinderGenerator {
 
 
 }; // class cylinderGenerator
+
+class SinusGenerator {
+
+    public:
+        SinusGenerator() = default;
+
+        void compute_k (Scalar pos_x, Scalar pos_y){
+            Scalar der = h_sinus * f_sinus * cos(f_sinus * pos_x + p_sinus);
+            Scalar derder = - h_sinus * f_sinus * f_sinus * sin(f_sinus * pos_x + p_sinus);
+            
+            Scalar num = abs( derder );
+            Scalar den = pow(1 + der * der , 1.5);
+            Scalar k_temp = num / den;
+            if (k_temp > k_sinus)
+                k_sinus = k_temp;
+        }
+
+        void generateSinus(MyPointCloud<Scalar> &cloud, Scalar sigma_pos, Scalar sigma_normal) {
+
+            SampleMatrixType sinus_verts = SampleMatrixType(x_sinus * z_sinus, 3);
+            SampleMatrixType sinus_norms = SampleMatrixType(x_sinus * z_sinus, 3);
+
+            Scalar dx = (4.0f) / (x_sinus - 1);
+            Scalar dz = (2.0f) / (z_sinus - 1);
+
+            for (int i = 0; i < x_sinus; ++i) {
+                for (int j = 0; j < z_sinus; ++j) {
+                    Scalar x = -1 + i * dx;
+                    Scalar z = -1 + j * dz;
+                    Scalar y = h_sinus * sin( f_sinus * x + p_sinus );
+
+                    sinus_verts(i * z_sinus + j, 0) =  x;
+                    sinus_verts(i * z_sinus + j, 1) =  y;
+                    sinus_verts(i * z_sinus + j, 2) =  z;
+
+                    sinus_norms(i * z_sinus + j, 0) =  h_sinus * f_sinus * cos( f_sinus * x + p_sinus);
+                    sinus_norms(i * z_sinus + j, 1) =  -1;
+                    sinus_norms(i * z_sinus + j, 2) =  0;
+
+                    // Normalize the normal vector
+                    sinus_norms.row(i * z_sinus + j) = sinus_norms.row(i * z_sinus + j) / sinus_norms.row(i * z_sinus + j).norm();
+
+                    compute_k(x, y);
+                }
+            }
+            cloud = MyPointCloud<Scalar>(sinus_verts, sinus_norms);
+            cloud.addNoise(sigma_pos, sigma_normal);
+        }
+
+    public:
+        
+        // Parameters for the sinus public for easy access and modification
+
+        float h_sinus  = 0.3; // amplitude
+
+        float f_sinus  = 0.5; // frequency on x
+
+        float p_sinus  = 0.5; // phase shift
+
+        float k_sinus = 0.0; // curvature
+
+        int x_sinus      = 60;
+        int z_sinus      = 60;
+}; // class sinusGenerator
