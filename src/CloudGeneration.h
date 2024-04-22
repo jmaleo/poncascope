@@ -317,8 +317,9 @@ class SinusGenerator {
             Scalar num = abs( derder );
             Scalar den = pow(1 + der * der , 1.5);
             Scalar k_temp = num / den;
-            if (k_temp > k_sinus)
-                k_sinus = k_temp;
+            k_temp /= 2.0;
+            if ( abs( k_temp ) > abs( kMean_sinus ) )
+                kMean_sinus = k_temp;
         }
 
         void generateSinus(MyPointCloud<Scalar> &cloud, Scalar sigma_pos, Scalar sigma_normal) {
@@ -328,6 +329,8 @@ class SinusGenerator {
 
             Scalar dx = (4.0f) / (x_sinus - 1);
             Scalar dz = (2.0f) / (z_sinus - 1);
+            
+            kMean_sinus = 0.0;
 
             for (int i = 0; i < x_sinus; ++i) {
                 for (int j = 0; j < z_sinus; ++j) {
@@ -363,8 +366,11 @@ class SinusGenerator {
 
         float p_sinus  = 0.5; // phase shift
 
-        float k_sinus = 0.0; // curvature
+        float kMean_sinus = 0.0; // curvature
 
         int x_sinus      = 60;
         int z_sinus      = 60;
+
+        bool automatic_sinus = false;
+
 }; // class sinusGenerator

@@ -275,13 +275,26 @@ void GUI::sinusParameters(){
         ImGui::SliderInt("z_number", &sinusGenerator.z_sinus, 30, 120 ))
             modification = true;
 
+    // display max curvature, already stored in k_sinus
+    ImGui::Text("Max mean curvature : %f", sinusGenerator.kMean_sinus);
+
+    ImGui::Text("Radius of the curvature : %f", 1.0/sinusGenerator.kMean_sinus);
+
+    if ( ImGui::Button("Automatic ;)") ){
+        sinusGenerator.automatic_sinus = ! sinusGenerator.automatic_sinus;
+    }
+
+    if (sinusGenerator.automatic_sinus){
+        // Update the phase sinus during time
+        sinusGenerator.p_sinus += 0.01;
+        if (sinusGenerator.p_sinus > 2*M_PI) sinusGenerator.p_sinus = 0;
+        modification = true;
+    }
+
     if (modification){
         cloudNeedsUpdate = true;
         sinusGenerator.generateSinus(mainCloud, pointNoise, normalNoise);
     }
-
-    // display max curvature, already stored in k_sinus
-    ImGui::Text("Max curvature : %f", sinusGenerator.k_sinus);
 
     ImGui::End();
 }
