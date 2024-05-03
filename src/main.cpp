@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     std::string kernel = "Smooth";
     app.add_option("-k, --kernel", kernel, "Kernel to use, default Smooth. Available kernels : Smooth, Constant, Wendland, Singular");
 
-    std::string property = "Mean curvature";
+    std::string property = "";
     app.add_option("--property", property, "Property to display, default Mean curvature => ( Projections, Normals, Mean curvature, Min curvature, Max curvature, Min curvature direction, Max curvature direction, Shape index, Neighbors )");
 
     std::vector<float> radius = {0.1};
@@ -61,11 +61,20 @@ int main(int argc, char **argv) {
     float mlsIter = 1;
     app.add_option("--mls", mlsIter, "Number of iterations for the moving least squares, default 1.");   
 
+    float noisePosition = 0.0;
+    app.add_option("--noisePosition", noisePosition, "Noise on the position of the vertices, default 0.");
+
+    float noiseNormal = 0.0;
+    app.add_option("--noiseNormal", noiseNormal, "Noise on the normal of the vertices, default 0.");
+
     float minBound = -5.0;
     app.add_option("--minBound", minBound, "Minimum bound of the visualization, default -5.");
 
     float maxBound = 5.0;
     app.add_option("--maxBound", maxBound, "Maximum bound of the visualization, default 5.");
+
+    float vertexRadius = -1;
+    app.add_option("--vertexRadius", vertexRadius, "Radius of the vertices, default -1 (not taken into account).");
 
 
 
@@ -105,13 +114,22 @@ int main(int argc, char **argv) {
     if (fastRender)
         gui->setFastMode();
 
-    gui->setRadius (radius[0]);
+    gui->setVertexRadius(vertexRadius);
+
     gui->setkNN(kNN);
-    gui->setMLSIter(mlsIter);
+    gui->setRadius (radius[0]);
+    gui->setVertexSource(vertexQuery[0]);
+
     gui->setKernel(kernel);
     gui->setMethod(method);
+    gui->setMLSIter(mlsIter);
+    
     gui->setProperty(property);
-    gui->setVertexSource(vertexQuery[0]);
+    
+    gui->setNoise(noisePosition, noiseNormal);
+
+    // Load the point cloud with parameters
+    gui->init();
 
     if (output_file != "")
         gui->oneShotCallBack(output_file, property, vertexQuery, radius, minBound, maxBound);

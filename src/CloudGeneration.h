@@ -122,8 +122,8 @@ void loadObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma
         exit (EXIT_FAILURE);
     }
 
-    SampleMatrixType resca = rescalePoints(cloudV);
-    cloud = MyPointCloud<Scalar>(resca, cloudN);
+    // SampleMatrixType resca = rescalePoints(cloudV);
+    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
 
     cloud.addNoise(sigma_pos, sigma_normal);
 }

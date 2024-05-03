@@ -34,15 +34,6 @@ class GUI {
             // Initialize the point cloud
             selectedFile = assetsDir + "armadillo.obj";
 
-            pointProcessing.measureTime("[Generation] Load object", [this](){
-                loadObject(mainCloud, selectedFile, 0.0f, 0.0f);
-            });
-            
-            pointProcessing.update(mainCloud);
-            polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.getVertices());
-            addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
-            remove_clouds();
-
             // Initialize the item selected method
             item_selected_method = 0;
         }
@@ -59,8 +50,13 @@ class GUI {
             // Initialize the point cloud
             selectedFile = input_file;
 
+            // Initialize the item selected method
+            item_selected_method = 0;
+        }
+
+        void init () {
             pointProcessing.measureTime("[Generation] Load object", [this](){
-                loadObject(mainCloud, selectedFile, 0.0f, 0.0f);
+                loadObject(mainCloud, selectedFile, pointNoise, normalNoise);
             });
             
             pointProcessing.update(mainCloud);
@@ -68,8 +64,13 @@ class GUI {
             addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
             remove_clouds();
 
-            // Initialize the item selected method
-            item_selected_method = 0;
+            if (fastMode){
+                polyscope_mainCloud->setPointRenderMode(polyscope::PointRenderMode::Quad);
+            }
+
+            if (pointRadius > 0.0f)
+                polyscope_mainCloud->setPointRadius(pointRadius);
+
         }
 
         void setProperty(const std::string& prop){
@@ -118,11 +119,20 @@ class GUI {
         }
 
         void setFastMode(){
-            polyscope_mainCloud->setPointRenderMode(polyscope::PointRenderMode::Quad);
+            fastMode = true;
         }
 
         void setVertexSource (const int& i){
             pointProcessing.iVertexSource = i;
+        }
+
+        void setVertexRadius (const float& r){
+            pointRadius = r;
+        }
+
+        void setNoise (const float& noisePosition, const float& noiseNormal){
+            pointNoise = noisePosition;
+            normalNoise = noiseNormal;
         }
 
         void mainCallBack();
@@ -175,47 +185,48 @@ class GUI {
 
             SampleMatrixType values;
 
-            switch (weightFuncType){
-                case 0 :
-                    functionWithKernel<ConstWeightFunc>(values, propertyName, vertexQueries, radii); break;
-                    // methodWithKernel<SmoothWeightFunc>(); break;
-                case 2 : 
-                    functionWithKernel<WendlandWeightFunc>(values, propertyName, vertexQueries, radii); break;
-                    // methodWithKernel<WendlandWeightFunc>(); break;
-                case 3 : 
-                    functionWithKernel<SingularWeightFunc>(values, propertyName, vertexQueries, radii); break;
-                    // methodWithKernel<SingularWeightFunc>(); break;
-                default : 
-                    functionWithKernel<SmoothWeightFunc>(values, propertyName, vertexQueries, radii); break;
-                    // methodWithKernel<SmoothWeightFunc>(); break;
-            }
+            if (propertyName != "") {
+                switch (weightFuncType){
+                    case 0 :
+                        functionWithKernel<ConstWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                        // methodWithKernel<SmoothWeightFunc>(); break;
+                    case 2 : 
+                        functionWithKernel<WendlandWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                        // methodWithKernel<WendlandWeightFunc>(); break;
+                    case 3 : 
+                        functionWithKernel<SingularWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                        // methodWithKernel<SingularWeightFunc>(); break;
+                    default : 
+                        functionWithKernel<SmoothWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                        // methodWithKernel<SmoothWeightFunc>(); break;
+                }
+                // const SampleMatrixType& values = mainCloud.getDiffQuantities().getByName(propertyName);
 
-            // const SampleMatrixType& values = mainCloud.getDiffQuantities().getByName(propertyName);
+                std::string colormap = "coolwarm";
+                if (propertyName == "Neighbors"){
+                    colormap = "turbo";
+                    minBound = 0.0f; 
+                    maxBound = 1.0f; 
+                }
+                if (propertyName == "Shape index"){ 
+                    colormap = "viridis"; 
+                    minBound = -1.0f; 
+                    maxBound = 1.0f; 
+                }
 
-            std::string colormap = "coolwarm";
-            if (propertyName == "Neighbors"){
-                colormap = "turbo";
-                minBound = 0.0f; 
-                maxBound = 1.0f; 
-            }
-            if (propertyName == "Shape index"){ 
-                colormap = "viridis"; 
-                minBound = -1.0f; 
-                maxBound = 1.0f; 
-            }
-
-            if (values.cols() == 1){
-                // Make values beeing a vector
-                SampleVectorType valuesVec = values.col(0);
-                auto quantity = polyscope_mainCloud->addScalarQuantity(propertyName, valuesVec);
-                // Set bound [-5, 5] for the scalar quantity
-                quantity->setMapRange(std::pair<double,double>(minBound,maxBound));
-                quantity->setColorMap(colormap);
-                quantity->setEnabled(true);
-            }
-            else { 
-                auto quantity = polyscope_mainCloud->addVectorQuantity(propertyName, values);
-                quantity->setEnabled(true);
+                if (values.cols() == 1){
+                    // Make values beeing a vector
+                    SampleVectorType valuesVec = values.col(0);
+                    auto quantity = polyscope_mainCloud->addScalarQuantity(propertyName, valuesVec);
+                    // Set bound [-5, 5] for the scalar quantity
+                    quantity->setMapRange(std::pair<double,double>(minBound,maxBound));
+                    quantity->setColorMap(colormap);
+                    quantity->setEnabled(true);
+                }
+                else { 
+                    auto quantity = polyscope_mainCloud->addVectorQuantity(propertyName, values);
+                    quantity->setEnabled(true);
+                }
             }
 
             // Set SSAA anti-aliasing
@@ -259,6 +270,7 @@ class GUI {
         float slice = 0.0f;
         int axis = 0;
 
+        bool fastMode = false;
         Scalar pointRadius    = 0.005; /// < display radius of the point cloud
         
         polyscope::PointCloud* polyscope_mainCloud;
