@@ -14,6 +14,7 @@ im_dir="./saved_images/"
 method_list=("Plane (mean)" "Ellipsoid 3D" "FO2D" "CNC avg hexa" "ASO")
 property_list=("Mean curvature" "Normals" "Shape index")
 
+pointRadius=0.008
 radius=0.028
 kNN=15
 

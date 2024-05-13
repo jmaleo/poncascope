@@ -146,7 +146,20 @@ void GUI::generationFromFile(){
         pointProcessing.measureTime("[Generation] Load object", [this](){
             loadObject(mainCloud, selectedFile, pointNoise, normalNoise);
         });
-        
+    }
+
+    ImGui::SameLine();
+    // generation with a mesh to compute the normals
+    if(ImGui::Button("Generate with normals") && selectedFile != ""){
+        cloudNeedsUpdate = true;
+        pointProcessing.measureTime("[Generation] Load object with normals", [this](){
+            loadObject(mainCloud, selectedFile, pointNoise, normalNoise);
+            std::string selectedFileOBJ = selectedFile;
+            // Replace the extension by .obj
+            selectedFileOBJ.replace(selectedFileOBJ.end()-3, selectedFileOBJ.end(), "obj");
+            std::cout << "OBJ : " << selectedFileOBJ << std::endl;
+            normalsFromMesh(mainCloud, selectedFileOBJ, pointNoise, normalNoise);
+        });
     }
 }
 
