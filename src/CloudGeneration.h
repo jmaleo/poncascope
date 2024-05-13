@@ -85,6 +85,52 @@ void loadPTSObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar si
     cloud.addNoise(sigma_pos, sigma_normal);
 }
 
+void loadXYZObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_pos, Scalar sigma_normal){
+
+    SampleMatrixType cloudV, cloudN;
+
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Could not open the file: " << filename << std::endl;
+        return;
+    }
+
+    std::string line;
+    // Read the first line (header)
+    std::getline(file, line);
+    std::istringstream iss(line);
+    std::string word;
+
+    // Find the indices of the x, y, z, nx, ny, nz in the header
+    std::map<std::string, int> indices;
+
+    indices["x"] = 0;
+    indices["y"] = 1;
+    indices["z"] = 2;
+
+    // Read the rest of the file
+    while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        std::vector<Scalar> values(3);
+        for (int i = 0; i < 3; ++i) {
+            iss >> values[i];
+        }
+
+        // Add the read values to the matrices
+        cloudV.conservativeResize(cloudV.rows() + 1, 3);
+        cloudV.row(cloudV.rows() - 1) << values[indices["x"]], values[indices["y"]], values[indices["z"]];
+
+        cloudN.conservativeResize(cloudN.rows() + 1, 3);
+        cloudN.row(cloudN.rows() - 1) << 0, 0, 0;
+    }
+
+    file.close();
+
+    std::cout << "cloudV: " << cloudV.rows() << " " << cloudV.cols() << std::endl;
+
+    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
+    cloud.addNoise(sigma_pos, sigma_normal);
+}
 
 void loadObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_pos, Scalar sigma_normal) {
 
@@ -95,18 +141,20 @@ void loadObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma
         loadPTSObject(cloud, filename, sigma_pos, sigma_normal);
         return;
     }
-    else {
-        if (filename.substr(filename.find_last_of(".") + 1) == "ply"){
-            Eigen::MatrixXi cloudE;
-            SampleMatrixType cloudUV;
-            igl::readPLY(filename, cloudV, meshF, cloudE, cloudN, cloudUV);
-        }
-        else {
-            igl::read_triangle_mesh(filename, cloudV, meshF);
-        }
-        if (cloudN.rows() == 0)
-            igl::per_vertex_normals(cloudV, meshF, cloudN);
+    if (filename.substr(filename.find_last_of(".") + 1) == "xyz") {
+        loadXYZObject(cloud, filename, sigma_pos, sigma_normal);
+        return;
     }
+    if (filename.substr(filename.find_last_of(".") + 1) == "ply"){
+        Eigen::MatrixXi cloudE;
+        SampleMatrixType cloudUV;
+        igl::readPLY(filename, cloudV, meshF, cloudE, cloudN, cloudUV);
+    }
+    else {
+        igl::read_triangle_mesh(filename, cloudV, meshF);
+    }
+    if (cloudN.rows() == 0)
+        igl::per_vertex_normals(cloudV, meshF, cloudN);
     // Check if there is mesh 
     if ( meshF.rows() == 0 && cloudN.rows() == 0 ) {
         std::cerr << "[libIGL] The mesh is empty. Aborting..." << std::endl;
