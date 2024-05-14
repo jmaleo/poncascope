@@ -86,7 +86,7 @@ void loadPTSObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar si
     cloud.addNoise(sigma_pos, sigma_normal);
 }
 
-void loadXYZObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_pos, Scalar sigma_normal){
+void loadXYZObject (MyPointCloud<Scalar> &cloud, std::string &filename, Scalar sigma_pos, Scalar sigma_normal){
 
     SampleMatrixType cloudV, cloudN;
 
@@ -176,74 +176,6 @@ void loadObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma
 
     cloud.addNoise(sigma_pos, sigma_normal);
 }
-
-/***
- * Cloud is already loaded, we just need to open the file, 
- * load the normals from the mesh and add the corresponding normal to each point of the Cloud.
- * The normals are computed using per face normals.
- */
-void normalsFromMesh (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_pos, Scalar sigma_normal){
-    Eigen::MatrixXi meshF;
-    SampleMatrixType cloudV, cloudN;
-    SampleMatrixType cloudV_for_cloud;
-
-    if (filename.substr(filename.find_last_of(".") + 1) == "ply"){
-        Eigen::MatrixXi cloudE;
-        SampleMatrixType cloudUV;
-        igl::readPLY(filename, cloudV, meshF, cloudE, cloudN, cloudUV);
-    }
-    else {
-        igl::read_triangle_mesh(filename, cloudV, meshF);
-    }
-    if (cloudN.rows() == 0)
-        igl::per_face_normals(cloudV, meshF, cloudN);
-    // Check if there is mesh 
-    if ( meshF.rows() == 0 && cloudN.rows() == 0 ) {
-        std::cerr << "[libIGL] The mesh is empty. Aborting..." << std::endl;
-        exit (EXIT_FAILURE);
-    }
-
-    // Check if normals have been properly loaded
-    int nbUnitNormal = cloudN.rowwise().squaredNorm().sum();
-    // if ( meshF.rows() != 0 && nbUnitNormal != cloudV.rows() ) {
-    if ( meshF.rows() != 0 && cloudN.rows() == 0 ) {
-        std::cerr << "[libIGL] An error occurred when computing the normal vectors from the mesh. Aborting..."
-                  << std::endl;
-        exit (EXIT_FAILURE);
-    }
-
-    std::cout << "Mesh normals loaded." << std::endl;
-
-    cloudV_for_cloud = cloud.getNormals();
-
-    VectorType point_i;
-    VectorType normal_i = VectorType::Zero();
-    for (int i = 0; i < cloud.getSize(); ++i){
-        point_i = cloud.getVertices().row(i);
-        // Check the nearest point / face to the point_i in the meshF
-        double minDist = std::numeric_limits<double>::max();
-        for (int j = 0; j < meshF.rows(); ++j){
-            VectorType face = cloudV.row(meshF(j, 0)) + cloudV.row(meshF(j, 1)) + cloudV.row(meshF(j, 2));
-            face /= 3.0;
-            double dist = (point_i - face).norm();
-            if (dist < minDist){
-                minDist = dist;
-                normal_i = cloudN.row(j);
-            }
-        }
-        std::cout << "Normal: " << normal_i << std::endl;
-        cloudV_for_cloud.row(i) = normal_i;
-    }
-
-    cloud.setNormals(cloudV_for_cloud);
-
-    // SampleMatrixType resca = rescalePoints(cloudV);
-    // cloud = MyPointCloud<Scalar>(cloudV, cloudN);
-
-    // cloud.addNoise(sigma_pos, sigma_normal);
-    
-}
-
 
 void create_tube(MyPointCloud<Scalar> &cloud) {
 
@@ -491,3 +423,134 @@ class SinusGenerator {
         bool automatic_sinus = false;
 
 }; // class sinusGenerator
+
+class Mesh_test {
+
+    public : 
+
+        Mesh_test(std::string &filename){
+            if (filename.substr(filename.find_last_of(".") + 1) == "ply"){
+                Eigen::MatrixXi cloudE;
+                SampleMatrixType cloudUV;
+                igl::readPLY(filename, cloudV, meshF, cloudE, cloudN, cloudUV);
+            }
+            else {
+                igl::read_triangle_mesh(filename, cloudV, meshF);
+            }
+            if (cloudN.rows() == 0)
+                igl::per_vertex_normals(cloudV, meshF, cloudN);
+            // Check if there is mesh 
+            if ( meshF.rows() == 0 && cloudN.rows() == 0 ) {
+                std::cerr << "[libIGL] The mesh is empty. Aborting..." << std::endl;
+                exit (EXIT_FAILURE);
+            }
+
+            // Check if normals have been properly loaded
+            int nbUnitNormal = cloudN.rowwise().squaredNorm().sum();
+            // if ( meshF.rows() != 0 && nbUnitNormal != cloudV.rows() ) {
+            if ( meshF.rows() != 0 && cloudN.rows() == 0 ) {
+                std::cerr << "[libIGL] An error occurred when computing the normal vectors from the mesh. Aborting..."
+                        << std::endl;
+                exit (EXIT_FAILURE);
+            }
+        }
+
+        void rotateTranslate(std::string &filenameRotation){
+            std::ifstream file(filenameRotation);
+            if (!file.is_open()) {
+                std::cerr << "The translation / rotation file : " << filenameRotation << " doen't exist."<< std::endl;
+                return;
+            }
+
+            // Format :  rotation x y z
+            //           translation x y z 
+            
+            VectorType rotation, translation;
+
+            std::string line;
+            for (int line_idx = 0; line_idx < 2; ++line_idx){
+                std::getline(file, line);
+                std::istringstream iss(line);
+                std::vector<Scalar> values(3);
+                for (int i = 0; i < 3; ++i) {
+                    iss >> values[i];
+                }
+                if (line_idx == 0)
+                    rotation = VectorType(values[0], values[1], values[2]);
+                else
+                    translation = VectorType(values[0], values[1], values[2]);
+            }
+
+            // Rotation (degree) to radian
+            rotation = rotation * M_PI / 180.0;
+            
+            Eigen::Matrix<Scalar, 3, 3> rot, rotX, rotY, rotZ;
+            rotX << 1, 0, 0, 0, cos(rotation[0]), -sin(rotation[0]), 0, sin(rotation[0]), cos(rotation[0]);
+            rotY << cos(rotation[1]), 0, sin(rotation[1]), 0, 1, 0, -sin(rotation[1]), 0, cos(rotation[1]);
+            rotZ << cos(rotation[2]), -sin(rotation[2]), 0, sin(rotation[2]),  cos(rotation[2]), 0, 0, 0, 1;
+            rot = rotX.transpose() * rotY.transpose() * rotZ.transpose();
+
+            for (int i = 0; i < cloudV.rows(); ++i){
+                cloudV.row(i) = rot.transpose() * cloudV.row(i).transpose() + translation;
+                cloudN.row(i) = rot.transpose() * cloudN.row(i).transpose();
+            }
+        }
+
+        const Eigen::MatrixXi getIndices() {
+            return meshF;
+        }
+
+        const SampleMatrixType getVertices () {
+            return cloudV;
+        }
+
+        const SampleMatrixType getNormals() {
+            return cloudN;
+        }
+
+        private :
+
+        Eigen::MatrixXi meshF;
+        SampleMatrixType cloudV, cloudN;
+}; // class Mesh_test
+
+/***
+ * Cloud is already loaded, we just need to open the file, 
+ * load the normals from the mesh and add the corresponding normal to each point of the Cloud.
+ * The normals are computed using per face normals.
+ */
+void normalsFromMesh (MyPointCloud<Scalar> &cloud, Mesh_test& originalMesh, Scalar sigma_pos, Scalar sigma_normal){
+
+    const Eigen::MatrixXi meshF = originalMesh.getIndices();
+    const SampleMatrixType cloudV = originalMesh.getVertices();
+    const SampleMatrixType cloudN = originalMesh.getNormals();
+
+    SampleMatrixType cloudN_new = cloud.getNormals();
+
+    VectorType point_i;
+    VectorType normal_i = VectorType::Zero();
+    for (int i = 0; i < cloud.getSize(); ++i){
+        point_i = cloud.getVertices().row(i);
+        // Check the nearest point / face to the point_i in the meshF
+        double minDist = std::numeric_limits<double>::max();
+        for (int j = 0; j < meshF.rows(); ++j){
+            VectorType face = cloudV.row(meshF(j, 0)) + cloudV.row(meshF(j, 1)) + cloudV.row(meshF(j, 2));
+            face /= 3.0;
+            double dist = (point_i - face).norm();
+            if (dist < minDist){
+                minDist = dist;
+                normal_i = cloudN.row(meshF(j, 0)) + cloudN.row(meshF(j, 1)) + cloudN.row(meshF(j, 2));
+                normal_i.normalize();
+            }
+        }
+        cloudN_new.row(i) = normal_i;
+    }
+
+    cloud.setNormals(cloudN_new);
+
+    // SampleMatrixType resca = rescalePoints(cloudV);
+    // cloud = MyPointCloud<Scalar>(cloudV, cloudN);
+
+    // cloud.addNoise(sigma_pos, sigma_normal);
+    
+}

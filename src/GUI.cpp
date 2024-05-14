@@ -155,10 +155,19 @@ void GUI::generationFromFile(){
         pointProcessing.measureTime("[Generation] Load object with normals", [this](){
             loadObject(mainCloud, selectedFile, pointNoise, normalNoise);
             std::string selectedFileOBJ = selectedFile;
+            std::string selectedFileRotation = selectedFile;
             // Replace the extension by .obj
             selectedFileOBJ.replace(selectedFileOBJ.end()-3, selectedFileOBJ.end(), "obj");
-            std::cout << "OBJ : " << selectedFileOBJ << std::endl;
-            normalsFromMesh(mainCloud, selectedFileOBJ, pointNoise, normalNoise);
+            selectedFileRotation.replace(selectedFileRotation.end()-3, selectedFileRotation.end(), "txt");
+            
+            
+            Mesh_test originalOBG = Mesh_test(selectedFileOBJ);
+            originalOBG.rotateTranslate(selectedFileRotation);
+
+            // Add the original mesh to the polyscope
+            polyscope::registerSurfaceMesh("original", originalOBG.getVertices(), originalOBG.getIndices());
+
+            normalsFromMesh(mainCloud, originalOBG, pointNoise, normalNoise);
         });
     }
 }
