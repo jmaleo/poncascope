@@ -359,16 +359,33 @@ class SinusGenerator {
     public:
         SinusGenerator() = default;
 
-        void compute_k (Scalar pos_x, Scalar pos_y){
-            Scalar der = h_sinus * f_sinus * cos(f_sinus * pos_x + p_sinus);
-            Scalar derder = - h_sinus * f_sinus * f_sinus * sin(f_sinus * pos_x + p_sinus);
+        std::pair< VectorType, VectorType > computeSinus (Scalar pos_x, Scalar pos_z) {
             
-            Scalar num = abs( derder );
-            Scalar den = pow(1 + der * der , 1.5);
-            Scalar k_temp = num / den;
-            k_temp /= 2.0;
-            if ( abs( k_temp ) > abs( kMean_sinus ) )
-                kMean_sinus = k_temp;
+            Scalar y = h_sinus * sin( f_sinus * pos_x + p_sinus );
+
+            VectorType vert = VectorType(pos_x, y, pos_z);
+            VectorType norm = VectorType(h_sinus * f_sinus * cos( f_sinus * pos_x + p_sinus), -1, 0);
+
+            Scalar y2 = 0;
+
+            VectorType norm2 = VectorType::Zero();
+
+            if ( sinus2onX ) {
+                y2 = h_sinus2 * sin( f_sinus2 * pos_x + p_sinus2 );
+                norm2 = VectorType(h_sinus2 * f_sinus2 * cos( f_sinus2 * pos_x + p_sinus2), -1, 0);
+            } 
+            else {
+                y2 = h_sinus2 * sin( f_sinus2 * pos_z + p_sinus2 );
+                norm2 = VectorType(0, -1, h_sinus2 * f_sinus2 * cos( f_sinus2 * pos_z + p_sinus2));
+            }
+
+            VectorType vert2 = VectorType(pos_x, y2, pos_z);
+
+
+            vert = vert + vert2;
+            norm = norm + norm2;
+            norm.normalize();
+            return std::make_pair(vert, norm);
         }
 
         void generateSinus(MyPointCloud<Scalar> &cloud, Scalar sigma_pos, Scalar sigma_normal) {
@@ -379,26 +396,14 @@ class SinusGenerator {
             Scalar dx = (4.0f) / (x_sinus - 1);
             Scalar dz = (2.0f) / (z_sinus - 1);
             
-            kMean_sinus = 0.0;
-
             for (int i = 0; i < x_sinus; ++i) {
                 for (int j = 0; j < z_sinus; ++j) {
                     Scalar x = -1 + i * dx;
                     Scalar z = -1 + j * dz;
-                    Scalar y = h_sinus * sin( f_sinus * x + p_sinus );
+                    std::pair <VectorType, VectorType> vert_norm = computeSinus(x, z);
 
-                    sinus_verts(i * z_sinus + j, 0) =  x;
-                    sinus_verts(i * z_sinus + j, 1) =  y;
-                    sinus_verts(i * z_sinus + j, 2) =  z;
-
-                    sinus_norms(i * z_sinus + j, 0) =  h_sinus * f_sinus * cos( f_sinus * x + p_sinus);
-                    sinus_norms(i * z_sinus + j, 1) =  -1;
-                    sinus_norms(i * z_sinus + j, 2) =  0;
-
-                    // Normalize the normal vector
-                    sinus_norms.row(i * z_sinus + j) = sinus_norms.row(i * z_sinus + j) / sinus_norms.row(i * z_sinus + j).norm();
-
-                    compute_k(x, y);
+                    sinus_verts.row(i * z_sinus + j) =  vert_norm.first;
+                    sinus_norms.row(i * z_sinus + j) =  vert_norm.second;
                 }
             }
             cloud = MyPointCloud<Scalar>(sinus_verts, sinus_norms);
@@ -410,15 +415,17 @@ class SinusGenerator {
         // Parameters for the sinus public for easy access and modification
 
         float h_sinus  = 0.3; // amplitude
-
         float f_sinus  = 0.5; // frequency on x
-
         float p_sinus  = 0.5; // phase shift
 
-        float kMean_sinus = 0.0; // curvature
+        float h_sinus2  = 0.3; // amplitude
+        float f_sinus2  = 0.5; // frequency on x
+        float p_sinus2  = 0.5; // phase shift
 
         int x_sinus      = 60;
         int z_sinus      = 60;
+
+        bool sinus2onX = false ;
 
         bool automatic_sinus = false;
 

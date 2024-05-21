@@ -293,14 +293,21 @@ void GUI::sinusParameters(){
     if (ImGui::SliderFloat("Phase", &sinusGenerator.p_sinus, -5.0, 5.0))
         modification = true;
     
+    if (ImGui::SliderFloat("Amplitude2", &sinusGenerator.h_sinus2, -1.0, 1.0)) 
+        modification = true;
+
+    if (ImGui::SliderFloat("Frequency2", &sinusGenerator.f_sinus2, -20.0, 20.0))
+        modification = true;
+    
+    if (ImGui::SliderFloat("Phase2", &sinusGenerator.p_sinus2, -5.0, 5.0))
+        modification = true;
+
+    if ( ImGui::Checkbox( "2nd Sinus on x", &sinusGenerator.sinus2onX ) )
+        modification = true;
+    
     if (ImGui::SliderInt("x_number", &sinusGenerator.x_sinus, 30, 120 )      ||
         ImGui::SliderInt("z_number", &sinusGenerator.z_sinus, 30, 120 ))
             modification = true;
-
-    // display max curvature, already stored in k_sinus
-    ImGui::Text("Max mean curvature : %f", sinusGenerator.kMean_sinus);
-
-    ImGui::Text("Radius of the curvature : %f", 1.0/sinusGenerator.kMean_sinus);
 
     if ( ImGui::Button("Automatic ;)") ){
         sinusGenerator.automatic_sinus = ! sinusGenerator.automatic_sinus;
