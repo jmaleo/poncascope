@@ -37,6 +37,7 @@ SampleMatrixType rescalePoints (SampleMatrixType &vertices){
 void loadPTSObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_pos, Scalar sigma_normal){
 
     SampleMatrixType cloudV, cloudN;
+    std::vector<VectorType> cloudVVec, cloudNVec;
 
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -70,17 +71,21 @@ void loadPTSObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar si
             iss >> values[i];
         }
 
-        // Add the read values to the matrices
-        cloudV.conservativeResize(cloudV.rows() + 1, 3);
-        cloudV.row(cloudV.rows() - 1) << values[indices["x"]], values[indices["y"]], values[indices["z"]];
+        cloudVVec.push_back( VectorType( values[ indices[ "x" ] ], values[ indices[ "y" ] ], values[ indices[ "z" ] ] ) );
 
-        cloudN.conservativeResize(cloudN.rows() + 1, 3);
-        cloudN.row(cloudN.rows() - 1) << values[indices["nx"]], values[indices["ny"]], values[indices["nz"]];
+        cloudNVec.push_back( VectorType( values[ indices[ "nx" ] ], values[ indices[ "ny" ] ], values[ indices[ "nz" ] ] ) );
     }
 
     file.close();
+    // Cast cloudVVec and cloudNVec to Eigen::Matrix
+    cloudV = SampleMatrixType( cloudVVec.size(), 3 );
+    cloudN = SampleMatrixType( cloudNVec.size(), 3 );
 
-    std::cout << "cloudV: " << cloudV.rows() << " " << cloudV.cols() << std::endl;
+    #pragma omp parallel for
+    for ( int i = 0; i < cloudVVec.size(); ++i ) {
+        cloudV.row( i ) = cloudVVec[ i ];
+        cloudN.row( i ) = cloudNVec[ i ];
+    }
 
     cloud = MyPointCloud<Scalar>(cloudV, cloudN);
     cloud.addNoise(sigma_pos, sigma_normal);

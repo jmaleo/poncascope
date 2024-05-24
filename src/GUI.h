@@ -184,24 +184,29 @@ class GUI {
             offline_computing = true; 
 
             SampleMatrixType values;
-
+            
             if (propertyName != "") {
-                switch (weightFuncType){
-                    case 0 :
-                        functionWithKernel<ConstWeightFunc>(values, propertyName, vertexQueries, radii); break;
-                        // methodWithKernel<SmoothWeightFunc>(); break;
-                    case 2 : 
-                        functionWithKernel<WendlandWeightFunc>(values, propertyName, vertexQueries, radii); break;
-                        // methodWithKernel<WendlandWeightFunc>(); break;
-                    case 3 : 
-                        functionWithKernel<SingularWeightFunc>(values, propertyName, vertexQueries, radii); break;
-                        // methodWithKernel<SingularWeightFunc>(); break;
-                    default : 
-                        functionWithKernel<SmoothWeightFunc>(values, propertyName, vertexQueries, radii); break;
-                        // methodWithKernel<SmoothWeightFunc>(); break;
+                if (propertyName == "real-normals"){
+                    values = mainCloud.getNormals();
                 }
-                // const SampleMatrixType& values = mainCloud.getDiffQuantities().getByName(propertyName);
-
+                else {
+                    switch (weightFuncType){
+                        case 0 :
+                            functionWithKernel<ConstWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                            // methodWithKernel<SmoothWeightFunc>(); break;
+                        case 2 : 
+                            functionWithKernel<WendlandWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                            // methodWithKernel<WendlandWeightFunc>(); break;
+                        case 3 : 
+                            functionWithKernel<SingularWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                            // methodWithKernel<SingularWeightFunc>(); break;
+                        default : 
+                            functionWithKernel<SmoothWeightFunc>(values, propertyName, vertexQueries, radii); break;
+                            // methodWithKernel<SmoothWeightFunc>(); break;
+                    }
+                    // const SampleMatrixType& values = mainCloud.getDiffQuantities().getByName(propertyName);
+                }
+                
                 std::string colormap = "coolwarm";
                 if (propertyName == "Neighbors"){
                     colormap = "turbo";
