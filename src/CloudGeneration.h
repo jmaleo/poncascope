@@ -361,40 +361,53 @@ class CylinderGenerator {
 
 class SinusGenerator {
 
+    using MatrixType = Eigen::Matrix<Scalar, 3, 3>;
+    // using VectorType = Eigen::Matrix<Scalar, 3, 1>;
+
     public:
         SinusGenerator() = default;
 
-        std::pair< VectorType, VectorType > computeSinus (Scalar pos_x, Scalar pos_z) {
-            
-            Scalar y = h_sinus * sin( f_sinus * pos_x + p_sinus );
+        MatrixType computeLocalFrame(const VectorType &n) {
+            MatrixType B;
+            VectorType u = n.cross(VectorType(1, 0, 0));
+            if (u.norm() < 1e-6)
+                u = n.cross(VectorType(0, 1, 0));
+            u.normalize();
+            VectorType v = n.cross(u);
+            v.normalize();
+            B << u, v, n;
+            return B;
+        }
 
-            VectorType vert = VectorType(pos_x, y, pos_z);
-            VectorType norm = VectorType(h_sinus * f_sinus * cos( f_sinus * pos_x + p_sinus), -1, 0);
+        VectorType worldToLocalFrame(const MatrixType& B, const VectorType& origin, const VectorType& _q, bool ignoreTranslation) const {
+            if (ignoreTranslation)
+                return B.transpose() * _q;
+            else
+                return B.transpose() * (_q - origin);
+        }
 
-            Scalar y2 = 0;
+        VectorType localFrameToWorld(const MatrixType& B, const VectorType& origin, const VectorType& _lq, bool ignoreTranslation) const {
+            if (ignoreTranslation)
+                return B * _lq;
+            else
+                return B * _lq + origin;
+        }
 
-            VectorType norm2 = VectorType::Zero();
+        std::pair<Scalar, VectorType> computeSecondSinus(Scalar pos_x, Scalar pos_z) {
+            Scalar y = h_sinus2 * sin( f_sinus2 * pos_x + p_sinus2 );
 
-            if ( sinus2onX ) {
-                y2 = h_sinus2 * sin( f_sinus2 * pos_x + p_sinus2 );
-                norm2 = VectorType(h_sinus2 * f_sinus2 * cos( f_sinus2 * pos_x + p_sinus2), -1, 0);
-            } 
-            else {
-                y2 = h_sinus2 * sin( f_sinus2 * pos_z + p_sinus2 );
-                norm2 = VectorType(0, -1, h_sinus2 * f_sinus2 * cos( f_sinus2 * pos_z + p_sinus2));
-            }
+            VectorType norm = VectorType(h_sinus2 * f_sinus2 * cos(f_sinus2 * pos_x + p_sinus2), -1, 0);
+            return std::make_pair(y, norm);
+        }
 
-            VectorType vert2 = VectorType(pos_x, y2, pos_z);
+        std::pair<Scalar, VectorType> computeFirstSinus(Scalar pos_x, Scalar pos_z) {
+            Scalar y = h_sinus * sin(f_sinus * pos_x + p_sinus);
 
-
-            vert = vert + vert2;
-            norm = norm + norm2;
-            norm.normalize();
-            return std::make_pair(vert, norm);
+            VectorType norm = VectorType(h_sinus * f_sinus * cos(f_sinus * pos_x + p_sinus), -1, 0);
+            return std::make_pair(y, norm);
         }
 
         void generateSinus(MyPointCloud<Scalar> &cloud, Scalar sigma_pos, Scalar sigma_normal) {
-
             SampleMatrixType sinus_verts = SampleMatrixType(x_sinus * z_sinus, 3);
             SampleMatrixType sinus_norms = SampleMatrixType(x_sinus * z_sinus, 3);
 
@@ -405,10 +418,21 @@ class SinusGenerator {
                 for (int j = 0; j < z_sinus; ++j) {
                     Scalar x = -1 + i * dx;
                     Scalar z = -1 + j * dz;
-                    std::pair <VectorType, VectorType> vert_norm = computeSinus(x, z);
+                    std::pair<Scalar, VectorType> vert_norm = computeFirstSinus(x, z);
+                    std::pair<Scalar, VectorType> vert_norm_sin_2 = computeSecondSinus(x, z);
 
-                    sinus_verts.row(i * z_sinus + j) =  vert_norm.first;
-                    sinus_norms.row(i * z_sinus + j) =  vert_norm.second;
+                    Scalar sin_1 = vert_norm.first;
+                    Scalar sin_2 = vert_norm_sin_2.first;
+
+                    VectorType norm_sin1 = vert_norm.second;
+                    VectorType norm_sin2 = vert_norm_sin_2.second;
+
+                    Scalar sin = sin_1 + sin_2;
+                    VectorType norm = vert_norm_sin_2.second + vert_norm.second ;
+                    norm.normalize();
+
+                    sinus_verts.row(i * z_sinus + j) = VectorType (x, sin, z);
+                    sinus_norms.row(i * z_sinus + j) = norm; 
                 }
             }
             cloud = MyPointCloud<Scalar>(sinus_verts, sinus_norms);
