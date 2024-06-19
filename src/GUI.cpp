@@ -301,9 +301,6 @@ void GUI::sinusParameters(){
     
     if (ImGui::SliderFloat("Phase2", &sinusGenerator.p_sinus2, -5.0, 5.0))
         modification = true;
-
-    if ( ImGui::Checkbox( "2nd Sinus on x", &sinusGenerator.sinus2onX ) )
-        modification = true;
     
     if (ImGui::SliderInt("x_number", &sinusGenerator.x_sinus, 30, 120 )      ||
         ImGui::SliderInt("z_number", &sinusGenerator.z_sinus, 30, 120 ))
@@ -323,6 +320,10 @@ void GUI::sinusParameters(){
     if (modification){
         cloudNeedsUpdate = true;
         sinusGenerator.generateSinus(mainCloud, pointNoise, normalNoise);
+    }
+
+    if (ImGui::Button("Save pts")){
+        sinusGenerator.saveSinus(mainCloud);
     }
 
     ImGui::End();

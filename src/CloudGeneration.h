@@ -34,6 +34,23 @@ SampleMatrixType rescalePoints (SampleMatrixType &vertices){
     return rescaledVertices;
 }
 
+void savePTSObject (MyPointCloud<Scalar> &cloud, std::string filename){
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Could not open the file: " << filename << std::endl;
+        return;
+    }
+
+    SampleMatrixType cloudV = cloud.getVertices();
+    SampleMatrixType cloudN = cloud.getNormals();
+
+    for (int i = 0; i < cloudV.rows(); ++i) {
+        file << cloudV(i, 0) << " " << cloudV(i, 1) << " " << cloudV(i, 2) << " " << cloudN(i, 0) << " " << cloudN(i, 1) << " " << cloudN(i, 2) << std::endl;
+    }
+
+    file.close();
+}
+
 void loadPTSObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_pos, Scalar sigma_normal){
 
     SampleMatrixType cloudV, cloudN;
@@ -439,6 +456,10 @@ class SinusGenerator {
             cloud.addNoise(sigma_pos, sigma_normal);
         }
 
+        void saveSinus ( MyPointCloud<Scalar> &cloud ) {
+            savePTSObject (cloud, "MySin.pts");
+        }
+
     public:
         
         // Parameters for the sinus public for easy access and modification
@@ -453,8 +474,6 @@ class SinusGenerator {
 
         int x_sinus      = 60;
         int z_sinus      = 60;
-
-        bool sinus2onX = false ;
 
         bool automatic_sinus = false;
 
