@@ -35,6 +35,16 @@ SampleMatrixType rescalePoints (SampleMatrixType &vertices){
 }
 
 void savePTSObject (MyPointCloud<Scalar> &cloud, std::string filename){
+
+    // If the filename exist, add a number to the filename (without the extension)
+    std::string filename_no_ext = filename.substr(0, filename.find_last_of("."));
+    std::string ext = filename.substr(filename.find_last_of("."));
+    int i = 0;
+    while ( std::ifstream(filename).good() ){
+        filename = filename_no_ext + std::to_string(i) + ext;
+        i++;
+    }
+
     std::ofstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Could not open the file: " << filename << std::endl;
@@ -44,10 +54,10 @@ void savePTSObject (MyPointCloud<Scalar> &cloud, std::string filename){
     SampleMatrixType cloudV = cloud.getVertices();
     SampleMatrixType cloudN = cloud.getNormals();
 
+    file << "# x y z nx ny nz" << std::endl;
     for (int i = 0; i < cloudV.rows(); ++i) {
         file << cloudV(i, 0) << " " << cloudV(i, 1) << " " << cloudV(i, 2) << " " << cloudN(i, 0) << " " << cloudN(i, 1) << " " << cloudN(i, 2) << std::endl;
     }
-
     file.close();
 }
 
@@ -379,48 +389,21 @@ class CylinderGenerator {
 class SinusGenerator {
 
     using MatrixType = Eigen::Matrix<Scalar, 3, 3>;
-    // using VectorType = Eigen::Matrix<Scalar, 3, 1>;
+    using VectorType = Eigen::Matrix<Scalar, 3, 1>;
+    // using SampleMatrixType = Eigen::Matrix<Scalar, Eigen::Dynamic, 3>;
 
     public:
         SinusGenerator() = default;
 
-        MatrixType computeLocalFrame(const VectorType &n) {
-            MatrixType B;
-            VectorType u = n.cross(VectorType(1, 0, 0));
-            if (u.norm() < 1e-6)
-                u = n.cross(VectorType(0, 1, 0));
-            u.normalize();
-            VectorType v = n.cross(u);
-            v.normalize();
-            B << u, v, n;
-            return B;
+        std::pair<Scalar, VectorType> computeModulatingSinus(Scalar x) {
+            Scalar y_mod = h_sinus2 * sin(f_sinus2 * x + p_sinus2);
+            VectorType norm_mod = VectorType(h_sinus2 * f_sinus2 * cos(f_sinus2 * x + p_sinus2), -1, 0);
+            return std::make_pair(y_mod, norm_mod);
         }
 
-        VectorType worldToLocalFrame(const MatrixType& B, const VectorType& origin, const VectorType& _q, bool ignoreTranslation) const {
-            if (ignoreTranslation)
-                return B.transpose() * _q;
-            else
-                return B.transpose() * (_q - origin);
-        }
-
-        VectorType localFrameToWorld(const MatrixType& B, const VectorType& origin, const VectorType& _lq, bool ignoreTranslation) const {
-            if (ignoreTranslation)
-                return B * _lq;
-            else
-                return B * _lq + origin;
-        }
-
-        std::pair<Scalar, VectorType> computeSecondSinus(Scalar pos_x, Scalar pos_z) {
-            Scalar y = h_sinus2 * sin( f_sinus2 * pos_x + p_sinus2 );
-
-            VectorType norm = VectorType(h_sinus2 * f_sinus2 * cos(f_sinus2 * pos_x + p_sinus2), -1, 0);
-            return std::make_pair(y, norm);
-        }
-
-        std::pair<Scalar, VectorType> computeFirstSinus(Scalar pos_x, Scalar pos_z) {
-            Scalar y = h_sinus * sin(f_sinus * pos_x + p_sinus);
-
-            VectorType norm = VectorType(h_sinus * f_sinus * cos(f_sinus * pos_x + p_sinus), -1, 0);
+        std::pair<Scalar, VectorType> computeBaseSinus(Scalar x) {
+            Scalar y = h_sinus * sin(f_sinus * x + p_sinus);
+            VectorType norm = VectorType(h_sinus * f_sinus * cos(f_sinus * x + p_sinus), -1, 0);
             return std::make_pair(y, norm);
         }
 
@@ -428,56 +411,55 @@ class SinusGenerator {
             SampleMatrixType sinus_verts = SampleMatrixType(x_sinus * z_sinus, 3);
             SampleMatrixType sinus_norms = SampleMatrixType(x_sinus * z_sinus, 3);
 
-            Scalar dx = (4.0f) / (x_sinus - 1);
-            Scalar dz = (2.0f) / (z_sinus - 1);
-            
-            for (int i = 0; i < x_sinus; ++i) {
-                for (int j = 0; j < z_sinus; ++j) {
-                    Scalar x = -1 + i * dx;
-                    Scalar z = -1 + j * dz;
-                    std::pair<Scalar, VectorType> vert_norm = computeFirstSinus(x, z);
-                    std::pair<Scalar, VectorType> vert_norm_sin_2 = computeSecondSinus(x, z);
+            Scalar dx = (x_max - x_min) / (x_sinus - 1);
+            Scalar dz = (z_max - z_min) / (z_sinus - 1);
 
-                    Scalar sin_1 = vert_norm.first;
-                    Scalar sin_2 = vert_norm_sin_2.first;
+            for (int j = 0; j < z_sinus; ++j) {
+                for (int i = 0; i < x_sinus; ++i) {
+                    Scalar x = x_min + i * dx;
+                    Scalar z = z_min + j * dz;
 
-                    VectorType norm_sin1 = vert_norm.second;
-                    VectorType norm_sin2 = vert_norm_sin_2.second;
+                    auto [y_base, norm_base] = computeBaseSinus(x);
+                    auto [y_mod, norm_mod] = computeModulatingSinus(x);
 
-                    Scalar sin = sin_1 + sin_2;
-                    VectorType norm = vert_norm_sin_2.second + vert_norm.second ;
-                    norm.normalize();
+                    Scalar y = y_base + y_mod;
+                    VectorType norm = (norm_base + norm_mod).normalized();
 
-                    sinus_verts.row(i * z_sinus + j) = VectorType (x, sin, z);
-                    sinus_norms.row(i * z_sinus + j) = norm; 
+                    sinus_verts.row(i * z_sinus + j) = VectorType(x, y, z);
+                    sinus_norms.row(i * z_sinus + j) = norm;
                 }
             }
+
             cloud = MyPointCloud<Scalar>(sinus_verts, sinus_norms);
             cloud.addNoise(sigma_pos, sigma_normal);
         }
 
-        void saveSinus ( MyPointCloud<Scalar> &cloud ) {
-            savePTSObject (cloud, "MySin.pts");
+        void saveSinus(MyPointCloud<Scalar> &cloud) {
+            savePTSObject(cloud, "MySin.pts");
         }
 
     public:
-        
-        // Parameters for the sinus public for easy access and modification
+        // Parameters for the base sinus
+        float h_sinus = 0.3;  // amplitude
+        float f_sinus = 0.5;  // frequency on x
+        float p_sinus = 0.0;  // phase shift
 
-        float h_sinus  = 0.3; // amplitude
-        float f_sinus  = 0.5; // frequency on x
-        float p_sinus  = 0.5; // phase shift
+        // Parameters for the modulating sinus
+        float h_sinus2 = 0.1;  // amplitude of modulation
+        float f_sinus2 = 0.3;  // frequency of modulation on z
+        float p_sinus2 = 0.0;  // phase shift of modulation
 
-        float h_sinus2  = 0.3; // amplitude
-        float f_sinus2  = 0.5; // frequency on x
-        float p_sinus2  = 0.5; // phase shift
-
-        int x_sinus      = 60;
-        int z_sinus      = 60;
+        // Sampling parameters
+        int x_sinus = 60;
+        int z_sinus = 60;
+        Scalar x_min = -2.0;
+        Scalar x_max = 2.0;
+        Scalar z_min = -2.0;
+        Scalar z_max = 2.0;
 
         bool automatic_sinus = false;
+};
 
-}; // class sinusGenerator
 
 class Mesh_test {
 

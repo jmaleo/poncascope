@@ -35,6 +35,8 @@ void GUI::mainCallBack(){
 
     ImGui::Separator();
 
+    picking();
+
     cloudComputing();
 
 }
@@ -329,6 +331,19 @@ void GUI::sinusParameters(){
     ImGui::End();
 }
 
+
+void GUI::picking() {
+    ImGuiIO& io = ImGui::GetIO();
+    // If the user clicked on the screen, while maintaining the shift key, we pick the point
+    if (io.MouseClicked[0] && io.KeyShift){
+      glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
+      std::pair<polyscope::Structure*, size_t> pickPair =
+          polyscope::pick::evaluatePickQuery(screenCoords.x, screenCoords.y);
+
+      if (pickPair.first != nullptr) 
+        pointProcessing.iVertexSource = pickPair.second ;
+      }
+}
 
 /////////////////////////////////////////////////////////////////////
 ////                       CLOUD COMPUTING                       ////

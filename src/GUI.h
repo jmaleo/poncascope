@@ -17,6 +17,7 @@
 #include <Eigen/Dense>
 #include "imgui_filedialog.h"
 #include <string>
+#include "polyscope/pick.h"
 
 class GUI {
 
@@ -313,6 +314,8 @@ class GUI {
         /// Save the camera settings to a file called "camera_settings.txt"
         /// in the current working directory
         void saveCameraSettings();
+
+        void picking();
 
     private:
 
