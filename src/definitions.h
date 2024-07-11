@@ -47,9 +47,6 @@ template <typename WeightFunc>
 using basket_BaseOrientedCylinderFit     =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::BaseOrientedParabolicCylinderFit>;
 
 template <typename WeightFunc>
-using basket_NearOrientedCylinderFit     =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::NearOrientedParabolicCylinderFit>;
-
-template <typename WeightFunc>
 using basket_FullyOrientedEllipsoid2DFit =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::FullyOrientedEllipsoid2DFit>;
 
 template <typename WeightFunc>
@@ -57,9 +54,6 @@ using basket_BaseEllipsoid2DFit          =  Ponca::Basket<PPAdapter, WeightFunc,
 
 template <typename WeightFunc>
 using basket_BaseOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::BaseOrientedEllipsoid2DFit>;
-
-template <typename WeightFunc>
-using basket_NearOrientedEllipsoid2DFit  =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::NearOrientedEllipsoid2DFit>;
 
 template <typename WeightFunc>
 using basket_AlgebraicShapeOperatorFit   =  Ponca::BasketDiff<

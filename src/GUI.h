@@ -293,7 +293,8 @@ class GUI {
         PointProcessing pointProcessing;
 
         int item_selected_method = 0;
-        const char* methods[24] = { "Plane (PCA)", "Plane (mean)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "NO2D", "B0 Cylinder", "B Cylinder", "NO Cylinder", "FO Cylinder", "Varifold", "Monge patch", "Oriented Monge patch", "Unoriented sphere", "Sphere fit" };
+        const char* methods[22] = { "Plane (PCA)", "Plane (mean)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "B0 Cylinder", "B Cylinder", "FO Cylinder", "Varifold", "Monge patch", "Oriented Monge patch", "Unoriented sphere", "Sphere fit" };
+        // const char* methods[24] = { "Plane (PCA)", "Plane (mean)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "NO2D", "B0 Cylinder", "B Cylinder", "NO Cylinder", "FO Cylinder", "Varifold", "Monge patch", "Oriented Monge patch", "Unoriented sphere", "Sphere fit" };
 
     
         float pointNoise = 0.0f;
@@ -362,16 +363,16 @@ class GUI {
                 case (11) : methodForCloudComputing<basket_FullyOrientedEllipsoid2DFit<WeightFunc >>("FO Ellipsoid2D"); break;
                 case (12) : methodForCloudComputing<basket_BaseOrientedEllipsoid2DFit<WeightFunc >>("BO Ellipsoid2D"); break;
                 case (13) : methodForCloudComputing<basket_BaseEllipsoid2DFit<WeightFunc >, false>("B Ellipsoid2D"); break;
-                case (14) : methodForCloudComputing<basket_NearOrientedEllipsoid2DFit<WeightFunc >>("NO Ellipsoid2D"); break;
-                case (15) : methodForCloudComputing<basket_BaseOrientedCylinderFit<WeightFunc >>("BO Cylinder"); break;
-                case (16) : methodForCloudComputing<basket_BaseCylinderFit<WeightFunc >, false>("B Cylinder"); break;
-                case (17) : methodForCloudComputing<basket_NearOrientedCylinderFit<WeightFunc >>("NO Cylinder"); break;
-                case (18) : methodForCloudComputing<basket_FullyOrientedCylinderFit<WeightFunc >>("FO Cylinder"); break;
-                case (19) : methodForCloudComputing<basket_varifold>("Varifold", false); break;
-                case (20) : methodForCloudComputing<basket_mongePatchFit<WeightFunc>, false>("Monge patch"); break;
-                case (21) : methodForCloudComputing<basket_orientedMongePatchFit<WeightFunc>>("Oriented Monge patch"); break;
-                case (22) : methodForCloudComputing<basket_UnorientedSphereFit<WeightFunc>, false>("Unoriented sphere"); break;
-                case (23) : methodForCloudComputing<basket_SphereFit<WeightFunc>, false>("Sphere fit"); break;
+                // case (14) : methodForCloudComputing<basket_NearOrientedEllipsoid2DFit<WeightFunc >>("NO Ellipsoid2D"); break;
+                case (14) : methodForCloudComputing<basket_BaseOrientedCylinderFit<WeightFunc >>("BO Cylinder"); break;
+                case (15) : methodForCloudComputing<basket_BaseCylinderFit<WeightFunc >, false>("B Cylinder"); break;
+                // case (17) : methodForCloudComputing<basket_NearOrientedCylinderFit<WeightFunc >>("NO Cylinder"); break;
+                case (16) : methodForCloudComputing<basket_FullyOrientedCylinderFit<WeightFunc >>("FO Cylinder"); break;
+                case (17) : methodForCloudComputing<basket_varifold>("Varifold", false); break;
+                case (18) : methodForCloudComputing<basket_mongePatchFit<WeightFunc>, false>("Monge patch"); break;
+                case (19) : methodForCloudComputing<basket_orientedMongePatchFit<WeightFunc>>("Oriented Monge patch"); break;
+                case (20) : methodForCloudComputing<basket_UnorientedSphereFit<WeightFunc>, false>("Unoriented sphere"); break;
+                case (21) : methodForCloudComputing<basket_SphereFit<WeightFunc>, false>("Sphere fit"); break;
                 default : break; 
             }
         }
@@ -397,16 +398,16 @@ class GUI {
                 case (11) : return pointProcessing.evalScalarField_impl<basket_FullyOrientedEllipsoid2DFit<WeightFunc >>("FO Ellipsoid2D", vertices);
                 case (12) : return pointProcessing.evalScalarField_impl<basket_BaseOrientedEllipsoid2DFit<WeightFunc >>("BO Ellipsoid2D", vertices);
                 case (13) : return pointProcessing.evalScalarField_impl<basket_BaseEllipsoid2DFit<WeightFunc >, false>("B Ellipsoid2D", vertices);
-                case (14) : return pointProcessing.evalScalarField_impl<basket_NearOrientedEllipsoid2DFit<WeightFunc >>("NO Ellipsoid2D", vertices);
-                case (15) : return pointProcessing.evalScalarField_impl<basket_BaseOrientedCylinderFit<WeightFunc >>("BO Cylinder", vertices);
-                case (16) : return pointProcessing.evalScalarField_impl<basket_BaseCylinderFit<WeightFunc >, false>("B Cylinder", vertices);
-                case (17) : return pointProcessing.evalScalarField_impl<basket_NearOrientedCylinderFit<WeightFunc >>("NO Cylinder", vertices);
-                case (18) : return pointProcessing.evalScalarField_impl<basket_FullyOrientedCylinderFit<WeightFunc >>("FO Cylinder", vertices);
-                case (19) : return SampleVectorType::Zero(vertices.rows()); // Varifold
-                case (20) : return pointProcessing.evalScalarField_impl<basket_mongePatchFit<WeightFunc>, false>("Monge patch", vertices);
-                case (21) : return pointProcessing.evalScalarField_impl<basket_orientedMongePatchFit<WeightFunc>>("Oriented Monge patch", vertices);
-                case (22) : return pointProcessing.evalScalarField_impl<basket_UnorientedSphereFit<WeightFunc>, false>("Unoriented sphere", vertices);
-                case (23) : return pointProcessing.evalScalarField_impl<basket_SphereFit<WeightFunc>, false>("Sphere fit", vertices);
+                // case (14) : return pointProcessing.evalScalarField_impl<basket_NearOrientedEllipsoid2DFit<WeightFunc >>("NO Ellipsoid2D", vertices);
+                case (14) : return pointProcessing.evalScalarField_impl<basket_BaseOrientedCylinderFit<WeightFunc >>("BO Cylinder", vertices);
+                case (15) : return pointProcessing.evalScalarField_impl<basket_BaseCylinderFit<WeightFunc >, false>("B Cylinder", vertices);
+                // case (17) : return pointProcessing.evalScalarField_impl<basket_NearOrientedCylinderFit<WeightFunc >>("NO Cylinder", vertices);
+                case (16) : return pointProcessing.evalScalarField_impl<basket_FullyOrientedCylinderFit<WeightFunc >>("FO Cylinder", vertices);
+                case (17) : return SampleVectorType::Zero(vertices.rows()); // Varifold
+                case (18) : return pointProcessing.evalScalarField_impl<basket_mongePatchFit<WeightFunc>, false>("Monge patch", vertices);
+                case (19) : return pointProcessing.evalScalarField_impl<basket_orientedMongePatchFit<WeightFunc>>("Oriented Monge patch", vertices);
+                case (20) : return pointProcessing.evalScalarField_impl<basket_UnorientedSphereFit<WeightFunc>, false>("Unoriented sphere", vertices);
+                case (21) : return pointProcessing.evalScalarField_impl<basket_SphereFit<WeightFunc>, false>("Sphere fit", vertices);
                 default : break; 
             }
             return SampleVectorType::Zero(vertices.rows());
