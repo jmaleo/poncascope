@@ -35,6 +35,17 @@ using varifoldWeightFunc   = Ponca::DistWeightFunc<PPAdapter, Ponca::VarifoldWei
 using basket_triangleGeneration          =  Ponca::Basket<PPAdapter, ConstWeightFunc, Ponca::TriangleGeneration>; 
 using basket_dryFit                      =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::DryFit>;
 
+template <typename WeightFunc>
+using basket_Covariance2DFit             = Ponca::Basket<PPAdapter, WeightFunc, Ponca::Covariance2DFit>;
+
+template <typename WeightFunc>
+using basket_NormalCovariance2DFit       = Ponca::Basket<PPAdapter, WeightFunc, Ponca::NormalCovariance2DFit>;
+
+template <typename WeightFunc>
+using basket_NormalCovariance3DFit       = Ponca::Basket<PPAdapter, WeightFunc, Ponca::NormalCovariance3DFit>;
+
+template<typename WeightFunc>
+using basket_ShapeOperator2DFit          = Ponca::Basket<PPAdapter, WeightFunc, Ponca::ShapeOperator2DFit>;
 
 // Templated ( for the weight kernel ) Fitting methods
 template <typename WeightFunc>
