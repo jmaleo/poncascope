@@ -36,6 +36,9 @@ using basket_triangleGeneration          =  Ponca::Basket<PPAdapter, ConstWeight
 using basket_dryFit                      =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::DryFit>;
 
 template <typename WeightFunc>
+using basket_MeanFit                     =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::MeanCurvatureFit>;
+
+template <typename WeightFunc>
 using basket_Covariance2DFit             = Ponca::Basket<PPAdapter, WeightFunc, Ponca::Covariance2DFit>;
 
 template <typename WeightFunc>
