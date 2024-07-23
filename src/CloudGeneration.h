@@ -9,6 +9,34 @@
 #include "MyPointCloud.h"
 #include "definitions.h"
 
+SampleMatrixType applyCentering(SampleMatrixType &cloudV){
+    SampleMatrixType cloud_out = SampleMatrixType(cloudV.rows(), 3);
+    
+    VectorType min = { std::numeric_limits<Scalar>::max(), std::numeric_limits<Scalar>::max(), std::numeric_limits<Scalar>::max() };
+    VectorType max = { std::numeric_limits<Scalar>::min(), std::numeric_limits<Scalar>::min(), std::numeric_limits<Scalar>::min() };
+
+    for ( int i = 0; i < cloudV.rows() ; ++i ){
+        VectorType p = cloudV.row(i);
+        for ( auto j = 0u; j < 3; ++j ){
+        if ( p[ j ] < min[ j ] )
+            min[ j ] = p[ j ];
+        if ( p[ j ] > max[ j ] )
+            max[ j ] = p[ j ];
+        }
+    }
+
+    VectorType barycenter = (min + max) / 2.0;
+    #pragma omp parallel for
+    for (int i = 0; i < cloud_out.rows(); ++i){
+        VectorType current = cloudV.row(i);
+        cloud_out.row(i) = current - barycenter;
+    }
+
+    std::cout << "Cloud is centered. Barycenter: " << barycenter.transpose() << std::endl;
+
+    return cloud_out;
+}
+
 SampleMatrixType rescalePoints (SampleMatrixType &vertices){
     VectorType baryCenter = VectorType::Zero();
     // Compute barycenter
@@ -114,7 +142,9 @@ void loadPTSObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar si
         cloudN.row( i ) = cloudNVec[ i ];
     }
 
-    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
+    SampleMatrixType cloudV_centered = applyCentering(cloudV);
+
+    cloud = MyPointCloud<Scalar>(cloudV_centered, cloudN);
     cloud.addNoise(sigma_pos, sigma_normal);
 }
 
@@ -159,9 +189,11 @@ void loadXYZObject (MyPointCloud<Scalar> &cloud, std::string &filename, Scalar s
 
     file.close();
 
-    std::cout << "cloudV: " << cloudV.rows() << " " << cloudV.cols() << std::endl;
+    // std::cout << "cloudV: " << cloudV.rows() << " " << cloudV.cols() << std::endl;
+    
+    SampleMatrixType cloudV_centered = applyCentering(cloudV);
 
-    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
+    cloud = MyPointCloud<Scalar>(cloudV_centered, cloudN);
     cloud.addNoise(sigma_pos, sigma_normal);
 }
 
@@ -202,9 +234,11 @@ void loadObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma
                   << std::endl;
         exit (EXIT_FAILURE);
     }
+    SampleMatrixType cloudV_centered = applyCentering(cloudV);
 
     // SampleMatrixType resca = rescalePoints(cloudV);
-    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
+    cloud = MyPointCloud<Scalar>(cloudV_centered, cloudN);
+
 
     cloud.addNoise(sigma_pos, sigma_normal);
 }

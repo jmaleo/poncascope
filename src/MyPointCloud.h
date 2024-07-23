@@ -203,6 +203,25 @@ class MyPointCloud {
             return m_size;
         }
 
+        std::pair<SampleMatrixType, SampleVectorType> getNonZeros( SampleVectorType &values ){
+            std::vector<VectorType> nonZeros;
+            std::vector<Scalar> nonZerosValues;
+            for (int i = 0; i < m_size; ++i) {
+                if (values(i) != 0){
+                    nonZeros.push_back(m_vertices.row(i));
+                    nonZerosValues.push_back(values(i));
+                }
+            }
+            // convert to matrix
+            SampleMatrixType nonZerosMatrix(nonZeros.size(), 3);
+            SampleVectorType nonZerosValuesVector(nonZerosValues.size());
+            for (int i = 0; i < nonZeros.size(); ++i) {
+                nonZerosMatrix.row(i) = nonZeros[i];
+                nonZerosValuesVector(i) = nonZerosValues[i];
+            }
+            return std::make_pair(nonZerosMatrix, nonZerosValuesVector);
+        }
+
         void addNoise (const Scalar &sigma_pos, const Scalar &sigma_norm){
 
             std::random_device rd;

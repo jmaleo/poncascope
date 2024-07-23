@@ -622,6 +622,46 @@ void GUI::cloudComputingParameters(){
             }
         }
     }
+    ImGui::SameLine();
+    if (pointProcessing.researchType == 0){
+        if (ImGui::Button("pc neighbors")) {
+            SampleVectorType neighbor_values= pointProcessing.colorizeKnn();
+            std::pair<SampleMatrixType, SampleVectorType> res_nei = mainCloud.getNonZeros(neighbor_values);
+            std::string cloudName = "neighborhood";
+            // Create a new point cloud
+            polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, res_nei.first);
+            polyscope_uniqueClouds.push_back(newCloud);
+            addQuantities(newCloud, "neighbors", res_nei.second);
+        }
+    }
+    else {
+        if (ImGui::Button("pc neighbors")) {
+            SampleVectorType neighbor_values;
+            switch (weightFuncType){
+                case 0 : 
+                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<ConstWeightFunc>();
+                    break;
+                case 1 :
+                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>();
+                    break;
+                case 2 :
+                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<WendlandWeightFunc>();
+                    break;
+                case 3 :
+                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>();
+                    break;
+                default : 
+                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>();
+                    break;
+            }
+            std::pair<SampleMatrixType, SampleVectorType> res_nei = mainCloud.getNonZeros(neighbor_values);
+            std::string cloudName = "neighborhood";
+            // Create a new point cloud
+            polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, res_nei.first);
+            polyscope_uniqueClouds.push_back(newCloud);
+            addQuantities(newCloud, "neighbors", res_nei.second);
+        }
+    }
 
     if ( pointProcessing.researchType == 0 ) {
         ImGui::InputInt("k-neighborhood size", &pointProcessing.kNN);
