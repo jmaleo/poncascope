@@ -626,7 +626,7 @@ void GUI::cloudComputingParameters(){
     if (pointProcessing.researchType == 0){
         if (ImGui::Button("pc neighbors")) {
             SampleVectorType neighbor_values= pointProcessing.colorizeKnn();
-            std::pair<SampleMatrixType, SampleVectorType> res_nei = mainCloud.getNonZeros(neighbor_values);
+            std::pair<SampleMatrixType, SampleVectorType> res_nei = mainCloud.getNonZeros(neighbor_values, pointProcessing.iVertexSource);
             std::string cloudName = "neighborhood";
             // Create a new point cloud
             polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, res_nei.first);
@@ -654,7 +654,7 @@ void GUI::cloudComputingParameters(){
                     neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>();
                     break;
             }
-            std::pair<SampleMatrixType, SampleVectorType> res_nei = mainCloud.getNonZeros(neighbor_values);
+            std::pair<SampleMatrixType, SampleVectorType> res_nei = mainCloud.getNonZeros(neighbor_values, pointProcessing.iVertexSource);
             std::string cloudName = "neighborhood";
             // Create a new point cloud
             polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, res_nei.first);

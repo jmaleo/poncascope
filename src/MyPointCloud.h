@@ -203,13 +203,18 @@ class MyPointCloud {
             return m_size;
         }
 
-        std::pair<SampleMatrixType, SampleVectorType> getNonZeros( SampleVectorType &values ){
+        std::pair<SampleMatrixType, SampleVectorType> getNonZeros( SampleVectorType &values, int index ){
             std::vector<VectorType> nonZeros;
             std::vector<Scalar> nonZerosValues;
+            Scalar max_value = values.maxCoeff() + 1;
             for (int i = 0; i < m_size; ++i) {
                 if (values(i) != 0){
                     nonZeros.push_back(m_vertices.row(i));
-                    nonZerosValues.push_back(values(i));
+                    if ( index == i ) {
+                        nonZerosValues.push_back(max_value);
+                    } else {
+                        nonZerosValues.push_back(values(i));
+                    }
                 }
             }
             // convert to matrix
