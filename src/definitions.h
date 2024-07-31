@@ -4,6 +4,7 @@
 #include "Ponca/SpatialPartitioning"
 #include "poncaAdapters.hpp"
 #include "mlods/mlods.h"
+#include "ndtree/ndtree.h"
 
 
 // Types definition
@@ -22,6 +23,7 @@ using KernelParameters   = Ponca::RationalWeightKernelParameters<float>;
 using KernelParamtersScalar = Ponca::RationalWeightKernelParameters<Scalar>;
 template <typename FitT>
 using MlodsTree          = Ponca::KdTreeCustom<Ponca::MyKdTreeTraits<PPAdapter, FitT, MLODSWeightKernel>>; 
+using Octree             = Ponca::Octree<PPAdapter>;
 // using MlodsTree          = Ponca::KdTreeCustom<Ponca::MyKdTreeTraits<PPAdapter, FitT, Ponca::MyKdTreeNode>>; 
 
 typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>  SampleMatrixType;

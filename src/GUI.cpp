@@ -592,7 +592,7 @@ void GUI::cloudComputingParameters(){
         mesh->setEdgeWidth(2);
 
         methodName = "Cell test";
-        all_computed = true;
+        // all_computed = true;
     }
 
     ImGui::InputFloat("radius factor", &pointProcessing.radiusFactor);

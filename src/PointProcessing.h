@@ -21,7 +21,8 @@ class PointProcessing {
     public:
         
         KdTree tree;                   /// < kdtree for nearest neighbors search
-        MlodsTree<FitTemp> mlodsTree;           /// < kdtree for MLoDs for nearest neighbors search
+        // MlodsTree<FitTemp> mlodsTree;  /// < kdtree for MLoDs for nearest neighbors search
+        Octree mlodsTree;  /// < kdtree for MLoDs for nearest neighbors search
         KnnGraph *knnGraph = nullptr;  /// < k-neighbor graph
 
         // Options for algorithms
