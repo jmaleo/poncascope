@@ -469,6 +469,9 @@ void GUI::cloudComputingSlices(){
         case 3 : 
             values = sliceWithKernel<SingularWeightFunc>(pair_slice.first);
             break;
+        case 4 : 
+            values = sliceWithKernel<ExponentialWeightFunc>(pair_slice.first);
+            break;
         default : 
             values = sliceWithKernel<SmoothWeightFunc>(pair_slice.first);
             break;
@@ -570,6 +573,9 @@ void GUI::cloudComputing(){
         case 3 : 
             methodWithKernel<SingularWeightFunc>();
             break;
+        case 4 : 
+            methodWithKernel<ExponentialWeightFunc>();
+            break;
         default : 
             methodWithKernel<SmoothWeightFunc>();
             break;
@@ -616,6 +622,9 @@ void GUI::cloudComputingParameters(){
                 case 3 :
                     addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>());
                     break;
+                case 4 : 
+                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<ExponentialWeightFunc>());
+                    break;
                 default : 
                     addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
                     break;
@@ -650,6 +659,9 @@ void GUI::cloudComputingParameters(){
                 case 3 :
                     neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>();
                     break;
+                case 4 : 
+                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<ExponentialWeightFunc>();
+                    break;
                 default : 
                     neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>();
                     break;
@@ -681,6 +693,8 @@ void GUI::cloudComputingParameters(){
     ImGui::RadioButton("Wendland", &weightFuncType, 2);
     ImGui::SameLine();
     ImGui::RadioButton("Singular", &weightFuncType, 3);
+    ImGui::SameLine();
+    ImGui::RadioButton("Exponential", &weightFuncType, 4);
 
     ImGui::Separator();
 

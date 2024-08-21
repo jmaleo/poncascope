@@ -294,7 +294,7 @@ class GUI {
 
         int item_selected_method = 0;
         // const char* methods[22] = { "Plane (PCA)", "Plane (mean)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "B0 Cylinder", "B Cylinder", "FO Cylinder", "Varifold", "Monge patch", "Oriented Monge patch", "Unoriented sphere", "Sphere fit" };
-        const char* methods[27] = { "Plane (PCA)", "Plane (mean)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "B0 Cylinder", "B Cylinder", "FO Cylinder", "Varifold", "Monge patch", "Oriented Monge patch", "Unoriented sphere", "Sphere fit", "Cov2D", "NormCov2D", "NormCov3D", "ShapeOperator2D", "Mean" };
+        const char* methods[30] = { "Plane (PCA)", "Plane (mean)", "APSS", "ASO", "CNC uniform", "CNC independent", "CNC hexa", "CNC avg hexa", "WaveJets", "oriented WaveJets", "Ellipsoid 3D", "FO2D", "B02D", "B2D", "B0 Cylinder", "B Cylinder", "FO Cylinder", "Varifold", "Monge patch", "Oriented Monge patch", "Unoriented sphere", "Sphere fit", "Cov2D", "NormCov2D", "NormCov3D", "ShapeOperator2D", "Mean", "PSS", "Quadric", "normalW" };
 
     
         float pointNoise = 0.0f;
@@ -378,6 +378,9 @@ class GUI {
                 case (24) : methodForCloudComputing<basket_NormalCovariance3DFit<WeightFunc>, false>("NormCov3D"); break;
                 case (25) : methodForCloudComputing<basket_ShapeOperator2DFit<WeightFunc> >("ShapeOperator2D"); break;
                 case (26) : methodForCloudComputing<basket_MeanFit<WeightFunc>, false >("Mean"); break;
+                case (27) : methodForCloudComputing<basket_pss<WeightFunc> >("PSS"); break;
+                case (28) : methodForCloudComputing<basket_quadricFit<WeightFunc>, false >("Quadric"); break;
+                case (29) : methodForCloudComputing<basket_normalWeingartenFit<WeightFunc> >("normalW"); break;
                 default : break; 
             }
         }
@@ -418,6 +421,9 @@ class GUI {
                 case (24) : return SampleVectorType::Zero(vertices.rows()); // NormCov3D
                 case (25) : return pointProcessing.evalScalarField_impl<basket_ShapeOperator2DFit<WeightFunc>, false>("ShapeOperator2D", vertices);
                 case (26) : return SampleVectorType::Zero(vertices.rows()); // MeanFit
+                case (27) : return SampleVectorType::Zero(vertices.rows()); // PSS
+                case (28) : return pointProcessing.evalScalarField_impl<basket_quadricFit<WeightFunc>, false>("Quadric", vertices);
+                case (29) : return pointProcessing.evalScalarField_impl<basket_normalWeingartenFit<WeightFunc>>("normalW", vertices);
                 default : break; 
             }
             return SampleVectorType::Zero(vertices.rows());

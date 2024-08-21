@@ -239,6 +239,7 @@ class MyPointCloud {
                     m_vertices(i, j) += dist_pos(gen);
                     m_normals(i, j) += dist_normal(gen);
                 }
+                m_normals.row(i).normalize();
             }
         }
 

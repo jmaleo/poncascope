@@ -20,11 +20,12 @@ typedef Eigen::Vector<Scalar, Eigen::Dynamic>                  SampleVectorType;
 
 
 // Weighting functions
-using SmoothWeightFunc     = Ponca::DistWeightFunc<PPAdapter, Ponca::SmoothWeightKernel<Scalar> >;
-using ConstWeightFunc      = Ponca::DistWeightFunc<PPAdapter, Ponca::ConstantWeightKernel<Scalar> >;
-using WendlandWeightFunc   = Ponca::DistWeightFunc<PPAdapter, Ponca::WendlandWeightKernel<Scalar> >;
-using SingularWeightFunc   = Ponca::DistWeightFunc<PPAdapter, Ponca::SingularWeightKernel<Scalar> >;
-using varifoldWeightFunc   = Ponca::DistWeightFunc<PPAdapter, Ponca::VarifoldWeightKernel<Scalar> >;
+using SmoothWeightFunc      = Ponca::DistWeightFunc<PPAdapter, Ponca::SmoothWeightKernel<Scalar> >;
+using ConstWeightFunc       = Ponca::DistWeightFunc<PPAdapter, Ponca::ConstantWeightKernel<Scalar> >;
+using WendlandWeightFunc    = Ponca::DistWeightFunc<PPAdapter, Ponca::WendlandWeightKernel<Scalar> >;
+using SingularWeightFunc    = Ponca::DistWeightFunc<PPAdapter, Ponca::SingularWeightKernel<Scalar> >;
+using varifoldWeightFunc    = Ponca::DistWeightFunc<PPAdapter, Ponca::VarifoldWeightKernel<Scalar> >;
+using ExponentialWeightFunc = Ponca::DistWeightFunc<PPAdapter, Ponca::ExponentialWeightKernel<Scalar> >;
 
 // Don't use in global to avoid the case where scale2D requires a ddf valide for the mlsSphereFit derivative
 // using CompactExpWeightFunc = Ponca::DistWeightFunc<PPAdapter, Ponca::CompactExpWeightKernel<Scalar> >;
@@ -32,8 +33,24 @@ using varifoldWeightFunc   = Ponca::DistWeightFunc<PPAdapter, Ponca::VarifoldWei
 
 // No templated Fitting methods
 
+// template <typename WeightFunc>
+// using basket_quadricFit                   = Ponca::Basket<PPAdapter, WeightFunc, Ponca::QuadricFit>;
+
+template <typename WeightFunc>
+using basket_normalWeingartenFit                   = Ponca::Basket<PPAdapter, WeightFunc, Ponca::NormalWeingartenFit>;
+
+template <typename WeightFunc>
+using basket_quadricFit                   = Ponca::BasketDiff<
+                                            Ponca::Basket<PPAdapter, WeightFunc, Ponca::QuadricFit>,
+                                            Ponca::DiffType::FitSpaceDer,
+                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+
 using basket_triangleGeneration          =  Ponca::Basket<PPAdapter, ConstWeightFunc, Ponca::TriangleGeneration>; 
+
 using basket_dryFit                      =  Ponca::Basket<PPAdapter, SmoothWeightFunc, Ponca::DryFit>;
+
+template <typename WeightFunc>
+using basket_pss                        =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::PointSetSurfaceFit>;
 
 template <typename WeightFunc>
 using basket_MeanFit                     =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::MeanCurvatureFit>;
