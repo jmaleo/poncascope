@@ -40,10 +40,8 @@ template <typename WeightFunc>
 using basket_normalWeingartenFit                   = Ponca::Basket<PPAdapter, WeightFunc, Ponca::NormalWeingartenFit>;
 
 template <typename WeightFunc>
-using basket_quadricFit                   = Ponca::BasketDiff<
-                                            Ponca::Basket<PPAdapter, WeightFunc, Ponca::QuadricFit>,
-                                            Ponca::DiffType::FitSpaceDer,
-                                            Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+using basket_quadricFit                   = Ponca::Basket<PPAdapter, WeightFunc, Ponca::QuadricFit>;
+
 
 using basket_triangleGeneration          =  Ponca::Basket<PPAdapter, ConstWeightFunc, Ponca::TriangleGeneration>; 
 

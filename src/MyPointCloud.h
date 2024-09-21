@@ -240,6 +240,10 @@ class MyPointCloud {
                     m_normals(i, j) += dist_normal(gen);
                 }
                 m_normals.row(i).normalize();
+                // 1, 2.6
+                // pts : 0.00720
+                // noise n 0.15
+                
             }
         }
 
