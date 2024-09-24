@@ -122,11 +122,7 @@ template <typename WeightFunc>
 using basket_AlgebraicPointSetSurfaceFit =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::SimpleOrientedSphereFit>;
 
 template <typename WeightFunc>
-using basket_planeFit                    =  Ponca::BasketDiff<
-                                                Ponca::Basket<PPAdapter, WeightFunc, Ponca::CovariancePlaneFit>,
-                                                Ponca::DiffType::FitSpaceDer,
-                                                Ponca::CovariancePlaneDer,
-                                                Ponca::CurvatureEstimatorBase, Ponca::NormalDerivativesCurvatureEstimator>;
+using basket_planeFit                    =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::CovPlaneCurvatureFit>;
 
 template <typename WeightFunc>
 using basket_meanPlaneFit                    =  Ponca::BasketDiff<
@@ -163,4 +159,5 @@ using basket_mongePatchFit               =  Ponca::Basket<PPAdapter, WeightFunc,
 template <typename WeightFunc>
 using basket_orientedMongePatchFit       =  Ponca::Basket<PPAdapter, WeightFunc, Ponca::OrientedMongePatchFit>;
 
-using basket_varifold                    =  Ponca::Basket<PPAdapter, varifoldWeightFunc, Ponca::Varifold>;
+using basket_varifoldsCovPlane            =  Ponca::Basket<PPAdapter, varifoldWeightFunc, Ponca::VarifoldsCovPlane>;
+using basket_varifoldsMeanPlane           =  Ponca::Basket<PPAdapter, varifoldWeightFunc, Ponca::VarifoldsMeanPlane>;
