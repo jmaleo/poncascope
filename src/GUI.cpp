@@ -422,12 +422,37 @@ void GUI::cloudComputingUpdateUnique (){
             polyscope_meshs.push_back(mesh);
         }
         else {
-            // Create a new point cloud
-            polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, tempCloud.getDiffQuantities().getVertices());
-            polyscope_uniqueClouds.push_back(newCloud);
-            addQuantities(newCloud, "normals", tempCloud.getDiffQuantities().getNormals());
-            addQuantities(newCloud, "d1", tempCloud.getDiffQuantities().getKMinDir());
-            addQuantities(newCloud, "d2", tempCloud.getDiffQuantities().getKMaxDir());
+            if ( methodName.find( "PCA" ) != methodName.find( "MeanPLANE" ) ){
+                VectorType origin = pointProcessing.getVertexSourcePosition();
+                VectorType normal = tempCloud.getDiffQuantities().getNormals().row(0);
+                std::pair< std::vector<VectorType>, std::vector<std::array<size_t, 3> > > faces_idx = generatePlane(tempCloud.getDiffQuantities().getVertices(), normal);
+                // Create a new surface mesh
+                std::string meshName = "[" + methodName + "] " + "mesh";
+                polyscope::SurfaceMesh* mesh = polyscope::registerSurfaceMesh(meshName, faces_idx.first, faces_idx.second);
+                // Add quantities only to the first vertex (or face)
+                std::vector<VectorType> normals(faces_idx.first.size(), VectorType::Zero());
+                std::vector<VectorType> d1(faces_idx.first.size(), VectorType::Zero());
+                std::vector<VectorType> d2(faces_idx.first.size(), VectorType::Zero());
+                normals[0] = normal;
+                d1[0] = tempCloud.getDiffQuantities().getKMinDir().row(0);
+                d2[0] = tempCloud.getDiffQuantities().getKMaxDir().row(0);
+                mesh->addVertexVectorQuantity("normals", normals);
+                mesh->addVertexVectorQuantity("d1", d1);
+                mesh->addVertexVectorQuantity("d2", d2);
+                polyscope_meshs.push_back(mesh);
+            }
+            else {
+                // if ( methodName.find("Sphere") || methodName.find("APSS") || methodName.find("UnorientedSphere") ) {
+
+                // }
+
+                // Create a new point cloud
+                polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, tempCloud.getDiffQuantities().getVertices());
+                polyscope_uniqueClouds.push_back(newCloud);
+                addQuantities(newCloud, "normals", tempCloud.getDiffQuantities().getNormals());
+                addQuantities(newCloud, "d1", tempCloud.getDiffQuantities().getKMinDir());
+                addQuantities(newCloud, "d2", tempCloud.getDiffQuantities().getKMaxDir());
+            }
         } 
     });
 

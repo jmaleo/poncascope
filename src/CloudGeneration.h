@@ -9,6 +9,33 @@
 #include "MyPointCloud.h"
 #include "definitions.h"
 
+std::pair< std::vector<VectorType>, std::vector<std::array<size_t, 3> >> generatePlane(const SampleMatrixType& vertices, VectorType & normal){
+    std::vector<std::array<size_t, 3>> faces (3);
+    faces[0] = {0, 1, 2};
+    faces[1] = {0, 2, 3};
+    faces[2] = {0, 0, 0};
+    
+    VectorType origin = vertices.row(0);
+
+    // compute the bounding box from vertices
+    VectorType min = vertices.colwise().minCoeff();
+    VectorType max = vertices.colwise().maxCoeff();
+
+    Scalar min_dist = std::sqrt(origin.dot(min));
+
+    VectorType origin_min = origin - min;
+    VectorType origin_max = origin - max;
+
+    std::vector<VectorType> farestPoints;
+    farestPoints.push_back(origin + min_dist * origin_min);
+    farestPoints.push_back(origin + min_dist * origin_max);
+    farestPoints.push_back(origin - min_dist * origin_min);
+    farestPoints.push_back(origin - min_dist * origin_max);
+    
+
+    return std::make_pair(farestPoints, faces);
+}
+
 SampleMatrixType applyCentering(SampleMatrixType &cloudV){
     SampleMatrixType cloud_out = SampleMatrixType(cloudV.rows(), 3);
     

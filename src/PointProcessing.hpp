@@ -406,7 +406,7 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar
                                     
                                     D1.row( 0 ) = fit.kminDirection();
                                     D2.row( 0 ) = fit.kmaxDirection();
-                                    proj.row( 0 )   = getVertexSourcePosition();
+                                    proj.row( 0 )   = fit.project(getVertexSourcePosition());
                                     if ( ! std::is_same<FitT, basket_AlgebraicShapeOperatorFit<weightFunc>>::value)
                                         normal.row( 0 ) = fit.primitiveGradient();
                                             
