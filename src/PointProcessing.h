@@ -13,11 +13,13 @@ class PointProcessing {
     // Variables
     public:
 
-        KdTree tree;                   /// < kdtree for nearest neighbors search
-        KnnGraph *knnGraph = nullptr;  /// < k-neighbor graph
+        KdTree tree;                      /// < kdtree for nearest neighbors search
+        KnnGraph *knnGraph = nullptr;     /// < k-neighbor graph
+        MyVoxelGrid *voxelGrid = nullptr; /// < voxel grid
 
         // Options for algorithms
         bool  useKnnGraph    = false; /// < use k-neighbor graph instead of kdtree
+        bool  useVoxelGrid   = false; /// < use voxel grid instead of kdtree
         int   kNN_for_graph  = 6;     /// < neighborhood size (knn) for the graph
         int   iVertexSource  = 7;     /// < id of the selected point
         int   kNN            = 10;    /// < neighborhood size (knn)
@@ -75,6 +77,9 @@ class PointProcessing {
         
         /// Compute the kNN graph
         void recomputeKnnGraph();
+
+        /// @brief Compute the VoxelGrid
+        void computeVoxelGrid(MyPointCloud<Scalar> &cloud);
 
         /// @brief Compute differential quantities
         /// @tparam FitT Fit Type, \see definitions.h

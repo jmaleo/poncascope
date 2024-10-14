@@ -622,107 +622,111 @@ void GUI::cloudComputingParameters(){
         pointProcessing.recomputeKnnGraph();
     if ( ImGui::InputInt("kNN for graph", &pointProcessing.kNN_for_graph) ) 
         pointProcessing.recomputeKnnGraph();
-
-    // Add radio buttons to select the research type
-    ImGui::RadioButton("kNN", &pointProcessing.researchType, 0);
-    ImGui::SameLine();
-    ImGui::RadioButton("Euclidian Nearest", &pointProcessing.researchType, 1);
-
-    ImGui::SameLine();
-    if (pointProcessing.researchType == 0){
-        if (ImGui::Button("show neighbors")) addQuantities(polyscope_mainCloud, "knn", pointProcessing.colorizeKnn());
+    if (ImGui::Checkbox("Use Voxelgrid", &pointProcessing.useVoxelGrid)) {
+        pointProcessing.computeVoxelGrid(mainCloud);
     }
-    else {
-        if (ImGui::Button("show neighbors")) {
-            switch (weightFuncType){
-                case 0 : 
-                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<ConstWeightFunc>());
+
+    if ( ! pointProcessing.useVoxelGrid ) {
+        // Add radio buttons to select the research type
+        ImGui::RadioButton("kNN", &pointProcessing.researchType, 0);
+        ImGui::SameLine();
+        ImGui::RadioButton("Euclidian Nearest", &pointProcessing.researchType, 1);
+
+        ImGui::SameLine();
+        if (pointProcessing.researchType == 0){
+            if (ImGui::Button("show neighbors")) addQuantities(polyscope_mainCloud, "knn", pointProcessing.colorizeKnn());
+        }
+        else {
+            if (ImGui::Button("show neighbors")) {
+                switch (weightFuncType){
+                    case 0 :
+                        addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<ConstWeightFunc>());
                     break;
-                case 1 :
-                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
+                    case 1 :
+                        addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
                     break;
-                case 2 :
-                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<WendlandWeightFunc>());
+                    case 2 :
+                        addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<WendlandWeightFunc>());
                     break;
-                case 3 :
-                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>());
+                    case 3 :
+                        addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>());
                     break;
-                case 4 : 
-                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<ExponentialWeightFunc>());
+                    case 4 :
+                        addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<ExponentialWeightFunc>());
                     break;
-                default : 
-                    addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
+                    default :
+                        addQuantities(polyscope_mainCloud, "euclidean nei", pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
                     break;
+                }
             }
         }
-    }
-    ImGui::SameLine();
-    if (pointProcessing.researchType == 0){
-        if (ImGui::Button("pc neighbors")) {
-            SampleVectorType neighbor_values= pointProcessing.colorizeKnn();
-            std::pair<SampleMatrixType, SampleVectorType> res_nei = mainCloud.getNonZeros(neighbor_values, pointProcessing.iVertexSource);
-            std::string cloudName = "neighborhood";
-            // Create a new point cloud
-            polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, res_nei.first);
-            polyscope_uniqueClouds.push_back(newCloud);
-            addQuantities(newCloud, "neighbors", res_nei.second);
-        }
-    }
-    else {
-        if (ImGui::Button("pc neighbors")) {
-            SampleVectorType neighbor_values;
-            switch (weightFuncType){
-                case 0 : 
-                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<ConstWeightFunc>();
-                    break;
-                case 1 :
-                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>();
-                    break;
-                case 2 :
-                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<WendlandWeightFunc>();
-                    break;
-                case 3 :
-                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>();
-                    break;
-                case 4 : 
-                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<ExponentialWeightFunc>();
-                    break;
-                default : 
-                    neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>();
-                    break;
+        ImGui::SameLine();
+        if (pointProcessing.researchType == 0){
+            if (ImGui::Button("pc neighbors")) {
+                SampleVectorType neighbor_values= pointProcessing.colorizeKnn();
+                std::pair<SampleMatrixType, SampleVectorType> res_nei = mainCloud.getNonZeros(neighbor_values, pointProcessing.iVertexSource);
+                std::string cloudName = "neighborhood";
+                // Create a new point cloud
+                polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, res_nei.first);
+                polyscope_uniqueClouds.push_back(newCloud);
+                addQuantities(newCloud, "neighbors", res_nei.second);
             }
-            std::pair<SampleMatrixType, SampleVectorType> res_nei = mainCloud.getNonZeros(neighbor_values, pointProcessing.iVertexSource);
-            std::string cloudName = "neighborhood";
-            // Create a new point cloud
-            polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, res_nei.first);
-            polyscope_uniqueClouds.push_back(newCloud);
-            addQuantities(newCloud, "neighbors", res_nei.second);
         }
+        else {
+            if (ImGui::Button("pc neighbors")) {
+                SampleVectorType neighbor_values;
+                switch (weightFuncType){
+                    case 0 :
+                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<ConstWeightFunc>();
+                    break;
+                    case 1 :
+                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>();
+                    break;
+                    case 2 :
+                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<WendlandWeightFunc>();
+                    break;
+                    case 3 :
+                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>();
+                    break;
+                    case 4 :
+                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<ExponentialWeightFunc>();
+                    break;
+                    default :
+                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>();
+                    break;
+                }
+                std::pair<SampleMatrixType, SampleVectorType> res_nei = mainCloud.getNonZeros(neighbor_values, pointProcessing.iVertexSource);
+                std::string cloudName = "neighborhood";
+                // Create a new point cloud
+                polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, res_nei.first);
+                polyscope_uniqueClouds.push_back(newCloud);
+                addQuantities(newCloud, "neighbors", res_nei.second);
+            }
+        }
+
+        if ( pointProcessing.researchType == 0 ) {
+            ImGui::InputInt("k-neighborhood size", &pointProcessing.kNN);
+        }
+        else {
+            ImGui::InputFloat("neighborhood size", &pointProcessing.NSize);
+        }
+
+        ImGui::InputInt("source vertex", &pointProcessing.iVertexSource);
+        ImGui::InputInt("Nb MLS Iterations", &pointProcessing.mlsIter);
+
+        // Add radio buttons to select the weight function
+        ImGui::RadioButton("Constant", &weightFuncType, 0);
+        ImGui::SameLine();
+        ImGui::RadioButton("Smooth", &weightFuncType, 1);
+        ImGui::SameLine();
+        ImGui::RadioButton("Wendland", &weightFuncType, 2);
+        ImGui::SameLine();
+        ImGui::RadioButton("Singular", &weightFuncType, 3);
+        ImGui::SameLine();
+        ImGui::RadioButton("Exponential", &weightFuncType, 4);
+
+        ImGui::Separator();
     }
-
-    if ( pointProcessing.researchType == 0 ) {
-        ImGui::InputInt("k-neighborhood size", &pointProcessing.kNN);
-    }
-    else {
-        ImGui::InputFloat("neighborhood size", &pointProcessing.NSize);
-    }
-
-    ImGui::InputInt("source vertex", &pointProcessing.iVertexSource);
-    ImGui::InputInt("Nb MLS Iterations", &pointProcessing.mlsIter);
-
-    // Add radio buttons to select the weight function
-    ImGui::RadioButton("Constant", &weightFuncType, 0);
-    ImGui::SameLine();
-    ImGui::RadioButton("Smooth", &weightFuncType, 1);
-    ImGui::SameLine();
-    ImGui::RadioButton("Wendland", &weightFuncType, 2);
-    ImGui::SameLine();
-    ImGui::RadioButton("Singular", &weightFuncType, 3);
-    ImGui::SameLine();
-    ImGui::RadioButton("Exponential", &weightFuncType, 4);
-
-    ImGui::Separator();
-
 }
 
 void GUI::addQuantities(polyscope::PointCloud *pc, const std::string &name, const SampleMatrixType &values){
