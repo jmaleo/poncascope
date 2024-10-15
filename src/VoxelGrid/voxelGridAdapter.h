@@ -17,17 +17,19 @@ struct Quantity {
     int test = 0; // just for testing
 };
 
+// Be carefull when using std::vector or Eigen::Matrix
 template <typename SampleMatrixType, typename VoxelGridType, typename DataType>
 void
 buildVoxelGrid (const SampleMatrixType& pos, const SampleMatrixType& norm, VoxelGridType& voxelGrid, int resolution, int N) {
+    using VectorType = typename DataType::VectorType;
     using Aabb = typename VoxelGridType::Aabb;
-    Aabb bbox;
-    for (int i = 0; i < pos.size(); i++) {
-        bbox.extend(pos[i]);
-    }
+
+    VectorType min_bbox, max_bbox;
+    Aabb bbox = Aabb(pos.colwise().minCoeff(), pos.colwise().maxCoeff());
     voxelGrid.init(bbox, N, resolution);
     for (int i = 0; i < pos.size(); i++) {
-        DataType data(pos[i], norm[i]);
+
+        DataType data(pos.row(i).transpose(), norm.row(i).transpose());
         voxelGrid.addData(data, i);
     }
 

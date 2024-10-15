@@ -56,7 +56,10 @@ endif()
 add_executable( poncascope
                 src/poncaAdapters.hpp
                 src/main.cpp
-                )
+        src/VoxelGrid/iVoxel.h
+        src/VoxelGrid/voxelGridAdapter.h
+        src/VoxelGrid/Voxel.h
+)
 
 add_dependencies( poncascope poncascope-copyassets)
 

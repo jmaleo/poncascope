@@ -15,7 +15,7 @@ class PointProcessing {
 
         KdTree tree;                      /// < kdtree for nearest neighbors search
         KnnGraph *knnGraph = nullptr;     /// < k-neighbor graph
-        MyVoxelGrid *voxelGrid = nullptr; /// < voxel grid
+        MyVoxelGrid voxelGrid; /// < voxel grid
 
         // Options for algorithms
         bool  useKnnGraph    = false; /// < use k-neighbor graph instead of kdtree

@@ -21,6 +21,7 @@ private:
     Estimator estimator;
     bool leaf = true;
     int resolution = 0;
+    std::vector<DataType> data;
 
 public:
     Voxel() = default;
@@ -35,6 +36,10 @@ public:
         return quantity;
     }
 
+    Estimator getEstimator() override {
+        return estimator;
+    }
+
     Aabb getBoundingBox() override {
         return boundingBox;
     }
@@ -43,11 +48,11 @@ public:
         return resolution;
     }
 
-    void setData(std::vector<DataType> data) override {
+    void setData(const std::vector<DataType>& data) override {
         this->data = data;
     }
 
-    void addData(DataType data, const int i) override {
+    void addData(const DataType& data, const int i) override {
         this->indices.push_back(i);
     }
 

@@ -15,7 +15,7 @@ public:
     using Scalar = typename DataType::Scalar;
     using Aabb = Eigen::AlignedBox<Scalar, VectorType::RowsAtCompileTime>;
 
-    virtual ~iVoxel() = 0;
+    virtual ~iVoxel() = default;
 
     virtual std::vector<int> getIndices() = 0;
     virtual Quantity getQuantity() = 0;
@@ -23,10 +23,10 @@ public:
     virtual Aabb getBoundingBox() = 0;
 
 
-    virtual void setData(std::vector<DataType> data) = 0;
+    virtual void setData(const std::vector<DataType>& data) = 0;
 
     // If the voxel is a grid, this will call the grid and add the data to the correct cell
-    virtual void addData(const DataType& data, int i) = 0;
+    virtual void addData(const DataType& data, const int i) = 0;
 
     virtual int getResolution() = 0;
     virtual bool isLeaf() = 0;

@@ -22,13 +22,16 @@
  * @tparam Estimator
  */
 template <typename DataType, typename Quantity, typename Estimator>
-class VoxelGrid
+class VoxelGrid : public iVoxel<DataType, Quantity, Estimator>
 {
-private:
+public:
     using VectorType = typename DataType::VectorType;
     using Scalar = typename DataType::Scalar;
     using Aabb = Eigen::AlignedBox<Scalar, VectorType::RowsAtCompileTime>;
     using VoxelType = Voxel<DataType, Quantity, Estimator>;
+    using VoxelGridType = VoxelGrid<DataType, Quantity, Estimator>;
+
+private:
 
     int N = 0;
 
@@ -46,7 +49,74 @@ private:
 
 public:
 
+    ~VoxelGrid() override = default;
+
     VoxelGrid () = default;
+
+    VoxelGrid (const Aabb& bbox, const int N, const int res) {
+        init(bbox, N, res);
+    }
+
+    VoxelGrid(const VoxelGrid&) = delete;
+    VoxelGrid& operator=(const VoxelGrid&) = delete;
+
+    VoxelGrid(VoxelGrid&& other) noexcept
+        : children(std::move(other.children)),
+          indices(std::move(other.indices)),
+          data(std::move(other.data)),
+          boundingBox(std::move(other.boundingBox)),
+          N(other.N),
+          quantity(std::move(other.quantity)),
+          resolution(other.resolution),
+          leaf(other.leaf)
+    {}
+
+    VoxelGrid& operator=(VoxelGrid&& other) noexcept {
+        if (this != &other) {
+            children = std::move(other.children);
+            indices = std::move(other.indices);
+            data = std::move(other.data);
+            boundingBox = std::move(other.boundingBox);
+            N = other.N;
+            quantity = std::move(other.quantity);
+            resolution = other.resolution;
+            leaf = other.leaf;
+        }
+        return *this;
+    }
+
+    void setData(const std::vector<DataType>& data) override {
+        std::cout << "setData" << std::endl;
+    }
+
+    int getResolution() override {
+        return resolution;
+    }
+
+    bool isLeaf () override {
+        return leaf;
+    }
+
+    bool isEmpty() override {
+        return indices.empty() || ! leaf;
+    }
+
+    Quantity getQuantity() override {
+        return quantity;
+    }
+
+    Estimator getEstimator() override {
+        return Estimator();
+    }
+
+    std::vector<int> getIndices() override {
+        std::vector<int> idx;
+        for (const std::unique_ptr<iVoxel<DataType, Quantity, Estimator>>& cell : children) {
+            std::vector<int> childIdx = cell->getIndices();
+            idx.insert(idx.end(), childIdx.begin(), childIdx.end());
+        }
+        return idx;
+    }
 
     /**
      * @param bbox The bounding box of the grid
@@ -55,22 +125,40 @@ public:
      *         But, at the end, we may imagine to be more detailed with a resolution of 2, 3, 4, etc.
      * @param res The resolution of the grid (depth of the tree)
      */
-    void init(Aabb bbox, const int N, const int res) : N(N), resolution(res) {
-        this->leaf = resolution == 0;
-        this->boundingBox = Aabb::Empty();
-        children = std::vector<std::unique_ptr<iVoxel<DataType, Quantity, Estimator>>>(N * N * N);
-        for (int i = 0; i < N * N * N; i++) {
-            Aabb children_aabb = getCellBoundingBox(i);
-            if (this->resolution == 1) {
-                children[i] = std::make_unique<VoxelType>(children_aabb);
-            }
-            else {
-                children[i] = std::make_unique<VoxelGrid>(children_aabb, N, resolution - 1);
+    void init(Aabb bbox, const int N, const int res) {
+        this->boundingBox = bbox;
+        this->N = N;
+        this->resolution = res;
+        this->leaf = res == 0;
+        if (!leaf) {
+            children.reserve(N * N * N);
+            for (int i = 0; i < N * N * N; i++) {
+                initializeChild(i);
             }
         }
     }
 
-    void addData(const DataType& data, int i) {
+    void initializeChild(int index) {
+        if (children.size() <= index) {
+            children.resize(index + 1);
+        }
+        if (!children[index]) {
+            Aabb childBbox = getCellBoundingBox(index);
+            if (resolution == 1) {
+                children[index] = std::make_unique<VoxelType>(childBbox);
+            } else {
+                children[index] = std::make_unique<VoxelGridType>(childBbox, N, resolution - 1);
+            }
+        }
+    }
+
+    iVoxel<DataType, Quantity, Estimator>* getChild(int index) {
+        if (index >= N * N * N) return nullptr;
+        initializeChild(index);
+        return children[index].get();
+    }
+
+    void addData(const DataType& data, const int i) override {
         // Grab position
         const VectorType& pos = data.pos();
         // Get the cell index
@@ -79,7 +167,7 @@ public:
         children[cellIdx]->addData(data, i);
     }
 
-    Aabb getBoundingBox() {
+    Aabb getBoundingBox() override {
         return boundingBox;
     }
 

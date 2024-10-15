@@ -573,6 +573,14 @@ void PointProcessing::recomputeKnnGraph() {
     }
 }
 
+inline void PointProcessing::computeVoxelGrid(MyPointCloud<Scalar> &cloud) {
+
+    const SampleMatrixType points = cloud.getVertices();
+    const SampleMatrixType normals = cloud.getNormals();
+
+    buildVoxelGrid< SampleMatrixType, MyVoxelGrid, PPAdapter >(points, normals, voxelGrid, 4, 1);
+}
+
 void PointProcessing::mlsDryRun() {
     int nvert = tree.index_data().size();
 
