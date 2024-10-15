@@ -27,8 +27,7 @@ buildVoxelGrid (const SampleMatrixType& pos, const SampleMatrixType& norm, Voxel
     VectorType min_bbox, max_bbox;
     Aabb bbox = Aabb(pos.colwise().minCoeff(), pos.colwise().maxCoeff());
     voxelGrid.init(bbox, N, resolution);
-    for (int i = 0; i < pos.size(); i++) {
-
+    for (int i = 0; i < pos.rows(); i++) {
         DataType data(pos.row(i).transpose(), norm.row(i).transpose());
         voxelGrid.addData(data, i);
     }
