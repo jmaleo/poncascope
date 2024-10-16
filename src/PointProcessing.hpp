@@ -541,10 +541,12 @@ void PointProcessing::recomputeKnnGraph() {
 inline void PointProcessing::computeVoxelGrid(MyPointCloud<Scalar> &cloud) {
     if (!useVoxelGrid)
         return;
-
+    std::cout << "Building the voxel grid" << std::endl;
+    voxelGrid = MyVoxelGrid();
     const SampleMatrixType points = cloud.getVertices();
     const SampleMatrixType normals = cloud.getNormals();
     buildVoxelGrid<SampleMatrixType, MyVoxelGrid, PPAdapter>(points, normals, voxelGrid, resolution, N);
+    std::cout << "Successfully build" << std::endl;
 }
 
 void PointProcessing::mlsDryRun() {
