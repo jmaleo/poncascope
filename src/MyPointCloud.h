@@ -99,6 +99,10 @@ class DiffQuantities {
             m_kMaxDir = d2;
         }
 
+        void setKMean(const SampleVectorType &kMean){
+            m_kMean = kMean;
+        }
+
         const SampleMatrixType getByName (const std::string &name){
             if (name == "Projections") return m_vertices;
             if (name == "Normals") return m_normals;

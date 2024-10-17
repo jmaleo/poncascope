@@ -390,26 +390,35 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar
 
     // Allocate memory
     SampleMatrixType normal( nvert, 3 ), proj( nvert, 3 ), D1 (nvert, 3), D2 (nvert, 3);
-
+    SampleVectorType kMean(nvert);
     // set Zeros 
     normal.setZero();
     proj.setZero();
     D1.setZero();
     D2.setZero();
+    kMean.setZero();
 
 
     measureTime( "[Ponca] Compute differential quantities using " + name,
-                [this, &cloud, &nvert, &normal, &proj, &D1, &D2]() {
+                [this, &cloud, &nvert, &normal, &proj, &D1, &D2, &kMean]() {
                     processPointCloud<FitT>(true, weightFunc(NSize),
-                                [this, &cloud, &nvert, &normal, &proj, &D1, &D2]
+                                [this, &cloud, &nvert, &normal, &proj, &D1, &D2, &kMean]
                                 ( int i, const FitT& fit, const VectorType& mlsPos){
                                     
                                     D1.row( 0 ) = fit.kminDirection();
                                     D2.row( 0 ) = fit.kmaxDirection();
-                                    proj.row( 0 )   = fit.project(getVertexSourcePosition());
+                                    kMean.row( 0 )[ 0 ] = fit.kMean();
+                                    normal.row( 0 ) = fit.primitiveGradient();
+                                    proj.row( 0 )   = mlsPos;
                                     if ( ! std::is_same<FitT, basket_AlgebraicShapeOperatorFit<weightFunc>>::value)
                                         normal.row( 0 ) = fit.primitiveGradient();
-                                            
+                                    
+                                    if ( std::is_same<FitT, basket_AlgebraicPointSetSurfaceFit<weightFunc>>::value 
+                                        || std::is_same<FitT, basket_AlgebraicShapeOperatorFit<weightFunc>>::value
+                                        || std::is_same<FitT, basket_SphereFit<weightFunc>>::value
+                                        || std::is_same<FitT, basket_UnorientedSphereFit<weightFunc>>::value){
+                                            proj.row( 0 )   = fit.barycenter();
+                                    }
                         
                                     for (int k = 1; k < nvert; k++){
                                         VectorType init = cloud.getVertices().row(k);
@@ -434,6 +443,7 @@ PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar
     DiffQuantities<Scalar> test (proj, normal);
     test.setD1(D1);
     test.setD2(D2);
+    test.setKMean(kMean);
     cloud.setDiffQuantities(test);
 
     // cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal));

@@ -23,7 +23,10 @@ int main(int argc, char **argv) {
     polyscope::options::programName = "poncascope";
     polyscope::view::windowWidth = 1024;
     polyscope::view::windowHeight = 1024;
-    polyscope::options::groundPlaneEnabled = false;
+    // polyscope::options::groundPlaneEnabled = false;
+    polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::ShadowOnly;
+    // polyscope::options::groundPlaneHeightFactor = 0.075;
+
     polyscope::view::bgColor = std::array<float, 4> {0.053, 0.053, 0.053, 0};
 
     CLI::App app{"Poncascope"};

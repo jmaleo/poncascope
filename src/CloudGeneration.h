@@ -5,32 +5,30 @@
 #include <igl/readPLY.h>
 #include <igl/per_vertex_normals.h>
 #include <igl/per_face_normals.h>
+#include "happly.h"
 
 #include "MyPointCloud.h"
 #include "definitions.h"
 
-std::pair< std::vector<VectorType>, std::vector<std::array<size_t, 3> >> generatePlane(const SampleMatrixType& vertices, VectorType & normal){
+std::pair< std::vector<VectorType>, std::vector<std::array<size_t, 3> >> generatePlane(const SampleMatrixType& vertices, VectorType & normal, VectorType& d1, VectorType& d2){
     std::vector<std::array<size_t, 3>> faces (3);
-    faces[0] = {0, 1, 2};
-    faces[1] = {0, 2, 3};
-    faces[2] = {0, 0, 0};
+    faces[0] = {0, 0, 0};
+    faces[1] = {1, 2, 3};
+    faces[2] = {1, 3, 4};
     
     VectorType origin = vertices.row(0);
 
     // compute the bounding box from vertices
     VectorType min = vertices.colwise().minCoeff();
     VectorType max = vertices.colwise().maxCoeff();
-
-    Scalar min_dist = std::sqrt(origin.dot(min));
-
-    VectorType origin_min = origin - min;
-    VectorType origin_max = origin - max;
+    Scalar min_dist = (max - min).norm() / 4.0;
 
     std::vector<VectorType> farestPoints;
-    farestPoints.push_back(origin + min_dist * origin_min);
-    farestPoints.push_back(origin + min_dist * origin_max);
-    farestPoints.push_back(origin - min_dist * origin_min);
-    farestPoints.push_back(origin - min_dist * origin_max);
+    farestPoints.push_back(origin);
+    farestPoints.push_back(origin + min_dist * d1);
+    farestPoints.push_back(origin + min_dist * d2);
+    farestPoints.push_back(origin - min_dist * d1);
+    farestPoints.push_back(origin - min_dist * d2);
     
 
     return std::make_pair(farestPoints, faces);
@@ -224,6 +222,42 @@ void loadXYZObject (MyPointCloud<Scalar> &cloud, std::string &filename, Scalar s
     cloud.addNoise(sigma_pos, sigma_normal);
 }
 
+bool loadMeshWithLibigl(const std::string& filename, SampleMatrixType& V, SampleMatrixType& N, Eigen::MatrixXi& F) {
+    Eigen::MatrixXi cloudE;
+    SampleMatrixType cloudUV;
+    try {
+        if (!igl::readPLY(filename, V, F, cloudE, N, cloudUV)) {
+    
+            std::cerr << "Erreur lors du chargement du fichier avec libigl" << std::endl;
+            return false;
+        }
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Exception lors du chargement avec libigl: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+void loadPLYPointCloud (std::string filename, SampleMatrixType& cloudV, SampleMatrixType& cloudN){
+    happly::PLYData plyIn(filename);
+
+    std::vector <Scalar> x = plyIn.getElement("vertex").getProperty< Scalar >("x");
+    std::vector <Scalar> y = plyIn.getElement("vertex").getProperty< Scalar >("y");
+    std::vector <Scalar> z = plyIn.getElement("vertex").getProperty< Scalar >("z");
+    std::vector <Scalar> nx = plyIn.getElement("vertex").getProperty< Scalar >("nx");
+    std::vector <Scalar> ny = plyIn.getElement("vertex").getProperty< Scalar >("ny");
+    std::vector <Scalar> nz = plyIn.getElement("vertex").getProperty< Scalar >("nz");
+    
+    cloudV = SampleMatrixType(x.size(), 3);
+    cloudN = SampleMatrixType(x.size(), 3);
+
+    #pragma omp parallel for
+    for (int i = 0; i < x.size(); ++i){
+        cloudV.row(i) = VectorType(x[i], y[i], z[i]);
+        cloudN.row(i) = VectorType(nx[i], ny[i], nz[i]);
+    }
+}
+
 void loadObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_pos, Scalar sigma_normal) {
 
     Eigen::MatrixXi meshF;
@@ -238,9 +272,9 @@ void loadObject (MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma
         return;
     }
     if (filename.substr(filename.find_last_of(".") + 1) == "ply"){
-        Eigen::MatrixXi cloudE;
-        SampleMatrixType cloudUV;
-        igl::readPLY(filename, cloudV, meshF, cloudE, cloudN, cloudUV);
+        if (!loadMeshWithLibigl(filename, cloudV, cloudN, meshF)){
+            loadPLYPointCloud(filename, cloudV, cloudN);
+        }
     }
     else {
         igl::read_triangle_mesh(filename, cloudV, meshF);

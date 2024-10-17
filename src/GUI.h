@@ -33,7 +33,7 @@ class GUI {
             selectedQuantities.resize(6, 0);
 
             // Initialize the point cloud
-            selectedFile = assetsDir + "armadillo.obj";
+            selectedFile = assetsDir + "Armadillo_little.pts";
 
             // Initialize the item selected method
             item_selected_method = 0;
