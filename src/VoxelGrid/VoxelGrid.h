@@ -80,7 +80,9 @@ public:
 
     bool isLeaf() override { return leaf; }
 
-    bool isEmpty() override { return indices.empty() || !leaf; }
+    bool isEmpty() override {
+        return indices.empty() || getIndices().empty();
+    }
 
     Quantity getQuantity() override { return quantity; }
 
@@ -155,14 +157,14 @@ public:
     Aabb getBoundingBox() override { return boundingBox; }
 
     // For debug only, get the Aabb of each cell, given a resolution
-    std::vector<Aabb> getCellBoundingBoxes(int res) {
+    std::vector<Aabb> getCellBoundingBoxes(int res, bool onlyNotEmpty = false) {
         std::vector<Aabb> cellBoundingBoxes;
         for (int ix = 0; ix < N; ix++) {
             for (int iy = 0; iy < N; iy++) {
                 for (int iz = 0; iz < N; iz++) {
                     int cellIdx = ix + N * (iy + N * iz);
                     std::unique_ptr<iVoxel<DataType, Quantity, Estimator>> &cell = children[cellIdx];
-                    if (res == cell->getResolution()) {
+                    if (res == cell->getResolution() && ( ! cell->isEmpty() || ! onlyNotEmpty)) {
                         cellBoundingBoxes.push_back(cell->getBoundingBox());
                     } else {
                         std::vector<Aabb> childCellBoundingBoxes =

@@ -638,7 +638,7 @@ void GUI::cloudComputingParameters() {
             if (displayVoxelResolution > pointProcessing.resolution)
                 displayVoxelResolution = pointProcessing.resolution;
             using Aabb = MyVoxelGrid::Aabb;
-            std::vector<Aabb> bboxes = pointProcessing.voxelGrid.getCellBoundingBoxes(displayVoxelResolution);
+            std::vector<Aabb> bboxes = pointProcessing.voxelGrid.getCellBoundingBoxes(displayVoxelResolution, false); // True to only keep non empty cells [TODO] not working
             // Create a new mesh using only lines
             std::vector<VectorType> vertices;
             std::vector<std::array<int, 2>> indices;
