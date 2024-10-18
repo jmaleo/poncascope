@@ -81,7 +81,11 @@ public:
     bool isLeaf() override { return leaf; }
 
     bool isEmpty() override {
-        return indices.empty() || getIndices().empty();
+        for (const std::unique_ptr<iVoxel<DataType, Quantity, Estimator>> &cell: children) {
+            if (!cell->isEmpty())
+                return false;
+        }
+        return true;
     }
 
     Quantity getQuantity() override { return quantity; }
@@ -154,40 +158,72 @@ public:
         }
     }
 
+    void computeData() override {
+        quantity = Quantity();
+        int count = 0;
+        for (std::unique_ptr<iVoxel<DataType, Quantity, Estimator>> &cell: children) {
+            cell->computeData();
+            if (cell->isEmpty())
+                continue;
+            count += 1;
+            quantity += cell->getQuantity();
+        }
+        quantity /= count;
+    }
+
     Aabb getBoundingBox() override { return boundingBox; }
 
     // For debug only, get the Aabb of each cell, given a resolution
     std::vector<Aabb> getCellBoundingBoxes(int res, bool onlyNotEmpty = false) {
         std::vector<Aabb> cellBoundingBoxes;
-        for (int ix = 0; ix < N; ix++) {
-            for (int iy = 0; iy < N; iy++) {
-                for (int iz = 0; iz < N; iz++) {
-                    int cellIdx = ix + N * (iy + N * iz);
-                    std::unique_ptr<iVoxel<DataType, Quantity, Estimator>> &cell = children[cellIdx];
-                    if (res == cell->getResolution() && ( ! cell->isEmpty() || ! onlyNotEmpty)) {
-                        cellBoundingBoxes.push_back(cell->getBoundingBox());
-                    } else {
-                        std::vector<Aabb> childCellBoundingBoxes =
-                                static_cast<VoxelGrid *>(cell.get())->getCellBoundingBoxes(res);
-                        cellBoundingBoxes.insert(cellBoundingBoxes.end(), childCellBoundingBoxes.begin(),
-                                                 childCellBoundingBoxes.end());
-                    }
+        for (int cellIdx = 0; cellIdx < N * N * N; cellIdx++) {
+            std::unique_ptr<iVoxel<DataType, Quantity, Estimator>> &cell = children[cellIdx];
+            if (res == cell->getResolution()) {
+                if (onlyNotEmpty && cell->isEmpty()) {
+                    continue;
                 }
+                cellBoundingBoxes.push_back(cell->getBoundingBox());
+            } else {
+                std::vector<Aabb> childCellBoundingBoxes =
+                        static_cast<VoxelGrid *>(cell.get())->getCellBoundingBoxes(res, onlyNotEmpty);
+                cellBoundingBoxes.insert(cellBoundingBoxes.end(), childCellBoundingBoxes.begin(),
+                                         childCellBoundingBoxes.end());
             }
         }
         return cellBoundingBoxes;
+    }
+
+    VectorType getCenter() override {
+        if (isEmpty())
+            return boundingBox.center();
+        return quantity.barycenter;
+    }
+
+    std::vector<VectorType> getCellCenters(int res, bool onlyNotEmpty = false) {
+        std::vector<VectorType> cellCenters;
+        for (int cellIdx = 0; cellIdx < N * N * N; cellIdx++) {
+            std::unique_ptr<iVoxel<DataType, Quantity, Estimator>> &cell = children[cellIdx];
+            if (res == cell->getResolution()) {
+                if (onlyNotEmpty && cell->isEmpty()) {
+                    continue;
+                }
+                cellCenters.push_back(cell->getCenter());
+            } else {
+                std::vector<VectorType> childCellCenters =
+                        static_cast<VoxelGrid *>(cell.get())->getCellCenters(res, onlyNotEmpty);
+                cellCenters.insert(cellCenters.end(), childCellCenters.begin(), childCellCenters.end());
+            }
+        }
+        return cellCenters;
     }
 
 private:
     // Convert a position to a cell index
     // [TODO] Need to be careful with the indices (do we need to use floor or ceil ?)
     int getCellIdx(const VectorType &pos) {
-        const int iX =
-                std::floor((pos.x() - boundingBox.min().x()) / (boundingBox.max().x() - boundingBox.min().x())) * N;
-        const int iY =
-                std::floor((pos.y() - boundingBox.min().y()) / (boundingBox.max().y() - boundingBox.min().y())) * N;
-        const int iZ =
-                std::floor((pos.z() - boundingBox.min().z()) / (boundingBox.max().z() - boundingBox.min().z())) * N;
+        int iX = std::floor((pos.x() - boundingBox.min().x()) / (boundingBox.max().x() - boundingBox.min().x()) * N);
+        int iY = std::floor((pos.y() - boundingBox.min().y()) / (boundingBox.max().y() - boundingBox.min().y()) * N);
+        int iZ = std::floor((pos.z() - boundingBox.min().z()) / (boundingBox.max().z() - boundingBox.min().z()) * N);
         return iX + N * (iY + N * iZ);
     }
 

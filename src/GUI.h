@@ -263,6 +263,7 @@ private:
     int axis = 0;
 
     int displayVoxelResolution = 0;
+    bool noEmptyVoxels = false;
 
     bool fastMode = false;
     Scalar pointRadius = 0.005; /// < display radius of the point cloud

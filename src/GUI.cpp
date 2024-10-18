@@ -626,6 +626,8 @@ void GUI::cloudComputingParameters() {
     }
 
     if (pointProcessing.useVoxelGrid) {
+        ImGui::SameLine();
+        ImGui::Checkbox("No empty cells", &noEmptyVoxels);
         if (ImGui::InputInt("Resolution", &pointProcessing.resolution, 1, 200)) {
             pointProcessing.computeVoxelGrid(mainCloud);
         }
@@ -633,12 +635,16 @@ void GUI::cloudComputingParameters() {
             pointProcessing.computeVoxelGrid(mainCloud);
         }
 
-        ImGui::InputInt("Show Voxels Resolution", &displayVoxelResolution, 0, 200);
+        if (ImGui::InputInt("Show Voxels Resolution", &displayVoxelResolution, 0, 200)) {
+            displayVoxelResolution = std::max(0, displayVoxelResolution);
+            displayVoxelResolution = std::min(displayVoxelResolution, pointProcessing.resolution);
+        }
         if (ImGui::Button("Show VoxelGrid")) {
             if (displayVoxelResolution > pointProcessing.resolution)
                 displayVoxelResolution = pointProcessing.resolution;
             using Aabb = MyVoxelGrid::Aabb;
-            std::vector<Aabb> bboxes = pointProcessing.voxelGrid.getCellBoundingBoxes(displayVoxelResolution, false); // True to only keep non empty cells [TODO] not working
+            std::vector<Aabb> bboxes = pointProcessing.voxelGrid.getCellBoundingBoxes(
+                    displayVoxelResolution, noEmptyVoxels); // True to only keep non empty cells [TODO] not working
             // Create a new mesh using only lines
             std::vector<VectorType> vertices;
             std::vector<std::array<int, 2>> indices;
@@ -646,6 +652,11 @@ void GUI::cloudComputingParameters() {
             // Delete older voxel grid if it exists
             polyscope::removeStructure("VoxelGrid", false);
             polyscope::registerCurveNetwork("VoxelGrid", vertices, indices);
+
+            std::vector<VectorType> centers =
+                    pointProcessing.voxelGrid.getCellCenters(displayVoxelResolution, noEmptyVoxels);
+            polyscope::registerPointCloud("VoxelGrid centers", centers);
+            // Add some quantities next time
         }
 
     } else {

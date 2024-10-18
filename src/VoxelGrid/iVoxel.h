@@ -7,9 +7,8 @@
 
 #include <vector>
 
-template <typename DataType, typename Quantity, typename Estimator>
-class iVoxel
-{
+template<typename DataType, typename Quantity, typename Estimator>
+class iVoxel {
 public:
     using VectorType = typename DataType::VectorType;
     using Scalar = typename DataType::Scalar;
@@ -21,17 +20,19 @@ public:
     virtual Quantity getQuantity() = 0;
     virtual Estimator getEstimator() = 0;
     virtual Aabb getBoundingBox() = 0;
+    virtual VectorType getCenter() = 0;
 
 
-    virtual void setData(const std::vector<DataType>& data) = 0;
+    virtual void setData(const std::vector<DataType> &data) = 0;
 
     // If the voxel is a grid, this will call the grid and add the data to the correct cell
-    virtual void addData(const DataType& data, const int i) = 0;
+    virtual void addData(const DataType &data, const int i) = 0;
+
+    virtual void computeData() = 0;
 
     virtual int getResolution() = 0;
     virtual bool isLeaf() = 0;
     virtual bool isEmpty() = 0;
-
 };
 
-#endif //IVOXEL_H
+#endif // IVOXEL_H

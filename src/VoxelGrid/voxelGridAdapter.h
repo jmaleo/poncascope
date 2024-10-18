@@ -13,8 +13,41 @@
 #include "VoxelGrid.h"
 #include "iVoxel.h"
 
-struct Quantity {
-    int test = 0; // just for testing
+template<typename DataType>
+class Quantity {
+
+private:
+    using VectorType = typename DataType::VectorType;
+    using Scalar = typename DataType::Scalar;
+
+    int N = 0;
+
+public:
+    VectorType barycenter;
+
+public:
+    Quantity() { barycenter = VectorType::Zero(); }
+
+    Quantity &operator+=(const DataType &data) {
+        barycenter += data.pos();
+        return *this;
+    }
+
+    Quantity &operator/=(const Scalar &divisor) {
+        barycenter /= divisor;
+        return *this;
+    }
+
+    Quantity &operator+=(const Quantity &other) {
+        barycenter += other.barycenter;
+        return *this;
+    }
+
+    Quantity operator+(const Quantity &other) const {
+        Quantity result = *this;
+        result += other;
+        return result;
+    }
 };
 
 template<typename Scalar, typename VectorType>
@@ -50,6 +83,7 @@ void buildVoxelGrid(const SampleMatrixType &pos, const SampleMatrixType &norm, V
         DataType data(pos.row(i).transpose(), norm.row(i).transpose());
         voxelGrid.addData(data, i);
     }
+    voxelGrid.computeData();
 }
 
 #endif // VOXELGRIDADAPTER_H
