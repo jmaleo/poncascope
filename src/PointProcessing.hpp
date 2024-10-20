@@ -7,99 +7,6 @@ void PointProcessing::measureTime(const std::string &actionName, Functor F) {
     std::cout << actionName << " in " << (end - start) / 1ms << "ms.\n";
 }
 
-/// Function to compute the neighbors of a point
-template<typename Functor>
-void PointProcessing::processNeighbors(const int &idx, const Functor f) {
-    VectorType pos = tree.point_data()[idx].pos();
-    if (useKnnGraph) {
-        if (researchType == 0) {
-            for (int j: knnGraph->k_nearest_neighbors(idx)) {
-                f(j);
-            }
-            f(idx);
-        } else {
-            for (int j: knnGraph->range_neighbors(idx, NSize)) {
-                f(j);
-            }
-            f(idx);
-        }
-    } else {
-        if (researchType == 0) {
-            for (int j: tree.k_nearest_neighbors(pos, kNN)) {
-                f(j);
-            }
-            // f(idx);
-        } else {
-            for (int j: tree.range_neighbors(pos, NSize)) {
-                f(j);
-            }
-            // f(idx);
-        }
-    }
-}
-
-// void processNeighbors(const VectorType &pos, const int &init_idx, const Functor f){
-/// Function to compute the neighbors of a point
-template<typename Functor>
-void PointProcessing::processNeighbors(const VectorType &pos, const Functor f) {
-    // VectorType pos = tree.point_data()[init_idx].pos();
-    // Couldn't use kNNGraph because there is no request for the position
-    // if(useKnnGraph){
-    //     if (researchType == 0){
-    //         for (int j : knnGraph->k_nearest_neighbors(init_idx)){
-    //             f(j);
-    //         }
-    //         f(init_idx);
-    //     }
-    //     else {
-    //         for (int j : knnGraph->range_neighbors(init_idx, NSize)){
-    //             f(j);
-    //         }
-    //         f(init_idx);
-    //     }
-    // } else {
-    if (researchType == 0) {
-        for (int j: tree.k_nearest_neighbors(pos, kNN)) {
-            f(j);
-        }
-    } else {
-        for (int j: tree.range_neighbors(pos, NSize)) {
-            f(j);
-        }
-    }
-    // }
-}
-
-// template <typename Functor>
-// void PointProcessing::processRangeNeighbors(const int &idx, const Functor f){
-//     VectorType pos = tree.point_data()[idx].pos();
-//     if(useKnnGraph)
-//         for (int j : knnGraph->range_neighbors(idx, NSize)){
-//             f(j);
-//         }
-//     else
-//         for (int j : tree.range_neighbors(pos, NSize)){
-//             f(j);
-//         }
-// }
-
-// template <typename Functor>
-// void PointProcessing::processRangeNeighbors(const VectorType &pos, const Functor f){
-//     for (int j : tree.range_neighbors(pos, NSize)){
-//         f(j);
-//     }
-// }
-
-template<typename FitT>
-void PointProcessing::initUseNormal(FitT &fit) {
-    // Nothing if not a plane fit
-}
-
-// template<>
-// void PointProcessing::initUseNormal(basket_planeFit<SmoothWeightFunc> &fit){
-//     fit.setUseNormal(false);
-// }
-
 template<typename FitT, typename Functor>
 void PointProcessing::processOnePoint(const VectorType &init_pos, const typename FitT::WeightFunction &w, Functor f) {
     VectorType pos = init_pos;
@@ -224,135 +131,92 @@ void PointProcessing::processOnePoint_Triangle(const int &idx, const int &type, 
     }
 }
 
-template<typename Functor>
-void PointProcessing::processPointCloud_Triangle(const bool &unique, const int &type, Functor f) {
-    if (unique) {
-        processOnePoint_Triangle(iVertexSource, type, f);
-    } else {
-        int nvert = tree.index_data().size();
-        std::cout << "nvert: " << nvert << std::endl;
-        // Traverse point cloud
+/// Generic processing function: traverse point cloud, compute fitting, and use functor to process fitting output
+/// \note Functor is called only if fit is stable
+template<typename Estimator, typename Functor>
+void processPointCloud( Estimator& estimator, int uniqueIdx, Functor f ){
+    int nvert = ponca_kdtree.index_data().size();
+
+    if ( uniqueIdx > -1 ){
+        Quantity<Scalar> q;
+        estimator( uniqueIdx, q );
+        f ( uniqueIdx, q );
+        // Print results of the quantity
+        // std::cout << "Unique point " << idx << ":\n";
+        // std::cout << "Mean: " << q.mean << "\n";
+        // std::cout << "Kmin: " << q.k1 << "\n";
+        // std::cout << "Kmax: " << q.k2 << "\n";
+        // std::cout << "Gauss: " << q.gauss << "\n";
+        return;
+    }
+
 #pragma omp parallel for
-        for (int i = 0; i < nvert; ++i) {
-            processOnePoint_Triangle(i, type, f);
-        }
+    for (int i = 0; i < nvert; ++i) {
+        DGtal::trace.progressBar( i, nvert );
+        Quantity<Scalar> q;
+        estimator(i, q);
+        f (i, q);
     }
 }
 
-template<typename FitT, typename Functor>
-void PointProcessing::processPointCloud(const bool &unique, const typename FitT::WeightFunction &w, Functor f) {
-    if (unique) {
-        processOnePoint<FitT, Functor>(iVertexSource, w, f);
-    } else {
-        int nvert = tree.index_data().size();
-        std::cout << "nvert: " << nvert << std::endl;
-        // Traverse point cloud
-        // #pragma omp parallel for
-        for (int i = 0; i < nvert; ++i) {
-            processOnePoint<FitT, Functor>(i, w, f);
-        }
-    }
-}
+/// Generic processing function: traverse point cloud and compute mean, first and second curvatures + their direction
+/// \tparam FitT Defines the type of estimator used for computation
+template<typename Estimator>
+DifferentialQuantities<Scalar> estimateDifferentialQuantities_impl( Estimator &estimator, int uniqueIdx ) {
 
-template<typename FitT, bool isSigned = true>
-void PointProcessing::computeDiffQuantities(const std::string &name, MyPointCloud<Scalar> &cloud) {
-    using weightFunc = typename FitT::WeightFunction;
+    int nvert = ponca_kdtree.index_data().size();
 
-    int nvert = tree.index_data().size();
+    VectorType defaultVectorType = VectorType(1, 0, 0); // Keep the norm to 1 to avoid numerical issues for non-stable points
 
-    // Allocate memory
-    SampleVectorType mean(nvert), kmin(nvert), kmax(nvert), shapeIndex(nvert);
-    SampleMatrixType normal(nvert, 3), dmin(nvert, 3), dmax(nvert, 3), proj(nvert, 3);
+    DGtal::Statistic<Scalar> statTime, statNei;
+    std::vector<Scalar> mean ( nvert ), kmin ( nvert ), kmax ( nvert ), gauss ( nvert );
+    std::vector<Eigen::Vector<Scalar, 3>> proj ( nvert ), normal( nvert, defaultVectorType ), dmin( nvert, defaultVectorType ), dmax( nvert,defaultVectorType );
+    std::vector <unsigned int> non_stable_idx(nvert, 0);
 
-    measureTime("[Ponca] Compute differential quantities using " + name, [this, &mean, &kmin, &kmax, &normal, &dmin,
-                                                                          &dmax, &proj, &shapeIndex]() {
-        processPointCloud<FitT>(false, weightFunc(NSize),
-                                [this, &mean, &kmin, &kmax, &normal, &dmin, &dmax, &proj,
-                                 &shapeIndex](int i, const FitT &fit, const VectorType &mlsPos) {
-                                    mean(i) = isSigned ? fit.kMean() : std::abs(fit.kMean());
+    measureTime( "[Ponca] Compute differential quantities using " + estimator.getName(),
+                 [&uniqueIdx, &estimator, &proj, &mean, &kmin, &kmax, &gauss, &normal, &dmin, &dmax, &statTime, &statNei, &non_stable_idx]() {
+                            processPointCloud(estimator, uniqueIdx,
+                                [&proj, &mean, &kmin, &kmax, &gauss, &normal, &dmin, &dmax, &statTime, &statNei, &non_stable_idx]
+                                (
+                                    int i, Quantity<Scalar> &quantity
+                                ) {
+                                    statNei.addValue( quantity.neighbor_count );
+                                    // statNei.addValue( fit.getNumNeighbors() );
+                                    statTime.addValue( quantity.computing_time.count() );
 
-                                    kmax(i) = isSigned ? fit.kmax() : std::abs(fit.kmax());
-                                    kmin(i) = isSigned ? fit.kmin() : std::abs(fit.kmin());
-
-
-                                    normal.row(i) = fit.primitiveGradient();
-                                    normal.row(i) /= normal.row(i).norm();
-
-                                    dmin.row(i) = fit.kminDirection();
-                                    dmax.row(i) = fit.kmaxDirection();
-
-                                    if (kmax(i) < kmin(i)) {
-                                        std::swap(kmax(i), kmin(i));
-                                        dmin.row(i) = fit.kmaxDirection();
-                                        dmax.row(i) = fit.kminDirection();
+                                    if (quantity.non_stable >= 1) {
+                                        non_stable_idx[i] = 1;
+                                        return;
                                     }
-
-                                    // proj.row( i )   = mlsPos - tree.point_data()[i].pos();
-                                    proj.row(i) = mlsPos;
-
-                                    shapeIndex(i) = (2.0 / M_PI) * std::atan((kmin(i) + kmax(i)) / (kmin(i) - kmax(i)));
+                                    mean  [ i ]   = quantity.mean;
+                                    kmax  [ i ]   = quantity.k2;
+                                    kmin  [ i ]   = quantity.k1;
+                                    dmax  [ i ]   = quantity.d2;
+                                    dmin  [ i ]   = quantity.d1;
+                                    gauss [ i ]   = quantity.gauss;
+                                    normal[ i ]   = quantity.normal;
+                                    proj  [ i ]   = quantity.projection;
                                 });
-    });
+                            });
 
-    // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal, dmin, dmax, kmin, kmax, mean, shapeIndex));
+    // if there is unstable points, we don't return the results
+
+    DifferentialQuantities<Scalar> dq = { proj, kmin, kmax, mean, gauss, dmin, dmax, normal, statNei, statTime };
+    dq.setNonStableVector(non_stable_idx);
+    return dq;
 }
 
-void PointProcessing::computeDiffQuantities_Triangle(const std::string &name, const int &type,
-                                                     MyPointCloud<Scalar> &cloud) {
-    int nvert = tree.index_data().size();
+template<typename WeightFunc>
+DifferentialQuantities<Scalar> estimateDifferentialQuantities( std::string name, int uniqueIdx = -1 ) {
 
-    // Allocate memory
-    SampleVectorType mean(nvert), kmin(nvert), kmax(nvert), shapeIndex(nvert);
-    ;
-    SampleMatrixType normal(nvert, 3), dmin(nvert, 3), dmax(nvert, 3), proj(nvert, 3);
+    std::shared_ptr<EstimatorFactory< WeightFunc >> factory = getEstimatorFactory<WeightFunc>();
 
-    proj.setZero();
-    normal.setZero();
+    auto estimator = factory->getEstimator(name);
 
-    measureTime("[Ponca] Compute differential quantities using " + name, [this, &type, &mean, &kmin, &kmax, &dmin,
-                                                                          &dmax, &normal, &shapeIndex]() {
-        processPointCloud_Triangle(false, type,
-                                   [this, &mean, &kmin, &kmax, &dmin, &dmax, &normal,
-                                    &shapeIndex](int i, basket_triangleGeneration &fit, const VectorType &mlsPos) {
-                                       mean(i) = fit.kMean();
-
-                                       kmax(i) = fit.kmax();
-                                       kmin(i) = fit.kmin();
-
-                                       dmin.row(i) = fit.kminDirection();
-                                       dmax.row(i) = fit.kmaxDirection();
-
-                                       normal.row(i) = fit.primitiveGradient();
-                                       normal.row(i) /= normal.row(i).norm();
-
-                                       shapeIndex(i) = (2.0 / M_PI) *
-                                                       std::atan((fit.kmin() + fit.kmax()) / (fit.kmin() - fit.kmax()));
-                                   });
-    });
-
-    // Add differential quantities to the cloud
-    cloud.setDiffQuantities(DiffQuantities<Scalar>(proj, normal, dmin, dmax, kmin, kmax, mean, shapeIndex));
+    DifferentialQuantities<Scalar> diff = estimateDifferentialQuantities_impl( *estimator, uniqueIdx );
+    diff.setOriented(estimator->isOriented());
+    return diff;
 }
-
-// concept ConceptFitT = requires (ConceptFitT fit, VectorType init) {
-//     { fit.primitiveGradient(init) } -> std::same_as<SampleMatrixType>;
-// };
-
-// template<typename FitT>
-// void PointProcessing::processPointUniqueNormal(const int &idx, const FitT& fit, const VectorType& init,
-// SampleMatrixType& normal)
-// {
-//         normal.row(idx) = fit.primitiveGradient(init);
-// }
-
-// template <>
-// void PointProcessing::processPointUniqueNormal<basket_AlgebraicShapeOperatorFit>(const int &idx, const
-// basket_AlgebraicShapeOperatorFit<WeightFunc>& fit, const VectorType& init, SampleMatrixType& normal)
-// {
-//     // Do nothing for ASO
-// }
-
 
 template<typename FitT>
 void PointProcessing::computeUniquePoint(const std::string &name, MyPointCloud<Scalar> &cloud) {

@@ -1,13 +1,10 @@
 #pragma once
 
-#include <igl/per_face_normals.h>
-#include <igl/per_vertex_normals.h>
-#include <igl/readOBJ.h>
-#include <igl/readPLY.h>
-#include <igl/read_triangle_mesh.h>
+#include "../IO/Readers.h"
+#include "../IO/Writters.h"
+#include "../IO/PointCloudDiff.h"
 
-#include "MyPointCloud.h"
-#include "definitions.h"
+#include "../definitions.h"
 
 std::pair<std::vector<VectorType>, std::vector<std::array<size_t, 3>>> generatePlane(const SampleMatrixType &vertices,
                                                                                      VectorType &normal) {

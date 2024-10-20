@@ -1,7 +1,7 @@
 #pragma once
 
 // GUI
-#include "GUI.h"
+#include "GUI/GUI.h"
 
 // PointCloud
 #include "MyPointCloud.h"
@@ -10,4 +10,4 @@
 #include "PointProcessing.h"
 
 // CloudGeneration
-#include "CloudGeneration.h"
+#include "IO/CloudGeneration.h"

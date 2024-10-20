@@ -8,25 +8,27 @@
 #include <random>
 #include <utility>
 
+#include "ponca_estimators/adapters/declarations.h"
+
 class PointProcessing {
 
     // Variables
 public:
-    KdTree tree; /// < kdtree for nearest neighbors search
-    KnnGraph *knnGraph = nullptr; /// < k-neighbor graph
-    MyVoxelGrid voxelGrid; /// < voxel grid
+    // KdTree ponca_kdtree; /// < kdtree for nearest neighbors search
+    // KnnGraph *ponca_knnGraph = nullptr; /// < k-neighbor graph
+    // MyVoxelGrid voxelGrid; /// < voxel grid
 
     // Options for algorithms
-    bool useKnnGraph = false; /// < use k-neighbor graph instead of kdtree
-    int kNN_for_graph = 6; /// < neighborhood size (knn) for the graph
-    int iVertexSource = 7; /// < id of the selected point
-    int kNN = 10; /// < neighborhood size (knn)
-    int mlsIter = 3; /// < number of moving least squares iterations
-    float NSize = 0.25; /// < neighborhood size (euclidean)
+    use_kNNGraph = false; /// < use k-neighbor graph instead of kdtree
+    kNN_for_graph = 6; /// < neighborhood size (knn) for the graph
+    iVertexSource = 7; /// < id of the selected point
+    kNN = 10; /// < neighborhood size (knn)
+    mls_iter = 3; /// < number of moving least squares iterations
+    radius = 0.25; /// < neighborhood size (euclidean)
 
-    bool useVoxelGrid = false; /// < use voxel grid instead of kdtree
-    int N = 10; /// < number of cells in each direction
-    int resolution = 1; /// < resolution of the voxel grid
+    use_VoxelGrid = false; /// < use voxel grid instead of kdtree
+    N_voxels = 10; /// < number of cells in each direction
+    resolution = 1; /// < resolution of the voxel grid
 
 
     int researchType = 1; // 0 : k Nearest Neighbors, 1 : Euclidian Nearest Neighbors
@@ -34,26 +36,26 @@ public:
 public:
     PointProcessing() {
         // Default values
-        useKnnGraph = false;
+        use_kNNGraph = false;
         kNN_for_graph = 6;
         iVertexSource = 7;
         kNN = 10;
-        mlsIter = 3;
-        NSize = 0.25;
+        mls_iter = 3;
+        radius = 0.25;
 
         researchType = 1;
     }
 
     // Constructor
-    PointProcessing(MyPointCloud<Scalar> &cloud) {
+    PointProcessing(PointCloudDiff<Scalar> &cloud) {
 
         // Default values
-        useKnnGraph = false;
+        use_kNNGraph = false;
         kNN_for_graph = 6;
         iVertexSource = 7;
         kNN = 10;
-        mlsIter = 3;
-        NSize = 0.25;
+        mls_iter = 3;
+        radius = 0.25;
 
         researchType = 1;
 
@@ -62,9 +64,9 @@ public:
     };
 
     // update the KdTree
-    void update(MyPointCloud<Scalar> &cloud) {
+    void update(PointCloudDiff<Scalar> &cloud) {
         measureTime("[Ponca] Build KdTree",
-                    [this, &cloud]() { buildKdTree(cloud.getVertices(), cloud.getNormals(), tree); });
+                    [this, &cloud]() { buildKdTree(cloud.points, cloud.normals, ponca_kdtree); });
         recomputeKnnGraph();
     }
 
@@ -79,31 +81,31 @@ public:
     void recomputeKnnGraph();
 
     /// @brief Compute the VoxelGrid
-    void computeVoxelGrid(MyPointCloud<Scalar> &cloud);
+    void computeVoxelGrid(PointCloudDiff<Scalar> &cloud);
 
     /// @brief Compute differential quantities
     /// @tparam FitT Fit Type, \see definitions.h
     /// @param name Name of the method, to be displayed in the console
     /// @param cloud Point Cloud to process
     template<typename FitT, bool isSigned = true>
-    void computeDiffQuantities(const std::string &name, MyPointCloud<Scalar> &cloud);
+    void computeDiffQuantities(const std::string &name, PointCloudDiff<Scalar> &cloud);
 
     /// @brief Compute differential quantities
     /// @tparam FitT Fit Type, \see definitions.h
     /// @param name Name of the method, to be displayed in the console
     /// @param cloud Point Cloud to process
-    void computeDiffQuantities_Triangle(const std::string &name, const int &type, MyPointCloud<Scalar> &cloud);
+    void computeDiffQuantities_Triangle(const std::string &name, const int &type, PointCloudDiff<Scalar> &cloud);
 
     /// @brief Compute differential quantities for a single point
     /// @tparam FitT Fit Type, \see definitions.h
     /// @param name Name of the method, to be displayed in the console
     /// @param cloud Point Cloud to process
     template<typename FitT>
-    void computeUniquePoint(const std::string &name, MyPointCloud<Scalar> &cloud);
+    void computeUniquePoint(const std::string &name, PointCloudDiff<Scalar> &cloud);
 
     /// @brief Compute triangle mesh with CNC algorithm
     /// @param name Name of the method, to be displayed in the console
-    void computeUniquePoint_triangle(const std::string &name, const int &type, MyPointCloud<Scalar> &cloud);
+    void computeUniquePoint_triangle(const std::string &name, const int &type, PointCloudDiff<Scalar> &cloud);
 
     /// @brief Evaluate scalar field for generit FitType
     /// @tparam FitT Fit Type, \see definitions.h
@@ -128,7 +130,7 @@ public:
     const SampleVectorType colorizeEuclideanNeighborhood(const std::vector<int> &vertexQueries,
                                                          const std::vector<float> &radii);
 
-    const SampleVectorType getVertexSourcePosition() { return tree.point_data()[iVertexSource].pos(); }
+    const SampleVectorType getVertexSourcePosition() { return ponca_kdtree.point_data()[iVertexSource].pos(); }
 
     Scalar getMeanNeighbors() { return m_meanNeighbors; }
 

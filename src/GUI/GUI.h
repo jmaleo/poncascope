@@ -7,16 +7,18 @@
 #include <iostream>
 #include <mutex>
 #include <string>
-#include "CloudGeneration.h"
-#include "MyPointCloud.h"
-#include "PointProcessing.h"
-#include "imgui_filedialog.h"
-#include "polyscope/messages.h"
-#include "polyscope/pick.h"
-#include "polyscope/point_cloud.h"
-#include "polyscope/polyscope.h"
-#include "polyscope/surface_mesh.h"
-#include "polyscope/view.h"
+#include "../IO/CloudGeneration.h"
+#include "../MyPointCloud.h"
+
+#include "../PointProcessing.h"
+
+#include "../../deps/imgui_filedialog.h"
+#include <polyscope/messages.h>
+#include <polyscope/pick.h>
+#include <polyscope/point_cloud.h>
+#include <polyscope/polyscope.h>
+#include <polyscope/surface_mesh.h>
+#include <polyscope/view.h>
 
 class GUI {
 

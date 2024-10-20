@@ -488,18 +488,18 @@ void GUI::cloudComputingSlices() {
             case 0:
                 values = sliceWithKernel<SmoothWeightFunc>(pair_slice.first);
                 break;
-            case 1:
-                values = sliceWithKernel<ConstWeightFunc>(pair_slice.first);
-                break;
-            case 2:
-                values = sliceWithKernel<WendlandWeightFunc>(pair_slice.first);
-                break;
-            case 3:
-                values = sliceWithKernel<SingularWeightFunc>(pair_slice.first);
-                break;
-            case 4:
-                values = sliceWithKernel<ExponentialWeightFunc>(pair_slice.first);
-                break;
+            // case 1:
+            //     values = sliceWithKernel<ConstWeightFunc>(pair_slice.first);
+            //     break;
+            // case 2:
+            //     values = sliceWithKernel<WendlandWeightFunc>(pair_slice.first);
+            //     break;
+            // case 3:
+            //     values = sliceWithKernel<SingularWeightFunc>(pair_slice.first);
+            //     break;
+            // case 4:
+            //     values = sliceWithKernel<ExponentialWeightFunc>(pair_slice.first);
+            //     break;
             default:
                 values = sliceWithKernel<SmoothWeightFunc>(pair_slice.first);
                 break;
@@ -590,21 +590,21 @@ void GUI::cloudComputing() {
     ImGui::Combo("Fitting Methods", &item_selected_method, methods, IM_ARRAYSIZE(methods));
 
     switch (weightFuncType) {
-        case 0:
-            methodWithKernel<ConstWeightFunc>();
-            break;
+        // case 0:
+        //     methodWithKernel<ConstWeightFunc>();
+        //     break;
         case 1:
             methodWithKernel<SmoothWeightFunc>();
             break;
-        case 2:
-            methodWithKernel<WendlandWeightFunc>();
-            break;
-        case 3:
-            methodWithKernel<SingularWeightFunc>();
-            break;
-        case 4:
-            methodWithKernel<ExponentialWeightFunc>();
-            break;
+        // case 2:
+        //     methodWithKernel<WendlandWeightFunc>();
+        //     break;
+        // case 3:
+        //     methodWithKernel<SingularWeightFunc>();
+        //     break;
+        // case 4:
+        //     methodWithKernel<ExponentialWeightFunc>();
+        //     break;
         default:
             methodWithKernel<SmoothWeightFunc>();
             break;
@@ -767,6 +767,8 @@ void GUI::cloudComputingParameters() {
         ImGui::RadioButton("Singular", &weightFuncType, 3);
         ImGui::SameLine();
         ImGui::RadioButton("Exponential", &weightFuncType, 4);
+
+        ImGui::TextColored(ImVec4(1, 1, 0, 1), "Warning: Only Smooth Kernel.");
 
         ImGui::Separator();
     }

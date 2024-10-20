@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/DGtal" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/libigl" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/polyscope" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/polyscope/deps/glfw" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/polyscope/deps/happly" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/polyscope/deps/imgui/imgui" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/ponca" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/ponca/external/doxygen-awesome-css" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/ponca/external/eigen" vcs="Git" />
+  </component>
+</project>

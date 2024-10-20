@@ -1,13 +1,13 @@
-#include "polyscope/polyscope.h"
-#include "polyscope/messages.h"
-#include "polyscope/point_cloud.h"
+#include <polyscope/polyscope.h>
+#include <polyscope/messages.h>
+#include <polyscope/point_cloud.h>
 
 #include <iostream>
 #include <utility>
 #include <chrono>
 #include "defines.h"
 
-#include "CLI11.hpp"
+#include "../deps/CLI11.hpp"
 
 // gui stuff as a global variable to be able to call it from the callback
 std::unique_ptr<GUI> gui;
