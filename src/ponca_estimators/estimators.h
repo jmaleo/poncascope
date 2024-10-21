@@ -55,7 +55,7 @@ void specialUniquePointCompute ( Estimator &estimator, PointCloudDiff<Scalar>& p
 template<typename Estimator>
 SampleVectorType evalScalarField_impl ( Estimator &estimator, const SampleMatrixType &input_pos ) {
     SampleVectorType scalarField;
-    int nvert = input_pos.size();
+    int nvert = input_pos.rows();
     scalarField = SampleVectorType::Zero( nvert );
 
     measureTime( "[Ponca] Compute scalar field using " + estimator.getName(),
@@ -65,7 +65,9 @@ SampleVectorType evalScalarField_impl ( Estimator &estimator, const SampleMatrix
                      for (int i = 0 ; i < nvert ; ++i) {
                              Quantity<Scalar> q;
                              estimator( input_pos.row(i), q );
+                             std::cout << "Potential: " << estimator.potential(input_pos.row(i)) << std::endl;
                              scalarField[i] = estimator.potential(input_pos.row(i));
+                             std::cout << "Potential: " << scalarField[i] << std::endl;
                          }
                      });
 

@@ -68,15 +68,8 @@ struct PointCloudDiff
   }
 
   void compute_bbox() {
-    bbox_min = VectorType::Ones() * std::numeric_limits<_Scalar>::max();
-    bbox_max = VectorType::Ones() * std::numeric_limits<_Scalar>::lowest();
-    for (int i = 0 ; i < points.rows(); i++) {
-      VectorType point = points.row(i);
-      for (int j = 0; j < 3; j++) {
-        bbox_min[j] = std::min(bbox_min[j], point[j]);
-        bbox_max[j] = std::max(bbox_max[j], point[j]);
-      }
-    }
+    bbox_min = points.colwise().minCoeff();
+    bbox_max = points.colwise().maxCoeff();
   }
 
   VectorType getMin() {

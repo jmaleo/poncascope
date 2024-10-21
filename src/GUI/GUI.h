@@ -401,7 +401,8 @@ private:
 
     template <typename WeightFunc>
     SampleVectorType sliceWithKernel (const SampleMatrixType& pos) {
-        SampleVectorType values = pointProcessing.getScalarField<WeightFunc>(methodName, pos);
+        std::string currentSelectedMethod = std::string(methods[item_selected_method]);
+        SampleVectorType values = pointProcessing.getScalarField<WeightFunc>(currentSelectedMethod, pos);
         return values;
     }
 

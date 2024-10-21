@@ -194,18 +194,27 @@ class ProcessHandler : public InterfaceProcessHandler< _Fit > {
         }
 
     void customQuery ( FitT &fit, PointCloudDiff<Scalar>& pcDiff ) override {
+        VectorType origin = pcDiff.points.row(0);
         pcDiff.v1.row(0) = fit.kminDirection();
         pcDiff.v2.row(0) = fit.kmaxDirection();
         pcDiff.normals.row(0) = fit.primitiveGradient();
-        pcDiff.points.row(0) = fit.project( pcDiff.points.row(0) );
         pcDiff.mean[0] = fit.kMean();
         pcDiff.k1[0] = fit.kmin();
         pcDiff.k2[0] = fit.kmax();
         pcDiff.gauss[0] = fit.GaussianCurvature();
+        pcDiff.points.row(0) = fit.project( origin );
+
+        if (name == "Sphere" 
+        || name == "UnorientedSphere" 
+        || name == "APSS"
+        || name == "ASO" ) {
+            pcDiff.points.row(0) = fit.barycenter();
+        }
 
         for (int i = 1 ; i < pcDiff.points.rows(); i++) {
-            const VectorType proj = fit.project( pcDiff.points.row(i) );
-            if ( ( pcDiff.points.row(i).transpose() - proj ).norm() > 1e-6 ) {
+            const VectorType current = pcDiff.points.row(i);
+            const VectorType proj = fit.project( current );
+            if ( ( current - proj ).norm() > 1e-6 ) {
                 pcDiff.points.row(i) = proj;
             }
             else {

@@ -282,8 +282,6 @@ inline std::pair<std::vector<VectorType>, std::vector<std::array<size_t, 4>>> cr
 
     std::vector<VectorType> vertices(nbSteps * nbSteps);
 
-    auto values = SampleVectorType(nbSteps * nbSteps);
-
     std::vector<std::array<size_t, 4>> faces;
     faces.reserve(nbSteps * nbSteps);
     std::array<size_t, 4> face{};
