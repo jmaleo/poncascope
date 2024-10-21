@@ -109,7 +109,9 @@ public:
     SampleVectorType colorizeNeighbors(const std::vector<int>& indices, const std::vector<float>& radii);
 
 
-    static VectorType getVertexSourcePosition();
+    VectorType getVertexSourcePosition(){
+        return getSourcePosition(iVertexSource);
+    }
 
     Scalar getMeanNeighbors() { return m_meanNeighbors; };
 

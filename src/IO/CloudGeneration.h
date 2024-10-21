@@ -42,7 +42,7 @@ inline std::pair<std::vector<VectorType>, std::vector<std::array<size_t, 3>>> ge
     return std::make_pair(farestPoints, faces);
 }
 
-inline SampleMatrixType applyCentering(SampleMatrixType &cloudV) {
+inline SampleMatrixType applyCentering(const SampleMatrixType &cloudV) {
     auto cloud_out = SampleMatrixType(cloudV.rows(), 3);
 
     VectorType min = {std::numeric_limits<Scalar>::max(), std::numeric_limits<Scalar>::max(),
@@ -229,7 +229,6 @@ inline void loadXYZObject(PointCloudDiff<Scalar> &cloud, std::string &filename, 
     cloud.addNoiseNormal(sigma_normal);
 }
 
-SampleMatrixType applyCentering(Eigen::Matrix<Scalar, Eigen::Dynamic, 3>::Nested matrix);
 inline void loadObject(PointCloudDiff<Scalar> &cloud, std::string filename, const Scalar sigma_pos, const Scalar sigma_normal) {
 
     Eigen::MatrixXi meshF;
@@ -265,7 +264,7 @@ inline void loadObject(PointCloudDiff<Scalar> &cloud, std::string filename, cons
         exit(EXIT_FAILURE);
     }
 
-    const SampleMatrixType cloudV_centered = applyCentering(cloudV);
+    SampleMatrixType cloudV_centered = applyCentering(cloudV);
 
     // SampleMatrixType resca = rescalePoints(cloudV);
     cloud = PointCloudDiff<Scalar>("MyPointCloud", cloudV_centered, cloudN);
