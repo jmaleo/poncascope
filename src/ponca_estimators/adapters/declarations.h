@@ -19,6 +19,7 @@ int resolution;
 
 int iVertexSource;
 int kNN_for_graph;
-Scalar radius;
+float radius;
 int mls_iter;
 int kNN;
+int researchType = 1; // 0 : k Nearest Neighbors, 1 : Euclidian Nearest Neighbors

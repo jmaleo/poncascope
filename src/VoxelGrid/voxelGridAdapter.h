@@ -14,7 +14,7 @@
 #include "iVoxel.h"
 
 template<typename DataType>
-class Quantity {
+class VoxelQuantity {
 
 private:
     using VectorType = typename DataType::VectorType;
@@ -26,25 +26,25 @@ public:
     VectorType barycenter;
 
 public:
-    Quantity() { barycenter = VectorType::Zero(); }
+    VoxelQuantity() { barycenter = VectorType::Zero(); }
 
-    Quantity &operator+=(const DataType &data) {
+    VoxelQuantity &operator+=(const DataType &data) {
         barycenter += data.pos();
         return *this;
     }
 
-    Quantity &operator/=(const Scalar &divisor) {
+    VoxelQuantity &operator/=(const Scalar &divisor) {
         barycenter /= divisor;
         return *this;
     }
 
-    Quantity &operator+=(const Quantity &other) {
+    VoxelQuantity &operator+=(const VoxelQuantity &other) {
         barycenter += other.barycenter;
         return *this;
     }
 
-    Quantity operator+(const Quantity &other) const {
-        Quantity result = *this;
+    VoxelQuantity operator+(const VoxelQuantity &other) const {
+        VoxelQuantity result = *this;
         result += other;
         return result;
     }
@@ -74,13 +74,18 @@ void buildVoxelGrid(const SampleMatrixType &pos, const SampleMatrixType &norm, V
     using Scalar = typename DataType::Scalar;
 
     VectorType min_bbox, max_bbox;
-    min_bbox = pos.colwise().minCoeff();
-    max_bbox = pos.colwise().maxCoeff();
+    min_bbox = VectorType (std::numeric_limits<Scalar>::max(), std::numeric_limits<Scalar>::max(), std::numeric_limits<Scalar>::max());
+    max_bbox = VectorType (std::numeric_limits<Scalar>::min(), std::numeric_limits<Scalar>::min(), std::numeric_limits<Scalar>::min());
+    for (int i = 0; i < pos.rows(); i++) {
+        VectorType pos_i = pos.row(i);
+        min_bbox = min_bbox.cwiseMin(pos_i);
+        max_bbox = max_bbox.cwiseMax(pos_i);
+    }
     auto minmax = getMinMaxAsCube<Scalar, VectorType>(min_bbox, max_bbox);
     Aabb bbox(minmax.first, minmax.second);
     voxelGrid.init(bbox, N, resolution);
     for (int i = 0; i < pos.rows(); i++) {
-        DataType data(pos.row(i).transpose(), norm.row(i).transpose());
+        DataType data(pos.row(i), norm.row(i));
         voxelGrid.addData(data, i);
     }
     voxelGrid.computeData();

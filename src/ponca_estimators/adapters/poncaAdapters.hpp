@@ -25,8 +25,11 @@
 
 #pragma once
 
-#include <Ponca/SpatialPartitioning>
+#include "../../definitions.h"
+
+
 #include <Eigen/Core>
+#include <Ponca/SpatialPartitioning>
 
 
 /// Map a block to a Ponca point
@@ -50,13 +53,13 @@ private:
     VectorType m_nor;
 };
 
-template<typename KdTreeType, typename VectorType>
+template<typename KdTreeType, typename SampleMatrixType>
 void
-buildKdTree(const std::vector<VectorType>& cloudV, const std::vector<VectorType>& cloudN, KdTreeType& tree){
+buildKdTree(const SampleMatrixType& cloudV, const SampleMatrixType& cloudN, KdTreeType& tree){
     std::vector<int> ids(cloudV.size());
     std::iota(ids.begin(), ids.end(), 0);
 
-    using VN = std::pair<const std::vector<VectorType>&, const std::vector<VectorType>&>;
+    using VN = std::pair<const SampleMatrixType&, const SampleMatrixType&>;
 
     tree.buildWithSampling(VN(cloudV, cloudN),
                            ids,
@@ -64,7 +67,7 @@ buildKdTree(const std::vector<VectorType>& cloudV, const std::vector<VectorType>
                                int s = bufs.first.size();
                                out.reserve(s);
                                for (int i = 0; i != s; ++i)
-                                   out.push_back(typename KdTreeType::DataPoint(bufs.first[i],
-                                                                                bufs.second[i]));
+                                   out.push_back(typename KdTreeType::DataPoint(bufs.first.row(i),
+                                                                                bufs.second.row(i)));
                            });
 }

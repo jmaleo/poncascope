@@ -21,8 +21,8 @@ void GUI::mainCallBack() {
         pointProcessing.update(mainCloud);
         pointProcessing.measureTime("[Polyscope] Update current main cloud", [this]() {
             polyscope::removeStructure(mainCloudName, false);
-            polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.getVertices());
-            addQuantities(polyscope_mainCloud, "real normals", mainCloud.getNormals());
+            polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.points);
+            addQuantities(polyscope_mainCloud, "real normals", mainCloud.normals);
             // Remove other clouds
             remove_clouds();
             remove_meshs();
@@ -144,29 +144,6 @@ void GUI::generationFromFile() {
         pointProcessing.measureTime("[Generation] Load object",
                                     [this]() { loadObject(mainCloud, selectedFile, pointNoise, normalNoise); });
     }
-
-    ImGui::SameLine();
-    // generation with a mesh to compute the normals
-    if (ImGui::Button("Generate with normals") && selectedFile != "") {
-        cloudNeedsUpdate = true;
-        pointProcessing.measureTime("[Generation] Load object with normals", [this]() {
-            loadObject(mainCloud, selectedFile, pointNoise, normalNoise);
-            std::string selectedFileOBJ = selectedFile;
-            std::string selectedFileRotation = selectedFile;
-            // Replace the extension by .obj
-            selectedFileOBJ.replace(selectedFileOBJ.end() - 3, selectedFileOBJ.end(), "obj");
-            selectedFileRotation.replace(selectedFileRotation.end() - 3, selectedFileRotation.end(), "txt");
-
-
-            Mesh_test originalOBG = Mesh_test(selectedFileOBJ);
-            originalOBG.rotateTranslate(selectedFileRotation);
-
-            // Add the original mesh to the polyscope
-            polyscope::registerSurfaceMesh("original", originalOBG.getVertices(), originalOBG.getIndices());
-
-            normalsFromMesh(mainCloud, originalOBG, pointNoise, normalNoise);
-        });
-    }
 }
 
 void GUI::generationFromImplicit() {
@@ -201,7 +178,8 @@ void GUI::generationFromImplicit() {
 
         pointProcessing.measureTime("[Generation] Generate tube", [this]() {
             create_tube(mainCloud);
-            mainCloud.addNoise(pointNoise, normalNoise);
+            mainCloud.addNoiseNormal(normalNoise);
+            mainCloud.addNoisePosition(pointNoise);
         });
     }
 
@@ -215,7 +193,8 @@ void GUI::generationFromImplicit() {
 
         pointProcessing.measureTime("[Generation] Generate sphere", [this]() {
             create_sphere(mainCloud);
-            mainCloud.addNoise(pointNoise, normalNoise);
+            mainCloud.addNoiseNormal(normalNoise);
+            mainCloud.addNoisePosition(pointNoise);
         });
     }
 }
@@ -329,15 +308,15 @@ void GUI::sinusParameters() {
 
 
 void GUI::picking() {
-    ImGuiIO &io = ImGui::GetIO();
+    const ImGuiIO &io = ImGui::GetIO();
     // If the user clicked on the screen, while maintaining the shift key, we pick the point
     if (io.MouseClicked[0] && io.KeyShift) {
-        glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
-        std::pair<polyscope::Structure *, size_t> pickPair =
+        const glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
+        const auto [fst, snd] =
                 polyscope::pick::evaluatePickQuery(screenCoords.x, screenCoords.y);
 
-        if (pickPair.first != nullptr)
-            pointProcessing.iVertexSource = pickPair.second;
+        if (fst != nullptr)
+            iVertexSource = snd;
     }
 }
 
@@ -353,8 +332,9 @@ void GUI::cloudComputingUpdateAll() {
         for (int i = 0; i < selectedQuantities.size(); ++i) {
             if (selectedQuantities[i]) {
                 std::string completeName = "[" + methodName + "] " + quantityNames[i];
+                auto DiffQuantities = mainCloud.getDiffQuantities();
                 addQuantities(polyscope_mainCloud, completeName,
-                              mainCloud.getDiffQuantities().getByName(quantityNames[i]));
+                              DiffQuantities.getByName(quantityNames[i]));
             }
         }
         if (displayProjectedPointCloud) {
@@ -370,15 +350,15 @@ void GUI::cloudComputingUpdateAll() {
                 }
             }
             polyscope::PointCloud *newCloud =
-                    polyscope::registerPointCloud(cloudName, mainCloud.getDiffQuantities().getVertices());
+                    polyscope::registerPointCloud(cloudName, mainCloud.getDiffQuantities().position());
             polyscope_projectionClouds.push_back(newCloud);
-            addQuantities(newCloud, "normals", mainCloud.getDiffQuantities().getNormals());
+            addQuantities(newCloud, "normals", mainCloud.getDiffQuantities().normal());
         }
 
         // Add the shapeIndex to the main cloud
         std::string completeName = "[" + methodName + "] " + "shape index";
         auto quantity =
-                polyscope_mainCloud->addScalarQuantity(completeName, mainCloud.getDiffQuantities().getShapeIndex());
+                polyscope_mainCloud->addScalarQuantity(completeName, mainCloud.getDiffQuantities().shapeIndex());
         quantity->setMapRange(std::pair<double, double>(-1, 1));
     });
 
@@ -414,16 +394,16 @@ void GUI::cloudComputingUpdateUnique() {
             std::string meshName = "[" + methodName + "] " + "mesh";
             polyscope::SurfaceMesh *mesh = polyscope::registerSurfaceMesh(meshName, tempCloud.getTriangles(), indices);
             // Add quantities to the mesh
-            mesh->addVertexVectorQuantity("normals", tempCloud.getDiffQuantities().getNormals());
-            mesh->addVertexVectorQuantity("d1", tempCloud.getDiffQuantities().getKMinDir());
-            mesh->addVertexVectorQuantity("d2", tempCloud.getDiffQuantities().getKMaxDir());
+            mesh->addVertexVectorQuantity("normals", tempCloud.getDiffQuantities().normal());
+            mesh->addVertexVectorQuantity("d1", tempCloud.getDiffQuantities().d1());
+            mesh->addVertexVectorQuantity("d2", tempCloud.getDiffQuantities().d2());
             polyscope_meshs.push_back(mesh);
         } else {
             if (methodName.find("PCA") != methodName.find("MeanPLANE")) {
                 VectorType origin = pointProcessing.getVertexSourcePosition();
-                VectorType normal = tempCloud.getDiffQuantities().getNormals().row(0);
+                VectorType normal = tempCloud.getDiffQuantities().normal().row(0);
                 std::pair<std::vector<VectorType>, std::vector<std::array<size_t, 3>>> faces_idx =
-                        generatePlane(tempCloud.getDiffQuantities().getVertices(), normal);
+                        generatePlane(tempCloud.getDiffQuantities().position(), normal);
                 // Create a new surface mesh
                 std::string meshName = "[" + methodName + "] " + "mesh";
                 polyscope::SurfaceMesh *mesh =
@@ -433,8 +413,8 @@ void GUI::cloudComputingUpdateUnique() {
                 std::vector<VectorType> d1(faces_idx.first.size(), VectorType::Zero());
                 std::vector<VectorType> d2(faces_idx.first.size(), VectorType::Zero());
                 normals[0] = normal;
-                d1[0] = tempCloud.getDiffQuantities().getKMinDir().row(0);
-                d2[0] = tempCloud.getDiffQuantities().getKMaxDir().row(0);
+                d1[0] = tempCloud.getDiffQuantities().d1().row(0);
+                d2[0] = tempCloud.getDiffQuantities().d2().row(0);
                 mesh->addVertexVectorQuantity("normals", normals);
                 mesh->addVertexVectorQuantity("d1", d1);
                 mesh->addVertexVectorQuantity("d2", d2);
@@ -446,11 +426,11 @@ void GUI::cloudComputingUpdateUnique() {
 
                 // Create a new point cloud
                 polyscope::PointCloud *newCloud =
-                        polyscope::registerPointCloud(cloudName, tempCloud.getDiffQuantities().getVertices());
+                        polyscope::registerPointCloud(cloudName, tempCloud.getDiffQuantities().position());
                 polyscope_uniqueClouds.push_back(newCloud);
-                addQuantities(newCloud, "normals", tempCloud.getDiffQuantities().getNormals());
-                addQuantities(newCloud, "d1", tempCloud.getDiffQuantities().getKMinDir());
-                addQuantities(newCloud, "d2", tempCloud.getDiffQuantities().getKMaxDir());
+                addQuantities(newCloud, "normals", tempCloud.getDiffQuantities().normal());
+                addQuantities(newCloud, "d1", tempCloud.getDiffQuantities().d1());
+                addQuantities(newCloud, "d2", tempCloud.getDiffQuantities().d2());
             }
         }
     });
@@ -479,29 +459,34 @@ void GUI::cloudComputingSlices() {
         min -= 0.1 * dist * VectorType::Ones();
         max += 0.1 * dist * VectorType::Ones();
 
-        std::pair<SampleMatrixType, std::vector<std::array<size_t, 4>>> pair_slice =
+        std::pair<std::vector<VectorType>, std::vector<std::array<size_t, 4>>> pair_slice =
                 create_frame(min, max, isHDSlicer ? 256 : 64, axis, slice);
+
+        SampleMatrixType positions = SampleMatrixType::Zero(pair_slice.first.size(), 1);
+        for (size_t i = 0; i < pair_slice.first.size(); ++i) {
+            positions.row(i) = pair_slice.first[i];
+        }
 
         // SampleVectorType values = SampleVectorType::Zero(pair_slice.first.rows());
         SampleVectorType values;
         switch (weightFuncType) {
             case 0:
-                values = sliceWithKernel<SmoothWeightFunc>(pair_slice.first);
+                values = sliceWithKernel<SmoothWeightFunc>(positions);
                 break;
-            // case 1:
-            //     values = sliceWithKernel<ConstWeightFunc>(pair_slice.first);
-            //     break;
-            // case 2:
-            //     values = sliceWithKernel<WendlandWeightFunc>(pair_slice.first);
-            //     break;
-            // case 3:
-            //     values = sliceWithKernel<SingularWeightFunc>(pair_slice.first);
-            //     break;
-            // case 4:
-            //     values = sliceWithKernel<ExponentialWeightFunc>(pair_slice.first);
-            //     break;
+            case 1:
+                values = sliceWithKernel<ConstWeightFunc>(positions);
+                break;
+            case 2:
+                values = sliceWithKernel<WendlandWeightFunc>(positions);
+                break;
+            case 3:
+                values = sliceWithKernel<SingularWeightFunc>(positions);
+                break;
+            case 4:
+                values = sliceWithKernel<ExponentialWeightFunc>(positions);
+                break;
             default:
-                values = sliceWithKernel<SmoothWeightFunc>(pair_slice.first);
+                values = sliceWithKernel<SmoothWeightFunc>(positions);
                 break;
         }
 
@@ -523,7 +508,7 @@ void GUI::methodForCloudComputing(const std::string &metName, bool unique) {
     if (offline_computing || ImGui::Button(buttonName_all.c_str())) {
         methodName = metName;
         all_computed = true;
-        pointProcessing.computeDiffQuantities<FitT, isSigned>(metName, mainCloud);
+        pointProcessing.computeDiffQuantities<FitT>(metName, mainCloud);
     }
 
     if (!unique || offline_computing)
@@ -551,7 +536,7 @@ void GUI::methodForCloudComputing_OnlyTriangle(const std::string &metName, const
     if (offline_computing || ImGui::Button(buttonName_all.c_str())) {
         methodName = metName;
         all_computed = true;
-        pointProcessing.computeDiffQuantities_Triangle(metName, type, mainCloud);
+        pointProcessing.computeDiffQuantities<ConstWeightFunc>(metName, mainCloud);
     }
 
     if (offline_computing)
@@ -562,7 +547,7 @@ void GUI::methodForCloudComputing_OnlyTriangle(const std::string &metName, const
     if (ImGui::Button(buttonName_unique.c_str())) {
         methodName = metName;
 
-        pointProcessing.computeUniquePoint_triangle(metName, type, tempCloud);
+        pointProcessing.computeUniquePoint<ConstWeightFunc>(metName, tempCloud);
 
         if (tempCloud.getTriangles().size() == 0) {
             std::cerr << "Error: computeUniquePointTriangle returned an empty matrix" << std::endl;
@@ -590,21 +575,21 @@ void GUI::cloudComputing() {
     ImGui::Combo("Fitting Methods", &item_selected_method, methods, IM_ARRAYSIZE(methods));
 
     switch (weightFuncType) {
-        // case 0:
-        //     methodWithKernel<ConstWeightFunc>();
-        //     break;
+        case 0:
+            methodWithKernel<ConstWeightFunc>();
+            break;
         case 1:
             methodWithKernel<SmoothWeightFunc>();
             break;
-        // case 2:
-        //     methodWithKernel<WendlandWeightFunc>();
-        //     break;
-        // case 3:
-        //     methodWithKernel<SingularWeightFunc>();
-        //     break;
-        // case 4:
-        //     methodWithKernel<ExponentialWeightFunc>();
-        //     break;
+        case 2:
+            methodWithKernel<WendlandWeightFunc>();
+            break;
+        case 3:
+            methodWithKernel<SingularWeightFunc>();
+            break;
+        case 4:
+            methodWithKernel<ExponentialWeightFunc>();
+            break;
         default:
             methodWithKernel<SmoothWeightFunc>();
             break;
@@ -621,29 +606,29 @@ void GUI::cloudComputing() {
 void GUI::cloudComputingParameters() {
     ImGui::Text("Neighborhood collection");
     ImGui::SameLine();
-    if (ImGui::Checkbox("Use Voxelgrid", &pointProcessing.useVoxelGrid)) {
+    if (ImGui::Checkbox("Use Voxelgrid", &use_VoxelGrid)) {
         pointProcessing.computeVoxelGrid(mainCloud);
     }
 
-    if (pointProcessing.useVoxelGrid) {
+    if (use_VoxelGrid) {
         ImGui::SameLine();
         ImGui::Checkbox("No empty cells", &noEmptyVoxels);
-        if (ImGui::InputInt("Resolution", &pointProcessing.resolution, 1, 200)) {
+        if (ImGui::InputInt("Resolution", &resolution, 1, 200)) {
             pointProcessing.computeVoxelGrid(mainCloud);
         }
-        if (ImGui::InputInt("Number of cells in each direction", &pointProcessing.N, 1, 200)) {
+        if (ImGui::InputInt("Number of cells in each direction", &N_voxels, 1, 200)) {
             pointProcessing.computeVoxelGrid(mainCloud);
         }
 
         if (ImGui::InputInt("Show Voxels Resolution", &displayVoxelResolution, 0, 200)) {
             displayVoxelResolution = std::max(0, displayVoxelResolution);
-            displayVoxelResolution = std::min(displayVoxelResolution, pointProcessing.resolution);
+            displayVoxelResolution = std::min(displayVoxelResolution, resolution);
         }
         if (ImGui::Button("Show VoxelGrid")) {
-            if (displayVoxelResolution > pointProcessing.resolution)
-                displayVoxelResolution = pointProcessing.resolution;
+            if (displayVoxelResolution > resolution)
+                displayVoxelResolution = resolution;
             using Aabb = MyVoxelGrid::Aabb;
-            std::vector<Aabb> bboxes = pointProcessing.voxelGrid.getCellBoundingBoxes(
+            std::vector<Aabb> bboxes = voxelGrid.getCellBoundingBoxes(
                     displayVoxelResolution, noEmptyVoxels); // True to only keep non empty cells [TODO] not working
             // Create a new mesh using only lines
             std::vector<VectorType> vertices;
@@ -654,61 +639,61 @@ void GUI::cloudComputingParameters() {
             polyscope::registerCurveNetwork("VoxelGrid", vertices, indices);
 
             std::vector<VectorType> centers =
-                    pointProcessing.voxelGrid.getCellCenters(displayVoxelResolution, noEmptyVoxels);
+                    voxelGrid.getCellCenters(displayVoxelResolution, noEmptyVoxels);
             polyscope::registerPointCloud("VoxelGrid centers", centers);
             // Add some quantities next time
         }
 
     } else {
-        if (ImGui::Checkbox("Use KnnGraph", &pointProcessing.useKnnGraph))
+        if (ImGui::Checkbox("Use KnnGraph", &use_kNNGraph))
             pointProcessing.recomputeKnnGraph();
-        if (ImGui::InputInt("kNN for graph", &pointProcessing.kNN_for_graph))
+        if (ImGui::InputInt("kNN for graph", &kNN_for_graph))
             pointProcessing.recomputeKnnGraph();
         // Add radio buttons to select the research type
-        ImGui::RadioButton("kNN", &pointProcessing.researchType, 0);
+        ImGui::RadioButton("kNN", &researchType, 0);
         ImGui::SameLine();
-        ImGui::RadioButton("Euclidian Nearest", &pointProcessing.researchType, 1);
+        ImGui::RadioButton("Euclidian Nearest", &researchType, 1);
 
         ImGui::SameLine();
-        if (pointProcessing.researchType == 0) {
+        if (researchType == 0) {
             if (ImGui::Button("show neighbors"))
-                addQuantities(polyscope_mainCloud, "knn", pointProcessing.colorizeKnn());
+                addQuantities(polyscope_mainCloud, "knn", pointProcessing.colorizeNeighbors<ConstWeightFunc>());
         } else {
             if (ImGui::Button("show neighbors")) {
                 switch (weightFuncType) {
                     case 0:
                         addQuantities(polyscope_mainCloud, "euclidean nei",
-                                      pointProcessing.colorizeEuclideanNeighborhood<ConstWeightFunc>());
-                        break;
+                                      pointProcessing.colorizeNeighbors<ConstWeightFunc>());
+                    break;
                     case 1:
                         addQuantities(polyscope_mainCloud, "euclidean nei",
-                                      pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
-                        break;
+                                      pointProcessing.colorizeNeighbors<SmoothWeightFunc>());
+                    break;
                     case 2:
                         addQuantities(polyscope_mainCloud, "euclidean nei",
-                                      pointProcessing.colorizeEuclideanNeighborhood<WendlandWeightFunc>());
-                        break;
+                                      pointProcessing.colorizeNeighbors<WendlandWeightFunc>());
+                    break;
                     case 3:
                         addQuantities(polyscope_mainCloud, "euclidean nei",
-                                      pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>());
-                        break;
+                                      pointProcessing.colorizeNeighbors<SingularWeightFunc>());
+                    break;
                     case 4:
                         addQuantities(polyscope_mainCloud, "euclidean nei",
-                                      pointProcessing.colorizeEuclideanNeighborhood<ExponentialWeightFunc>());
-                        break;
+                                      pointProcessing.colorizeNeighbors<ExponentialWeightFunc>());
+                    break;
                     default:
                         addQuantities(polyscope_mainCloud, "euclidean nei",
-                                      pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>());
-                        break;
+                                      pointProcessing.colorizeNeighbors<SmoothWeightFunc>());
+                    break;
                 }
             }
         }
         ImGui::SameLine();
-        if (pointProcessing.researchType == 0) {
+        if (researchType == 0) {
             if (ImGui::Button("pc neighbors")) {
-                SampleVectorType neighbor_values = pointProcessing.colorizeKnn();
+                SampleVectorType neighbor_values = pointProcessing.colorizeNeighbors<ConstWeightFunc>();
                 std::pair<SampleMatrixType, SampleVectorType> res_nei =
-                        mainCloud.getNonZeros(neighbor_values, pointProcessing.iVertexSource);
+                        mainCloud.getNonZeros(neighbor_values, iVertexSource);
                 std::string cloudName = "neighborhood";
                 // Create a new point cloud
                 polyscope::PointCloud *newCloud = polyscope::registerPointCloud(cloudName, res_nei.first);
@@ -720,26 +705,26 @@ void GUI::cloudComputingParameters() {
                 SampleVectorType neighbor_values;
                 switch (weightFuncType) {
                     case 0:
-                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<ConstWeightFunc>();
+                        neighbor_values = pointProcessing.colorizeNeighbors<ConstWeightFunc>();
                         break;
                     case 1:
-                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>();
+                        neighbor_values = pointProcessing.colorizeNeighbors<SmoothWeightFunc>();
                         break;
                     case 2:
-                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<WendlandWeightFunc>();
+                        neighbor_values = pointProcessing.colorizeNeighbors<WendlandWeightFunc>();
                         break;
                     case 3:
-                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SingularWeightFunc>();
+                        neighbor_values = pointProcessing.colorizeNeighbors<SingularWeightFunc>();
                         break;
                     case 4:
-                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<ExponentialWeightFunc>();
+                        neighbor_values = pointProcessing.colorizeNeighbors<ExponentialWeightFunc>();
                         break;
                     default:
-                        neighbor_values = pointProcessing.colorizeEuclideanNeighborhood<SmoothWeightFunc>();
+                        neighbor_values = pointProcessing.colorizeNeighbors<SmoothWeightFunc>();
                         break;
                 }
-                std::pair<SampleMatrixType, SampleVectorType> res_nei =
-                        mainCloud.getNonZeros(neighbor_values, pointProcessing.iVertexSource);
+                const std::pair<SampleMatrixType, SampleVectorType> res_nei =
+                        mainCloud.getNonZeros(neighbor_values, iVertexSource);
                 std::string cloudName = "neighborhood";
                 // Create a new point cloud
                 polyscope::PointCloud *newCloud = polyscope::registerPointCloud(cloudName, res_nei.first);
@@ -748,14 +733,14 @@ void GUI::cloudComputingParameters() {
             }
         }
 
-        if (pointProcessing.researchType == 0) {
-            ImGui::InputInt("k-neighborhood size", &pointProcessing.kNN);
+        if (researchType == 0) {
+            ImGui::InputInt("k-neighborhood size", &kNN);
         } else {
-            ImGui::InputFloat("neighborhood size", &pointProcessing.NSize);
+            ImGui::InputFloat("neighborhood size", &radius);
         }
 
-        ImGui::InputInt("source vertex", &pointProcessing.iVertexSource);
-        ImGui::InputInt("Nb MLS Iterations", &pointProcessing.mlsIter);
+        ImGui::InputInt("source vertex", &iVertexSource);
+        ImGui::InputInt("Nb MLS Iterations", &mls_iter);
 
         // Add radio buttons to select the weight function
         ImGui::RadioButton("Constant", &weightFuncType, 0);
@@ -772,23 +757,6 @@ void GUI::cloudComputingParameters() {
 
         ImGui::Separator();
     }
-}
-
-void GUI::addQuantities(polyscope::PointCloud *pc, const std::string &name, const SampleMatrixType &values) {
-    if (values.cols() == 1) {
-        // Make values beeing a vector
-        SampleVectorType valuesVec = values.col(0);
-        auto quantity = pc->addScalarQuantity(name, valuesVec);
-        // Set bound [-5, 5] for the scalar quantity
-        if (name != "knn" && name != "euclidean nei") {
-            quantity->setMapRange(std::pair<double, double>(-5, 5));
-            quantity->setColorMap("coolwarm");
-        } else {
-            quantity->setColorMap("turbo");
-            quantity->setEnabled(true);
-        }
-    } else
-        pc->addVectorQuantity(name, values);
 }
 
 void GUI::quantitiesParameters() {

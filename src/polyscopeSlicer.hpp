@@ -80,9 +80,9 @@ polyscope::SurfaceMesh* registerRegularSlicer(const std::string &name,
   
 //   std::vector<VectorType> vertices(nbSteps*nbSteps);
   
-  SampleMatrixType vertices (nbSteps*nbSteps,3);
+  SampleMatrixType vertices (nbSteps*nbSteps);
 
-  SampleVectorType values = SampleVectorType::Zero(nbSteps*nbSteps);
+  SampleVectorType values = SampleVectorType(nbSteps*nbSteps);
 
   std::vector<std::array<size_t,4>> faces;
   faces.reserve(nbSteps*nbSteps);
@@ -95,7 +95,7 @@ polyscope::SurfaceMesh* registerRegularSlicer(const std::string &name,
     auto j = id / nbSteps;
     p = lowerBound + i*vu + j*vv;
     p[axis] += sliceid*dw;
-    vertices.row(id) = p;
+    vertices[id] = p;
     face = { id, id+1, id+1+nbSteps, id+nbSteps };
     if (((i+1) < nbSteps) && ((j+1)<nbSteps))
       faces.push_back(face);
@@ -104,7 +104,7 @@ polyscope::SurfaceMesh* registerRegularSlicer(const std::string &name,
   //Evaluating the implicit function (in parallel using openmp)
 #pragma omp parallel for default(none) shared(nbSteps,values,vertices,implicit)
   for(int id=0; id < nbSteps*nbSteps; ++id)
-    values(id)  = implicit(vertices.row(id));
+    values[id]  = implicit(vertices[id]);
 
   //Polyscope registration
   auto psm = polyscope::registerSurfaceMesh(name, vertices, faces);

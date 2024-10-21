@@ -17,7 +17,7 @@ public:
         estimatorMap["MeanPLANE"] =        std::make_shared<Estimator<fit_MeanPLANE<WeightFunc>>>("MeanPLANE", true, mls_iter);
         estimatorMap["ASO"] =              std::make_shared<Estimator<fit_ASO<WeightFunc>>>("ASO", true, mls_iter);
         estimatorMap["APSS"] =             std::make_shared<Estimator<fit_APSS<WeightFunc>>>("APSS", true, mls_iter);
-        estimatorMap["OrientendPC-MLS"] =  std::make_shared<Estimator<fit_BOCylinder<WeightFunc>>>("OrientendPC-MLS", true, mls_iter);
+        estimatorMap["OrientedPC-MLS"] =  std::make_shared<Estimator<fit_BOCylinder<WeightFunc>>>("OrientendPC-MLS", true, mls_iter);
         estimatorMap["Direct2-Monge"] =    std::make_shared<Estimator<fit_FO2D<WeightFunc>>>("Direct2-Monge", true, mls_iter);
         estimatorMap["Ellipsoid"] =        std::make_shared<Estimator<fit_Ellipsoid<WeightFunc>>>("Ellipsoid", true, mls_iter);
         estimatorMap["Varifolds"] =        std::make_shared<Estimator<fit_Varifolds>>("Varifolds", true, 1); // To be fixed in Ponca for multiple iterations

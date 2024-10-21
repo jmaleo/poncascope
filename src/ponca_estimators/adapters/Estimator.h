@@ -1,17 +1,18 @@
 #pragma once
 
-#include "fitDefinitions.h"
 #include "types.h"
 #include <chrono>
 
 #include "declarations.h"
+#include "fitDefinitions.h"
+#include "../../definitions.h"
 
 /// Function to compute the neighbors of a point
 template <typename Functor>
 void processNeighbors(const int &idx, const Functor f){
     // VectorType pos = ponca_kdtree.point_data()[idx].pos();
     if(use_kNNGraph){
-        if (kNN != -1){
+        if (researchType == 0){
             for (int j : ponca_knnGraph->k_nearest_neighbors(idx)){
                 f(j);
             }
@@ -24,7 +25,7 @@ void processNeighbors(const int &idx, const Functor f){
             f(idx);
         }
     } else {
-        if (kNN != -1){
+        if (researchType == 0){
             for (int j : ponca_kdtree.k_nearest_neighbors(idx, kNN)){
                 f(j);
             }
@@ -44,7 +45,7 @@ template <typename Functor>
 void processNeighbors(const VectorType &pos, const int &init_idx, const Functor f){
     // VectorType pos = ponca_kdtree.point_data()[init_idx].pos();
     if(use_kNNGraph){
-        if (kNN != -1){
+        if (researchType == 0){
             for (int j : ponca_knnGraph->k_nearest_neighbors(init_idx)){
                 f(j);
             }
@@ -57,7 +58,7 @@ void processNeighbors(const VectorType &pos, const int &init_idx, const Functor 
             f(init_idx);
         }
     } else {
-        if (kNN != -1){
+        if (researchType == 0){
             for (int j : ponca_kdtree.k_nearest_neighbors(pos, kNN)){
                 f(j);
             }
@@ -96,6 +97,11 @@ class InterfaceProcessHandler {
         void initHandler ( int query_idx ){
             init_idx = query_idx;
             current_pos = ponca_kdtree.point_data()[ query_idx ].pos();
+        }
+
+        void initHandler ( const VectorType &query_pos ){
+            current_pos = query_pos;
+            init_idx = 0;
         }
 
         void initEstimator( FitT &fit ) {
@@ -140,6 +146,10 @@ class InterfaceProcessHandler {
             diffQuantity.projection = current_pos;
         }
 
+        virtual void customQuery ( FitT &fit, PointCloudDiff<Scalar>& pcDiff ) = 0;
+
+        virtual Scalar potential ( FitT &fit, const VectorType& pos ) = 0;
+
     protected :
 
         int                      init_idx = 0;
@@ -182,6 +192,27 @@ class ProcessHandler : public InterfaceProcessHandler< _Fit > {
             auto tNei_end = std::chrono::high_resolution_clock::now();
             Base::current_NeighborsTiming += std::chrono::duration_cast<std::chrono::nanoseconds>( tNei_end - tNei_start );
         }
+
+    void customQuery ( FitT &fit, PointCloudDiff<Scalar>& pcDiff ) override {
+        pcDiff.v1.row(0) = fit.kminDirection();
+        pcDiff.v2.row(0) = fit.kmaxDirection();
+        pcDiff.normals.row(0) = fit.primitiveGradient();
+        pcDiff.points.row(0) = fit.project( pcDiff.points.row(0) );
+
+        for (int i = 1 ; i < pcDiff.points.size(); i++) {
+            const VectorType proj = fit.project( pcDiff.points.row(i) );
+            if ( ( pcDiff.points.row(i).transpose() - proj ).norm() > 1e-6 ) {
+                pcDiff.points.row(i) = proj;
+            }
+            else {
+                pcDiff.points.row(i) = pcDiff.points.row(0);
+            }
+        }
+    }
+
+    Scalar potential ( FitT &fit, const VectorType& pos ) override {
+        return fit.potential( pos );
+    }
 
 }; // ProcessHandler
 
@@ -239,7 +270,29 @@ class ProcessHandler< fit_CNC > : public InterfaceProcessHandler< fit_CNC > {
 
             return Base::current_fitResult;
         }
-        
+
+        void customQuery ( FitT &fit, PointCloudDiff<Scalar>& pcDiff ) override {
+            pcDiff.v1.row(0) = fit.kminDirection();
+            pcDiff.v2.row(0) = fit.kmaxDirection();
+            pcDiff.normals.row(0) = fit.primitiveGradient();
+            std::vector<std::array<Scalar,3>> triangles;
+            fit.getTriangles(triangles);
+            pcDiff.init_zeros(triangles.size());
+            for (int i = 0 ; i < triangles.size(); i++) {
+                pcDiff.points.row(0) = VectorType(triangles[i][0], triangles[i][1], triangles[i][2]);
+            }
+            for (int i = 0 ; i < 3; i++) {
+                pcDiff.normals.row(i) = fit.primitiveGradient();
+                pcDiff.v1.row(i) = fit.kminDirection();
+                pcDiff.v2.row(i) = fit.kmaxDirection();
+            }
+            pcDiff.setTriangles(triangles);
+        }
+
+        Scalar potential ( FitT &fit, const VectorType& pos ) override {
+            return 0;
+        }
+
 }; // ProcessHandler for CNC
 
 
@@ -255,6 +308,15 @@ class BaseEstimator {
         virtual void operator() ( const int &query_idx, Quantity<Scalar> &quantity ) {
             std::cout << " Only here to check. " << std::endl;
         }
+
+        virtual void operator() ( const VectorType &query_pos, Quantity<Scalar> &quantity ) {
+            std::cout << " Only here to check. " << std::endl;
+        }
+
+        virtual void customQuery( PointCloudDiff<Scalar>& pcDiff ) = 0;
+
+        virtual Scalar potential ( const VectorType& pos ) = 0;
+
 }; // BaseEstimator
 
 
@@ -264,9 +326,12 @@ class Estimator : public BaseEstimator {
     using Self = Estimator<_FitT>;
 
     protected :
-        bool oriented;
+        bool oriented = false;
         std::string name = "None";
         int mls_max = 1;
+
+        _FitT end_fit;
+        bool isFinished = false;
 
     public : 
         // Overload the FitT
@@ -310,7 +375,49 @@ class Estimator : public BaseEstimator {
 
                 if ( mls_current == mls_max - 1 ){
                     pHandler.applyFunctor( fit, quantity );
+                    isFinished = true;
+                    end_fit = fit;
                 }
             }
         }
+
+        void operator() ( const VectorType &query_pos, Quantity<Scalar> &quantity ) override {
+
+            ProcessHandler<FitT> pHandler( name );
+
+            int mls_current = 0;
+
+            // VectorType query_pos = ponca_kdtree.point_data()[ query_idx ].pos();
+            pHandler.initHandler ( query_pos );
+
+            for ( mls_current = 0 ; mls_current < mls_max ; mls_current ++ ){
+                FitT fit;
+                pHandler.initEstimator( fit );
+
+                Ponca::FIT_RESULT res;
+                do {
+                    pHandler.applyNeighbors( fit );
+                    res = pHandler.finalize( fit );
+                } while ( res == Ponca::NEED_OTHER_PASS );
+
+                if ( mls_current == mls_max - 1 ){
+                    pHandler.applyFunctor( fit, quantity );
+                    isFinished = true;
+                    end_fit = fit;
+                }
+            }
+        }
+
+        void customQuery( PointCloudDiff<Scalar>& pcDiff ) override {
+            if ( !isFinished ) return;
+            ProcessHandler<FitT> pHandler( name );
+            pHandler.customQuery(end_fit, pcDiff);
+        }
+
+        Scalar potential ( const VectorType& pos ) override {
+            if ( !isFinished ) return 0;
+            ProcessHandler<FitT> pHandler( name );
+            return pHandler.potential(end_fit, pos);
+        }
+
 }; // Estimator

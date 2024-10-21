@@ -17,6 +17,7 @@ void measureTime( const std::string &actionName, Functor F ){
             std::chrono::steady_clock::now();
     F(); // run process
     const auto end = std::chrono::steady_clock::now();
+    std::cout << actionName << " in " << (end - start) / 1ms << "ms.\n";
 }
 
 /// Generic processing function: traverse point cloud, compute fitting, and use functor to process fitting output
@@ -29,22 +30,47 @@ void processPointCloud( Estimator& estimator, int uniqueIdx, Functor f ){
         Quantity<Scalar> q;
         estimator( uniqueIdx, q );
         f ( uniqueIdx, q );
-        // Print results of the quantity
-        // std::cout << "Unique point " << idx << ":\n";
-        // std::cout << "Mean: " << q.mean << "\n";
-        // std::cout << "Kmin: " << q.k1 << "\n";
-        // std::cout << "Kmax: " << q.k2 << "\n";
-        // std::cout << "Gauss: " << q.gauss << "\n";
         return;
     }
     
     #pragma omp parallel for
     for (int i = 0; i < nvert; ++i) {
         DGtal::trace.progressBar( i, nvert );    
-        Quantity<Scalar> q;    
+        Quantity<Scalar> q;
         estimator(i, q);
         f (i, q);
     }
+}
+
+template<typename Estimator>
+void specialUniquePointCompute ( Estimator &estimator, PointCloudDiff<Scalar>& pcDiff, int uniqueIdx ) {
+
+    measureTime( "[Ponca] Compute special unique point using " + estimator.getName(),
+                 [&uniqueIdx, &estimator, &pcDiff]() {
+                         Quantity<Scalar> q;
+                         estimator( uniqueIdx, q );
+                         estimator.customQuery( pcDiff );
+                    });
+}
+
+template<typename Estimator>
+SampleVectorType evalScalarField_impl ( Estimator &estimator, const SampleMatrixType &input_pos ) {
+    SampleVectorType scalarField;
+    int nvert = input_pos.size();
+    scalarField = SampleVectorType::Zero( nvert );
+
+    measureTime( "[Ponca] Compute scalar field using " + estimator.getName(),
+                 [&estimator, &input_pos, &scalarField, &nvert]() {
+
+                     #pragma omp for
+                     for (int i = 0 ; i < nvert ; ++i) {
+                             Quantity<Scalar> q;
+                             estimator( input_pos.row(i), q );
+                             scalarField[i] = estimator.potential(input_pos.row(i));
+                         }
+                     });
+
+    return scalarField;
 }
 
 /// Generic processing function: traverse point cloud and compute mean, first and second curvatures + their direction
@@ -57,13 +83,13 @@ DifferentialQuantities<Scalar> estimateDifferentialQuantities_impl( Estimator &e
     VectorType defaultVectorType = VectorType(1, 0, 0); // Keep the norm to 1 to avoid numerical issues for non-stable points
 
     DGtal::Statistic<Scalar> statTime, statNei;
-    std::vector<Scalar> mean ( nvert ), kmin ( nvert ), kmax ( nvert ), gauss ( nvert );
-    std::vector<Eigen::Vector<Scalar, 3>> proj ( nvert ), normal( nvert, defaultVectorType ), dmin( nvert, defaultVectorType ), dmax( nvert,defaultVectorType );
+    SampleVectorType mean ( nvert ), kmin ( nvert ), kmax ( nvert ), gauss ( nvert );
+    SampleMatrixType proj ( nvert, 3 ), normal( nvert, 3 ), dmin( nvert, 3 ), dmax( nvert, 3 );
     std::vector <unsigned int> non_stable_idx(nvert, 0);
 
     measureTime( "[Ponca] Compute differential quantities using " + estimator.getName(),
                  [&uniqueIdx, &estimator, &proj, &mean, &kmin, &kmax, &gauss, &normal, &dmin, &dmax, &statTime, &statNei, &non_stable_idx]() {
-                            processPointCloud(estimator, uniqueIdx, 
+                            processPointCloud(estimator, uniqueIdx,
                                 [&proj, &mean, &kmin, &kmax, &gauss, &normal, &dmin, &dmax, &statTime, &statNei, &non_stable_idx]
                                 (
                                     int i, Quantity<Scalar> &quantity
@@ -79,11 +105,11 @@ DifferentialQuantities<Scalar> estimateDifferentialQuantities_impl( Estimator &e
                                     mean  [ i ]   = quantity.mean;
                                     kmax  [ i ]   = quantity.k2;
                                     kmin  [ i ]   = quantity.k1;
-                                    dmax  [ i ]   = quantity.d2;
-                                    dmin  [ i ]   = quantity.d1;
+                                    dmax.row( i )   = quantity.d2;
+                                    dmin.row( i )   = quantity.d1;
                                     gauss [ i ]   = quantity.gauss;
-                                    normal[ i ]   = quantity.normal;
-                                    proj  [ i ]   = quantity.projection;
+                                    normal.row ( i )   = quantity.normal;
+                                    proj.row( i )   = quantity.projection;
                                 });
                             });
 
@@ -101,31 +127,54 @@ DifferentialQuantities<Scalar> estimateDifferentialQuantities( std::string name,
 
     auto estimator = factory->getEstimator(name);
 
-    DifferentialQuantities<Scalar> diff = estimateDifferentialQuantities_impl( *estimator, uniqueIdx ); 
+    DifferentialQuantities<Scalar> diff = estimateDifferentialQuantities_impl( *estimator, uniqueIdx );
     diff.setOriented(estimator->isOriented());
     return diff;
 }
 
 template <typename WeightFunc>
-std::vector<Scalar> neiRequest(int index) {
+void estimateAndProject_OnePoint( std::string name, PointCloudDiff<Scalar>& pcDiff, int uniqueIdx) {
+    specialUniquePointCompute( *getEstimatorFactory<WeightFunc>()->getEstimator(name), pcDiff, uniqueIdx );
+}
+
+template <typename WeightFunc>
+SampleVectorType evalScalarField( std::string name, const SampleMatrixType &input_pos) {
+    return evalScalarField_impl( *getEstimatorFactory<WeightFunc>()->getEstimator(name), input_pos );
+}
+
+template<typename WeightFunc>
+SampleVectorType neiRequest(int index) {
     int nvert = ponca_kdtree.index_data().size();
-    std::vector <Scalar> nei_value(nvert, 0);
+    SampleVectorType nei_value(nvert);
 
     VectorType pos = ponca_kdtree.point_data()[index].pos();
     WeightFunc w(radius);
 
     processNeighbors(pos, index, [&w, &pos, &nei_value, &index](int j) {
         // fit.addNeighbor(ponca_kdtree.point_data()[j]);
-        if (kNN != -1){
-            nei_value[j] = ( j != index ) ? 1 : 2;
-        }
-        else {
-            const auto& q = ponca_kdtree.point_data()[j];
-            nei_value[j] = w.w(q.pos() - pos, q ).first;
+        if (researchType == 0) {
+            nei_value[j] = (j != index) ? 1 : 2;
+        } else {
+            const auto &q = ponca_kdtree.point_data()[j];
+            nei_value[j] = w.w(q.pos() - pos, q).first;
         }
     });
-    
+
     return nei_value;
+}
+
+inline Scalar evalMeanNeighbors () {
+    Scalar meanNeighbors = 0;
+    int nvert = ponca_kdtree.index_data().size();
+    measureTime("[Ponca] Dry fit", [&meanNeighbors, &nvert]() {
+        for (int i = 0; i < nvert; ++i) {
+            processNeighbors(i, [&meanNeighbors](int j) {
+                meanNeighbors += 1;
+            });
+        }
+    });
+    meanNeighbors /= nvert;
+    return meanNeighbors;
 }
 
 Scalar estimateRadiusFromKNN(int k) {
@@ -143,4 +192,9 @@ Scalar estimateRadiusFromKNN(int k) {
     }
     radius /= nvert;
     return radius;
+}
+
+// GetVertexSourcePosition
+inline VectorType getSourcePosition(const int index) {
+    return ponca_kdtree.point_data()[index].pos();
 }

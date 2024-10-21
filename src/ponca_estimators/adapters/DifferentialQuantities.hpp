@@ -1,5 +1,6 @@
 #pragma once
 
+#include <utility>
 #include <vector>
 #include <Eigen/Dense>
 #include <DGtal/math/Statistic.h>
@@ -52,24 +53,31 @@ struct DifferentialQuantities {
 public:
     enum {Dim = 3};
     using Scalar     = _Scalar;
-    using VectorSample = std::vector<Scalar>;
-    using MatrixSample = std::vector<Eigen::Vector<Scalar, 3>>;
 
     DifferentialQuantities()  = default;
     ~DifferentialQuantities() = default;
 
-    inline DifferentialQuantities(MatrixSample position, VectorSample k1, VectorSample k2, VectorSample mean, VectorSample gauss, MatrixSample d1, MatrixSample d2, MatrixSample normal, DGtal::Statistic<Scalar> statNei, DGtal::Statistic<Scalar> statTime) {
-        m_k1 = k1;
-        m_k2 = k2;
-        m_mean = mean;
-        m_gauss = gauss;
-        m_d1 = d1;
-        m_d2 = d2;
-        m_normal = normal;
+    inline DifferentialQuantities(SampleMatrixType position, SampleVectorType k1, SampleVectorType k2, SampleVectorType mean, SampleVectorType gauss, SampleMatrixType d1, SampleMatrixType d2, SampleMatrixType normal, DGtal::Statistic<Scalar> statNei, DGtal::Statistic<Scalar> statTime) {
+        m_k1 = std::move(k1);
+        m_k2 = std::move(k2);
+        m_mean = std::move(mean);
+        m_gauss = std::move(gauss);
+        m_d1 = std::move(d1);
+        m_d2 = std::move(d2);
+        m_normal = std::move(normal);
         m_statNeighbors = statNei;
         m_statTimings = statTime;
-        m_position = position;
+        m_position = std::move(position);
         m_nonstable = 0;
+        computeShapeIndex();
+    }
+
+    inline void computeShapeIndex() {
+        m_shapeIndex = SampleVectorType(m_k1.size());
+        for (int i = 0; i < m_k1.size(); i++) {
+            _Scalar sIndex       = ( 2.0 / M_PI ) * std::atan( ( m_k1[ i ] + m_k2[ i ] ) / ( m_k1 [ i ] - m_k2[ i ] ) );
+            m_shapeIndex[i] = sIndex;
+        }
     }
 
     inline void setNonStableVector(std::vector<unsigned int> non_stables ) { 
@@ -77,31 +85,54 @@ public:
         m_nonstable = std::count_if(non_stables.begin(), non_stables.end(), [](Scalar x) { return x == 1; });
     }
 
-    inline int getNumNonstable()  const { return m_nonstable; }
+    [[nodiscard]] int getNumNonstable() const { return m_nonstable; }
 
     inline Scalar getNonStableRatio () const { return Scalar( m_nonstable ) / Scalar( m_position.size() ); }
 
-    inline std::vector<unsigned int> const getNonStableVector() { return m_non_stable_ratio;} 
+    std::vector<unsigned int> getNonStableVector() { return m_non_stable_ratio;}
 
-    inline VectorSample k1()     const { return m_k1; }
-    inline VectorSample k2()     const { return m_k2; }
-    inline VectorSample mean()   const { return m_mean; }
-    inline VectorSample gauss()  const { return m_gauss; }
+    [[nodiscard]] inline SampleVectorType k1()     const { return m_k1; }
+    [[nodiscard]] inline SampleVectorType k2()     const { return m_k2; }
+    [[nodiscard]] inline SampleVectorType mean()   const { return m_mean; }
+    [[nodiscard]] inline SampleVectorType gauss()  const { return m_gauss; }
+    [[nodiscard]] inline SampleVectorType shapeIndex() const { return m_shapeIndex; }
+    [[nodiscard]] inline SampleMatrixType d1()     const { return m_d1; }
+    [[nodiscard]] inline SampleMatrixType d2()     const { return m_d2; }
+    [[nodiscard]] inline SampleMatrixType normal() const { return m_normal; }
+    [[nodiscard]] inline SampleMatrixType position() const { return m_position; }
 
-    inline MatrixSample d1()     const { return m_d1; }
-    inline MatrixSample d2()     const { return m_d2; }
-    inline MatrixSample normal() const { return m_normal; }
-    inline MatrixSample position() const { return m_position; }
-
-    inline void setOriented(bool oriented) { m_oriented = oriented; }
-    inline bool isOriented() const { return m_oriented; }
+    inline void setOriented(const bool oriented) { m_oriented = oriented; }
+    [[nodiscard]] inline bool isOriented() const { return m_oriented; }
 
     inline DGtal::Statistic<Scalar> statNeighbors() const { return m_statNeighbors; }
     inline DGtal::Statistic<Scalar> statTimings()   const { return m_statTimings; }
 
+    SampleMatrixType getByName(const std::string& propertyName) {
+        if (propertyName == "Min curvature") {
+            return m_k1;
+        } else if (propertyName == "Max curvature") {
+            return m_k2;
+        } else if (propertyName == "Mean curvature") {
+            return m_mean;
+        } else if (propertyName == "Gaussian curvature") {
+            return m_gauss;
+        } else if (propertyName == "ShapeIndex") {
+            return m_shapeIndex;
+        } else if (propertyName == "Min curvature direction") {
+            return m_d1;
+        } else if (propertyName == "Max curvature direction") {
+            return m_d2;
+        } else if (propertyName == "Normals") {
+            return m_normal;
+        } else {
+            std::cerr << "Error: property name not found" << std::endl;
+            return SampleVectorType(1, 0);
+        }
+    }
+
 private:
-    VectorSample m_k1, m_k2, m_mean, m_gauss;
-    MatrixSample m_d1, m_d2, m_normal, m_position;
+    SampleVectorType m_k1, m_k2, m_mean, m_gauss, m_shapeIndex;
+    SampleMatrixType m_d1, m_d2, m_normal, m_position;
 
     DGtal::Statistic<Scalar> m_statNeighbors;
     DGtal::Statistic<Scalar> m_statTimings;

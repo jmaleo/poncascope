@@ -8,6 +8,8 @@
 #include <Eigen/Dense>
 #include <DGtal/math/Statistic.h>
 
+#include "../definitions.h"
+#include "../ponca_estimators/adapters/DifferentialQuantities.hpp"
 #include "Readers.h"
 #include "Writters.h"
 
@@ -19,15 +21,15 @@ template <typename _Scalar>
 struct PointCloudDiff
 {
   /// Types
-  typedef Eigen::VectorX<_Scalar>      DenseVector;
-  typedef Eigen::MatrixX<_Scalar>      DenseMatrix; 
-  typedef Eigen::Vector<_Scalar, 3>    Point;
-  typedef Eigen::Matrix<_Scalar, 3, 3> Tensor;
+  // typedef Eigen::VectorX<_Scalar>      DenseVector;
+  // typedef Eigen::MatrixX<_Scalar>      DenseMatrix;
+  // typedef Eigen::Vector<_Scalar, 3>    VectorType;
+  // typedef Eigen::Matrix<_Scalar, 3, 3> Tensor;
 
-  // PointCloudDiff()  = default;
+  // VectorTypeCloudDiff()  = default;
   ~PointCloudDiff() = default;
 
-  PointCloudDiff (const std::string& name) {
+  explicit PointCloudDiff (const std::string& name) {
     this->name = name;
     errorNormal = DGtal::Statistic<_Scalar> (true);
     errorPos = DGtal::Statistic<_Scalar> (true);
@@ -42,24 +44,93 @@ struct PointCloudDiff
     statNeighbors = DGtal::Statistic<_Scalar> (true);
   }
 
+  PointCloudDiff (const std::string& name, const SampleMatrixType& points, const SampleMatrixType& normals) {
+    this->name = name;
+    if ( points.size() != normals.size() )
+    {
+      std::cerr << "Error: points and normals have different sizes" << std::endl;
+      return;
+    }
+    this->points = points;
+    this->normals = normals;
+    errorNormal = DGtal::Statistic<_Scalar> (true);
+    errorPos = DGtal::Statistic<_Scalar> (true);
+    errorMean = DGtal::Statistic<_Scalar> (true);
+    errorGauss = DGtal::Statistic<_Scalar> (true);
+    errorK1 = DGtal::Statistic<_Scalar> (true);
+    errorK2 = DGtal::Statistic<_Scalar> (true);
+    errorD1 = DGtal::Statistic<_Scalar> (true);
+    errorD2 = DGtal::Statistic<_Scalar> (true);
+    errorShapeIndex = DGtal::Statistic<_Scalar> (true);
+    statTimings = DGtal::Statistic<_Scalar> (true);
+    statNeighbors = DGtal::Statistic<_Scalar> (true);
+    compute_bbox();
+  }
+
+  void compute_bbox() {
+    bbox_min = VectorType::Ones() * std::numeric_limits<_Scalar>::max();
+    bbox_max = VectorType::Ones() * std::numeric_limits<_Scalar>::lowest();
+    for (int i = 0 ; i < points.rows(); i++) {
+      VectorType point = points.row(i);
+      for (int j = 0; j < 3; j++) {
+        bbox_min[j] = std::min(bbox_min[j], point[j]);
+        bbox_max[j] = std::max(bbox_max[j], point[j]);
+      }
+    }
+  }
+
+  VectorType getMin() {
+    return bbox_min;
+  }
+
+  VectorType getMax() {
+    return bbox_max;
+  }
+
+  void resize (const int size )
+  {
+    points = SampleMatrixType( size, 3 );
+    normals = SampleMatrixType( size, 3 );
+    gauss = SampleVectorType( size );
+    mean = SampleVectorType( size );
+    k1 = SampleVectorType( size );
+    k2 = SampleVectorType( size );
+    v1 = SampleMatrixType( size, 3 );
+    v2 = SampleMatrixType( size, 3 );
+    non_stable_idx = SampleVectorType( size );
+  }
+
+  void init_zeros ( const int size )
+  {
+    points = SampleMatrixType::Zero( size, 3 );
+    normals = SampleMatrixType::Zero( size, 3 );
+    gauss = SampleVectorType::Zero( size );
+    mean = SampleVectorType::Zero( size );
+    k1 = SampleVectorType::Zero( size );
+    k2 = SampleVectorType::Zero( size );
+    v1 = SampleMatrixType::Zero( size, 3 );
+    v2 = SampleMatrixType::Zero( size, 3 );
+    non_stable_idx = SampleVectorType::Zero( size );
+  }
+
   PointCloudDiff( const PointCloudDiff & apc ) = default;
 
-  void loadPointCloud ( std::string & input )
+  void loadVectorTypeCloud ( std::string & input )
   {
     IO::loadPointCloud<PointCloudDiff<_Scalar>, _Scalar>( *this, input );
   }
 
-  void savePointCloud ( std::string & filename )
+  void saveVectorTypeCloud ( std::string & filename )
   {
     IO::savePointCloud<PointCloudDiff<_Scalar>>( *this, filename );
   }
   
-  void savePointCloudAsPositions ( std::string & filename )
+  void saveVectorTypeCloudAsPositions ( std::string & filename )
   {
     IO::savePointCloudAsPositions<PointCloudDiff<_Scalar>>( *this, filename );
   }
 
-  void savePointCloudAsErrors ( std::string & filename )
+  void saveVectorTypeCloudAsErrors ( std::string & filename )
   {
     IO::savePointCloudAsErrors<PointCloudDiff<_Scalar>, _Scalar>( *this, filename );
   }
@@ -74,8 +145,9 @@ struct PointCloudDiff
     generator.seed( ( seed == 0 ) ? random_seed() : seed );
     std::uniform_real_distribution<_Scalar> dis( 0, 1 );
     std::normal_distribution<_Scalar> dis_noise( 0, noise_position );
-    for ( auto & p : points )
+    for ( int i = 0 ; i < points.rows(); i++ )
     {
+      VectorType p = points.row(i);
       if (dis(generator) < ratio){
         p[ 0 ] += dis_noise( generator );
         p[ 1 ] += dis_noise( generator );
@@ -87,8 +159,9 @@ struct PointCloudDiff
   void flipNormal(_Scalar ratio){
     generator.seed( ( seed == 0 ) ? random_seed() : seed );
     std::uniform_real_distribution<_Scalar> dis( 0, 1 );
-    for ( auto & n : normals )
+    for ( int i = 0 ; i < points.rows(); i++ )
     {
+      VectorType n = normals.row(i);
       if (dis(generator) < ratio){
         n[ 0 ] *= -1;
         n[ 1 ] *= -1;
@@ -101,8 +174,9 @@ struct PointCloudDiff
   {
     generator.seed( ( seed == 0 ) ? random_seed() : seed );
     std::normal_distribution<_Scalar> dis( 0, noise_position );
-    for ( auto & v : points )
+    for ( int i = 0 ; i < points.rows(); i++ )
     {
+      VectorType v = points.row(i);
       v[ 0 ] += dis( generator );
       v[ 1 ] += dis( generator );
       v[ 2 ] += dis( generator );
@@ -113,8 +187,9 @@ struct PointCloudDiff
   {
     generator.seed( ( seed == 0 ) ? random_seed() : seed );
     std::normal_distribution<_Scalar> dis( 0, noise_normal );
-    for ( auto & n : normals )
+    for ( int i = 0 ; i < normals.rows(); i++ )
     {
+      VectorType n = normals.row(i);
       n[ 0 ] += dis( generator );
       n[ 1 ] += dis( generator );
       n[ 2 ] += dis( generator );
@@ -130,10 +205,12 @@ struct PointCloudDiff
     #pragma omp parallel for
     for ( int i = 0; i < points.size(); i++ )
     {
-      if ( k1[ i ]  >  k2[ i ] )
+      if ( k1[i]  >  k2[i] )
       {
         std::swap (k1[i], k2[i]);
-        std::swap (v1[i], v2[i]);
+        const VectorType tmp = v1.row(i);
+        v1.row(i) = v2.row(i);
+        v2.row(i) = tmp;
       }
     }
   }
@@ -141,7 +218,7 @@ struct PointCloudDiff
   void switch_to_abs ()
   {
     #pragma omp parallel for
-    for ( int i = 0; i < points.size(); i++ )
+    for ( int i = 0; i < points.rows(); i++ )
     {
       // particular treatment for kmean and kgauss
       mean[i] = std::abs(mean[i]);
@@ -150,10 +227,12 @@ struct PointCloudDiff
       k1[i] = std::abs(k1[i]);
       k2[i] = std::abs(k2[i]);
 
-      if ( k1[ i ]  >  k2[ i ] )
+      if ( k1[i]  >  k2[i] )
       {
-        std::swap (k1[i], k2[i]);
-        std::swap (v1[i], v2[i]);
+        std::swap(k1[i], k2[i]);
+        const VectorType tmp = v1.row(i);
+        v1.row(i) = v2.row(i);
+        v2.row(i) = tmp;
       }
 
     }
@@ -168,12 +247,12 @@ struct PointCloudDiff
   }
 
   template <typename Functor>
-  _Scalar compute_scalar_error ( _Scalar val, _Scalar other, Functor metric ) {
+  static _Scalar compute_scalar_error ( _Scalar val, _Scalar other, Functor metric ) {
     return metric( val - other );
   }
 
   template <typename Functor>
-  _Scalar compute_radian_error ( Point vec, Point other, Functor metric, bool oriented = false ) {
+  _Scalar compute_radian_error ( VectorType vec, VectorType other, Functor metric, bool oriented = false ) {
     _Scalar dot_prod = vec.dot ( other );
     if ( ! oriented && dot_prod < 0. ){
       dot_prod = vec.dot ( -other );
@@ -185,47 +264,47 @@ struct PointCloudDiff
   }
 
   template <typename Functor>
-  _Scalar compute_vector_error( Point vec, Point other, Functor metric, bool oriented = false ) {
+  _Scalar compute_vector_error( VectorType vec, VectorType other, Functor metric, bool oriented = false ) {
     _Scalar radian_err = compute_radian_error ( vec, other, metric, oriented );
     return metric ( radian_err * 180.0 / M_PI ); // degree
   }
 
   template <typename Functor>
-  _Scalar compute_point_error ( Point p, Point other, Functor metric ) {
+  static _Scalar compute_VectorType_error ( VectorType p, VectorType other, Functor metric ) {
     return metric( ( p - other ).norm() );
   }
 
   void correct_vectors ( int idx ) {
-    if ( v1[ idx ].norm() < 1e-6 )
+    if ( v1.row( idx ).norm() < 1e-6 )
     {
-      v1[ idx ] = Point( 1, 0, 0 );
-      v2[ idx ] = Point( 0, 1, 0 );
+      v1.row( idx ) = VectorType( 1, 0, 0 );
+      v2.row( idx ) = VectorType( 0, 1, 0 );
     }
-    if ( normals[ idx ].norm() < 1e-6 )
+    if ( normals.row( idx ).norm() < 1e-6 )
     {
-      normals[ idx ] = Point( 1, 0, 0 );
+      normals.row( idx ) = VectorType( 1, 0, 0 );
     }
   }
 
   template <typename Functor>
   void compare_at ( const PointCloudDiff & other, int i, Functor metric ){
 
-    errorPos.addValue( compute_point_error( points[ i ], other.points[ i ], metric ) );
-    errorMean.addValue( compute_scalar_error( mean[ i ], other.mean[ i ], metric ) );
-    errorGauss.addValue( compute_scalar_error( gauss[ i ], other.gauss[ i ], metric ) );
+    errorPos.addValue( compute_VectorType_error( points.row(i), other.points.row(i), metric ) );
+    errorMean.addValue( compute_scalar_error( mean[i], other.mean[i], metric ) );
+    errorGauss.addValue( compute_scalar_error( gauss[i], other.gauss[i], metric ) );
 
-    errorK1.addValue( compute_scalar_error( k1[ i ], other.k1[ i ], metric ) );
-    errorK2.addValue( compute_scalar_error( k2[ i ], other.k2[ i ], metric ) );
+    errorK1.addValue( compute_scalar_error( k1[i], other.k1[i], metric ) );
+    errorK2.addValue( compute_scalar_error( k2[i], other.k2[i], metric ) );
 
-    errorNormal.addValue( compute_vector_error( normals[ i ], other.normals[ i ], metric, oriented ) );
+    errorNormal.addValue( compute_vector_error( normals.row(i), other.normals.row(i), metric, oriented ) );
 
-    if ( std::fabs( other.k1[ i ] - other.k2[ i ] ) > 1e-6 )
+    if ( std::fabs( other.k1[i] - other.k2[i] ) > 1e-6 )
     {
-      errorD1.addValue( compute_vector_error( v1[ i ], other.v1[ i ], metric ) );
-      errorD2.addValue( compute_vector_error( v2[ i ], other.v2[ i ], metric ) );
+      errorD1.addValue( compute_vector_error( v1.row(i), other.v1.row(i), metric ) );
+      errorD2.addValue( compute_vector_error( v2.row(i), other.v2.row(i), metric ) );
 
-      _Scalar sIndex       = ( 2.0 / M_PI ) * std::atan( ( k1[ i ] + k2[ i ] ) / ( k1 [ i ] - k2[ i ] ) );
-      _Scalar sIndex_other = ( 2.0 / M_PI ) * std::atan( ( other.k1[ i ] + other.k2[ i ] ) / ( other.k1 [ i ] - other.k2[ i ] ) );
+      _Scalar sIndex       = ( 2.0 / M_PI ) * std::atan( ( k1[i] + k2[i] ) / ( k1[i] - k2[i] ) );
+      _Scalar sIndex_other = ( 2.0 / M_PI ) * std::atan( ( other.k1[i] + other.k2[i] ) / ( other.k1[i] - other.k2[i] ) );
       errorShapeIndex.addValue( compute_scalar_error( sIndex, sIndex_other, metric ) );
     }
     else
@@ -241,17 +320,17 @@ struct PointCloudDiff
 
     errorPos.addValue( 0 );
     errorMean.addValue( metric( metric(mean[i]) ));
-    errorGauss.addValue( metric(gauss[ i ]) );
+    errorGauss.addValue( metric(gauss[i]) );
 
-    errorK1.addValue( metric(k1[ i ]) );
-    errorK2.addValue( metric(k2[ i ]) );
+    errorK1.addValue( metric(k1[i]) );
+    errorK2.addValue( metric(k2[i]) );
 
     errorNormal.addValue( 0 );
 
     errorD1.addValue( 0 );
     errorD2.addValue( 0 );
-    _Scalar sIndex       = ( 2.0 / M_PI ) * std::atan( ( k1[ i ] + k2[ i ] ) / ( k1 [ i ] - k2[ i ] ) );
-    if ( std::fabs( k1[ i ] - k2[ i ] ) > 1e-6 ){
+    _Scalar sIndex       = ( 2.0 / M_PI ) * std::atan( ( k1[i] + k2[i] ) / ( k1[i] - k2[i] ) );
+    if ( std::fabs( k1[i] - k2[i] ) > 1e-6 ){
       errorShapeIndex.addValue( metric( sIndex ) );
     }
   } 
@@ -266,11 +345,11 @@ struct PointCloudDiff
       compare_at( other, unique_idx, [this, &absolute_err] ( _Scalar error ) { return ( absolute_err ) ? abs_error ( error ) : squared_error ( error ); } );
   }
 
-  void compare( const PointCloudDiff & other, bool absolute_err = true, bool statsAsEstimations = false )
+  void compare( const PointCloudDiff & other, bool absolute_err = true, const bool statsAsEstimations = false )
   {
-    for ( int i = 0; i < points.size(); i++ )
+    for ( int i = 0; i < points.rows(); i++ )
     {
-      if ( non_stable_idx.size() > 0 && non_stable_idx[ i ] == 1 )
+      if ( non_stable_idx.rows() > 0 && non_stable_idx[i] == static_cast<Scalar>(1) )
       {
         statNeighbors.addValue( 1 );
         continue;
@@ -297,16 +376,88 @@ struct PointCloudDiff
     }
   }
 
+  void setDifferentialQuantities(const DifferentialQuantities<_Scalar>& diffQuantities){
+    k1 = diffQuantities.k1();
+    k2 = diffQuantities.k2();
+    mean = diffQuantities.mean();
+    gauss = diffQuantities.gauss();
+    v1 = diffQuantities.d1();
+    v2 = diffQuantities.d2();
+    normals = diffQuantities.normal();
+    statNeighbors = diffQuantities.statNeighbors();
+    statTimings = diffQuantities.statTimings();
+    non_stable_idx = diffQuantities.getNonStableVector();
+  }
+
+  void setTriangles(std::vector<std::array<_Scalar, 3>> &triangles){
+    m_triangles = triangles;
+  }
+
+  std::vector<std::array<_Scalar, 3>> & getTriangles(){
+    return m_triangles;
+  }
+
+  SampleMatrixType getByName(const std::string& propertyName) {
+    if (propertyName == "Min curvature") {
+      return k1;
+    } else if (propertyName == "Max curvature") {
+      return k2;
+    } else if (propertyName == "Mean curvature") {
+      return mean;
+    } else if (propertyName == "Gaussian curvature") {
+      return gauss;
+    } else if (propertyName == "Min curvature direction") {
+      return v1;
+    } else if (propertyName == "Max curvature direction") {
+      return v2;
+    } else if (propertyName == "Normals") {
+      return normals;
+    } else if (propertyName == "ShapeIndex") {
+      return shapeIndex;
+    } else {
+      std::cerr << "Error: property name not found" << std::endl;
+      return SampleMatrixType(1);
+    }
+  }
+
+  [[nodiscard]] std::pair<SampleMatrixType, SampleVectorType> getNonZeros(const SampleVectorType& nei_val, const int iVertexSource) const {
+    std::vector<Scalar> nei_value;
+    std::vector<VectorType> nei_pos;
+    for (int i = 0; i < nei_val.size(); i++) {
+      Scalar val = nei_val[i];
+      VectorType pos = points.row(i);
+        if (val != 0 && i != iVertexSource) {
+            nei_value.push_back(val);
+            nei_pos.push_back(pos);
+        }
+    }
+    auto nei_pos_mat = Eigen::Map<SampleMatrixType>(nei_pos[0].data(), nei_pos.size(), 3);
+    auto nei_value_vec = Eigen::Map<SampleVectorType>(nei_value.data(), nei_value.size());
+    return std::make_pair(nei_pos_mat, nei_value_vec);
+  }
+
+  const DifferentialQuantities<_Scalar> & getDiffQuantities() {
+    return estimatedDiffQuantities;
+  }
+
   bool oriented = true;
 
   std::string name;
 
-  std::vector<Point> points;
-  std::vector<Point> normals;
-  std::vector<_Scalar> gauss, mean, k1, k2;
-  std::vector<Point> v1;
-  std::vector<Point> v2;
-  std::vector<unsigned int> non_stable_idx;
+  DifferentialQuantities<_Scalar> estimatedDiffQuantities;
+
+  VectorType bbox_min = VectorType::Zero();
+  VectorType bbox_max = VectorType::Zero();
+
+  SampleMatrixType points;
+  SampleMatrixType normals;
+  SampleVectorType gauss, mean, k1, k2;
+  SampleMatrixType v1;
+  SampleMatrixType v2;
+  SampleVectorType shapeIndex;
+  SampleVectorType non_stable_idx;
+
+  std::vector<std::array<_Scalar, 3>> m_triangles;
 
   // For error stats
   

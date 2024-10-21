@@ -6,23 +6,31 @@
 
 #include "../definitions.h"
 
-std::pair<std::vector<VectorType>, std::vector<std::array<size_t, 3>>> generatePlane(const SampleMatrixType &vertices,
+inline std::pair<std::vector<VectorType>, std::vector<std::array<size_t, 3>>> generatePlane(const SampleMatrixType &vertices,
                                                                                      VectorType &normal) {
     std::vector<std::array<size_t, 3>> faces(3);
     faces[0] = {0, 1, 2};
     faces[1] = {0, 2, 3};
     faces[2] = {0, 0, 0};
 
-    VectorType origin = vertices.row(0);
+    const VectorType origin = vertices.row(0);
 
     // compute the bounding box from vertices
-    VectorType min = vertices.colwise().minCoeff();
-    VectorType max = vertices.colwise().maxCoeff();
+    VectorType min = {std::numeric_limits<Scalar>::max(), std::numeric_limits<Scalar>::max(),
+                      std::numeric_limits<Scalar>::max()};
+    VectorType max = {std::numeric_limits<Scalar>::min(), std::numeric_limits<Scalar>::min(),
+                      std::numeric_limits<Scalar>::min()};
 
-    Scalar min_dist = std::sqrt(origin.dot(min));
+    for ( int i = 0; i < vertices.rows(); i++) {
+        VectorType p = vertices.row(i);
+        min = min.cwiseMin(p);
+        max = max.cwiseMax(p);
+    }
 
-    VectorType origin_min = origin - min;
-    VectorType origin_max = origin - max;
+    const Scalar min_dist = std::sqrt(origin.dot(min));
+
+    const VectorType origin_min = origin - min;
+    const VectorType origin_max = origin - max;
 
     std::vector<VectorType> farestPoints;
     farestPoints.push_back(origin + min_dist * origin_min);
@@ -34,15 +42,15 @@ std::pair<std::vector<VectorType>, std::vector<std::array<size_t, 3>>> generateP
     return std::make_pair(farestPoints, faces);
 }
 
-SampleMatrixType applyCentering(SampleMatrixType &cloudV) {
-    SampleMatrixType cloud_out = SampleMatrixType(cloudV.rows(), 3);
+inline SampleMatrixType applyCentering(SampleMatrixType &cloudV) {
+    auto cloud_out = SampleMatrixType(cloudV.rows(), 3);
 
     VectorType min = {std::numeric_limits<Scalar>::max(), std::numeric_limits<Scalar>::max(),
                       std::numeric_limits<Scalar>::max()};
     VectorType max = {std::numeric_limits<Scalar>::min(), std::numeric_limits<Scalar>::min(),
                       std::numeric_limits<Scalar>::min()};
 
-    for (int i = 0; i < cloudV.rows(); ++i) {
+    for (int i = 0; i < cloudV.rows(); i++) {
         VectorType p = cloudV.row(i);
         for (auto j = 0u; j < 3; ++j) {
             if (p[j] < min[j])
@@ -55,7 +63,7 @@ SampleMatrixType applyCentering(SampleMatrixType &cloudV) {
     VectorType barycenter = (min + max) / 2.0;
 #pragma omp parallel for
     for (int i = 0; i < cloud_out.rows(); ++i) {
-        VectorType current = cloudV.row(i);
+        const VectorType& current = cloudV.row(i);
         cloud_out.row(i) = current - barycenter;
     }
 
@@ -64,32 +72,34 @@ SampleMatrixType applyCentering(SampleMatrixType &cloudV) {
     return cloud_out;
 }
 
-SampleMatrixType rescalePoints(SampleMatrixType &vertices) {
+inline SampleMatrixType rescalePoints(SampleMatrixType &vertices) {
     VectorType baryCenter = VectorType::Zero();
     // Compute barycenter
-    for (int i = 0; i < vertices.rows(); ++i) {
-        baryCenter += vertices.row(i);
+    for (int i = 0; i < vertices.rows(); i++) {
+        VectorType vertice = vertices.row(i);
+        baryCenter += vertice;
     }
-    baryCenter /= Scalar(vertices.rows());
+    baryCenter /= static_cast<Scalar>(vertices.rows());
 
     // Compute max distance
     VectorType maxDist({0.0, 0.0, 0.0});
-    for (int i = 0; i < vertices.rows(); ++i) {
-        VectorType current = VectorType(vertices.row(i)[0], vertices.row(i)[1], vertices.row(i)[2]) - baryCenter;
+    for (int i = 0; i < vertices.rows(); i++) {
+        VectorType vertice = vertices.row(i);
+        VectorType current = vertice - baryCenter;
         maxDist = maxDist.cwiseMax(current.cwiseAbs());
     }
-    Scalar maxDistNorm = maxDist.maxCoeff();
+    const Scalar maxDistNorm = maxDist.maxCoeff();
 
     // Rescale
-    SampleMatrixType rescaledVertices = SampleMatrixType::Zero(vertices.rows(), 3);
+    auto rescaledVertices = SampleMatrixType(vertices.rows(), 3);
     for (int i = 0; i < vertices.rows(); ++i) {
-        VectorType current = VectorType(vertices.row(i)[0], vertices.row(i)[1], vertices.row(i)[2]);
+        VectorType current = vertices.row(i);
         rescaledVertices.row(i) = (current - baryCenter) / maxDistNorm;
     }
     return rescaledVertices;
 }
 
-void savePTSObject(MyPointCloud<Scalar> &cloud, std::string filename) {
+inline void savePTSObject(PointCloudDiff<Scalar> &cloud, std::string filename) {
 
     // If the filename exist, add a number to the filename (without the extension)
     std::string filename_no_ext = filename.substr(0, filename.find_last_of("."));
@@ -106,20 +116,19 @@ void savePTSObject(MyPointCloud<Scalar> &cloud, std::string filename) {
         return;
     }
 
-    SampleMatrixType cloudV = cloud.getVertices();
-    SampleMatrixType cloudN = cloud.getNormals();
+    SampleMatrixType cloudV = cloud.points;
+    SampleMatrixType cloudN = cloud.normals;
 
     file << "# x y z nx ny nz" << std::endl;
     for (int i = 0; i < cloudV.rows(); ++i) {
-        file << cloudV(i, 0) << " " << cloudV(i, 1) << " " << cloudV(i, 2) << " " << cloudN(i, 0) << " " << cloudN(i, 1)
-             << " " << cloudN(i, 2) << std::endl;
+        file << cloudV.row(i)[0] << " " << cloudV.row(i)[1] << " " << cloudV.row(i)[2] << " " << cloudN.row(i)[0] << " " << cloudN.row(i)[1]
+             << " " << cloudN.row(i)[2] << std::endl;
     }
     file.close();
 }
 
-void loadPTSObject(MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_pos, Scalar sigma_normal) {
+inline void loadPTSObject(PointCloudDiff<Scalar> &cloud, const std::string& filename, Scalar sigma_pos, Scalar sigma_normal) {
 
-    SampleMatrixType cloudV, cloudN;
     std::vector<VectorType> cloudVVec, cloudNVec;
 
     std::ifstream file(filename);
@@ -161,25 +170,20 @@ void loadPTSObject(MyPointCloud<Scalar> &cloud, std::string filename, Scalar sig
     }
 
     file.close();
-    // Cast cloudVVec and cloudNVec to Eigen::Matrix
-    cloudV = SampleMatrixType(cloudVVec.size(), 3);
-    cloudN = SampleMatrixType(cloudNVec.size(), 3);
 
-#pragma omp parallel for
-    for (int i = 0; i < cloudVVec.size(); ++i) {
-        cloudV.row(i) = cloudVVec[i];
-        cloudN.row(i) = cloudNVec[i];
-    }
+    SampleMatrixType cloudV = Eigen::Map<SampleMatrixType>(cloudVVec[0].data(), cloudVVec.size(), 3);
+    SampleMatrixType cloudN = Eigen::Map<SampleMatrixType>(cloudNVec[0].data(), cloudNVec.size(), 3);
 
     SampleMatrixType cloudV_centered = applyCentering(cloudV);
 
-    cloud = MyPointCloud<Scalar>(cloudV_centered, cloudN);
-    cloud.addNoise(sigma_pos, sigma_normal);
+    cloud = PointCloudDiff<Scalar>("MyPTSPointCloud", cloudV_centered, cloudN);
+    cloud.addNoisePosition(sigma_pos);
+    cloud.addNoiseNormal(sigma_normal);
 }
 
-void loadXYZObject(MyPointCloud<Scalar> &cloud, std::string &filename, Scalar sigma_pos, Scalar sigma_normal) {
+inline void loadXYZObject(PointCloudDiff<Scalar> &cloud, std::string &filename, Scalar sigma_pos, Scalar sigma_normal) {
 
-    SampleMatrixType cloudV, cloudN;
+    std::vector<VectorType> cloudVVec, cloudNVec;
 
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -209,27 +213,27 @@ void loadXYZObject(MyPointCloud<Scalar> &cloud, std::string &filename, Scalar si
         }
 
         // Add the read values to the matrices
-        cloudV.conservativeResize(cloudV.rows() + 1, 3);
-        cloudV.row(cloudV.rows() - 1) << values[indices["x"]], values[indices["y"]], values[indices["z"]];
-
-        cloudN.conservativeResize(cloudN.rows() + 1, 3);
-        cloudN.row(cloudN.rows() - 1) << 0, 0, 0;
+        cloudVVec.push_back(VectorType(values[indices["x"]], values[indices["y"]], values[indices["z"]]));
+        cloudNVec.push_back(VectorType(0, 0, 0));
     }
 
     file.close();
 
-    // std::cout << "cloudV: " << cloudV.rows() << " " << cloudV.cols() << std::endl;
+    SampleMatrixType cloudV = Eigen::Map<SampleMatrixType>(cloudVVec[0].data(), cloudVVec.size(), 3);
+    SampleMatrixType cloudN = Eigen::Map<SampleMatrixType>(cloudNVec[0].data(), cloudNVec.size(), 3);
 
     SampleMatrixType cloudV_centered = applyCentering(cloudV);
 
-    cloud = MyPointCloud<Scalar>(cloudV_centered, cloudN);
-    cloud.addNoise(sigma_pos, sigma_normal);
+    cloud = PointCloudDiff<Scalar>("MyXYZPointCloud", cloudV_centered, cloudN);
+    cloud.addNoisePosition(sigma_pos);
+    cloud.addNoiseNormal(sigma_normal);
 }
 
-void loadObject(MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_pos, Scalar sigma_normal) {
+SampleMatrixType applyCentering(Eigen::Matrix<Scalar, Eigen::Dynamic, 3>::Nested matrix);
+inline void loadObject(PointCloudDiff<Scalar> &cloud, std::string filename, const Scalar sigma_pos, const Scalar sigma_normal) {
 
     Eigen::MatrixXi meshF;
-    SampleMatrixType cloudV, cloudN;
+    Eigen::Matrix<Scalar, Eigen::Dynamic, 3> cloudV, cloudN;
 
     if (filename.substr(filename.find_last_of(".") + 1) == "pts") {
         loadPTSObject(cloud, filename, sigma_pos, sigma_normal);
@@ -241,7 +245,7 @@ void loadObject(MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_
     }
     if (filename.substr(filename.find_last_of(".") + 1) == "ply") {
         Eigen::MatrixXi cloudE;
-        SampleMatrixType cloudUV;
+        Eigen::Matrix<Scalar, Eigen::Dynamic, 3> cloudUV;
         igl::readPLY(filename, cloudV, meshF, cloudE, cloudN, cloudUV);
     } else {
         igl::read_triangle_mesh(filename, cloudV, meshF);
@@ -255,37 +259,38 @@ void loadObject(MyPointCloud<Scalar> &cloud, std::string filename, Scalar sigma_
     }
 
     // Check if normals have been properly loaded
-    int nbUnitNormal = cloudN.rowwise().squaredNorm().sum();
-    // if ( meshF.rows() != 0 && nbUnitNormal != cloudV.rows() ) {
     if (meshF.rows() != 0 && cloudN.rows() == 0) {
         std::cerr << "[libIGL] An error occurred when computing the normal vectors from the mesh. Aborting..."
                   << std::endl;
         exit(EXIT_FAILURE);
     }
-    SampleMatrixType cloudV_centered = applyCentering(cloudV);
+
+    const SampleMatrixType cloudV_centered = applyCentering(cloudV);
 
     // SampleMatrixType resca = rescalePoints(cloudV);
-    cloud = MyPointCloud<Scalar>(cloudV_centered, cloudN);
+    cloud = PointCloudDiff<Scalar>("MyPointCloud", cloudV_centered, cloudN);
 
-
-    cloud.addNoise(sigma_pos, sigma_normal);
+    cloud.addNoisePosition(sigma_pos);
+    cloud.addNoiseNormal(sigma_normal);
 }
 
-void create_tube(MyPointCloud<Scalar> &cloud) {
+inline void create_tube(PointCloudDiff<Scalar> &cloud) {
 
     int size = 1000;
 
     SampleMatrixType cloudV(size, 3);
     SampleMatrixType cloudN(size, 3);
-    cloudN.setZero();
+    for (int i = 0; i < size; ++i) {
+        cloudN.row(i) = VectorType(0, 0, 0);
+    }
 
-    Scalar a = 4; // radius in the x-direction
-    Scalar b = 4; // radius in the y-direction
-    Scalar length = 20; // length of the tube
+    constexpr Scalar a = 4.0; // radius in the x-direction
+    const Scalar b = 4.0; // radius in the y-direction
+    const Scalar length = 20.0; // length of the tube
 
     for (int i = 0; i < size; ++i) {
-        Scalar u = ((Scalar) rand() / (RAND_MAX)) * 2 * M_PI; // azimuthal angle
-        Scalar z = ((Scalar) rand() / (RAND_MAX)) * length - length / 2; // z-coordinate
+        const Scalar u = (static_cast<Scalar>( rand() ) / (RAND_MAX)) * 2 * M_PI; // azimuthal angle
+        const Scalar z = (static_cast<Scalar>( rand() ) / (RAND_MAX)) * length - length / 2; // z-coordinate
 
         // Vertex calculation
         cloudV.row(i) = VectorType(a * cos(u), b * sin(u), z);
@@ -294,25 +299,27 @@ void create_tube(MyPointCloud<Scalar> &cloud) {
         cloudN.row(i) = VectorType(cos(u) / a, sin(u) / b, 0);
 
         // Normalize the normal vector
-        cloudN.row(i) = cloudN.row(i) / cloudN.row(i).norm();
+        cloudN.row(i)= cloudN.row(i) / cloudN.row(i).norm();
     }
 
-    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
+    cloud = PointCloudDiff<Scalar>("MyTube", cloudV, cloudN);
 }
 
-void create_sphere(MyPointCloud<Scalar> &cloud) {
+inline void create_sphere(PointCloudDiff<Scalar> &cloud) {
 
     int size = 1000;
 
     SampleMatrixType cloudV(size, 3);
     SampleMatrixType cloudN(size, 3);
-    cloudN.setZero();
+    for (int i = 0; i < size; ++i) {
+        cloudN.row(i) = VectorType(0, 0, 0);
+    }
 
     Scalar r = 5.0; // radius of the sphere
 
     for (int i = 0; i < size; ++i) {
-        Scalar theta = ((Scalar) rand() / (RAND_MAX)) * 2 * M_PI; // azimuthal angle
-        Scalar phi = ((Scalar) rand() / (RAND_MAX)) * M_PI; // polar angle
+        const Scalar theta = (static_cast<Scalar>(rand()) / (RAND_MAX)) * 2 * M_PI; // azimuthal angle
+        const Scalar phi = (static_cast<Scalar>(rand()) / (RAND_MAX)) * M_PI; // polar angle
 
         // Vertex calculation
         cloudV.row(i) = VectorType(r * sin(phi) * cos(theta), // x
@@ -325,14 +332,16 @@ void create_sphere(MyPointCloud<Scalar> &cloud) {
                         r; // since the sphere is centered at origin, the normal is the position vector normalized
     }
 
-    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
+    cloud = PointCloudDiff<Scalar>("MySphere", cloudV, cloudN);
 }
 
-void create_cube(MyPointCloud<Scalar> &cloud, const SampleVectorType &pos, const Scalar &dist = 0.1) {
+void create_cube(PointCloudDiff<Scalar> &cloud, const VectorType &pos, const Scalar &dist = 0.1) {
     int size = 20 * 20 * 20;
     SampleMatrixType cloudV(size + 1, 3);
     SampleMatrixType cloudN(size + 1, 3);
-    cloudN.setZero();
+    for (int i = 0; i < size + 1; ++i) {
+        cloudN.row(i) = VectorType(0, 0, 0);
+    }
 
     cloudV.row(0) = pos;
     cloudN.row(0) = VectorType(0, 0, 1);
@@ -347,7 +356,7 @@ void create_cube(MyPointCloud<Scalar> &cloud, const SampleVectorType &pos, const
         }
     }
 
-    cloud = MyPointCloud<Scalar>(cloudV, cloudN);
+    cloud = PointCloudDiff<Scalar>("MyCube", cloudV, cloudN);
 }
 
 template<typename Aabb>
@@ -382,22 +391,22 @@ void createVoxels(const std::vector<Aabb> &boundingBoxes, std::vector<VectorType
     }
 }
 
-std::pair<SampleMatrixType, std::vector<std::array<size_t, 4>>> create_frame(const VectorType &lowerBound,
+inline std::pair<std::vector<VectorType>, std::vector<std::array<size_t, 4>>> create_frame(const VectorType &lowerBound,
                                                                              const VectorType &upperBound,
-                                                                             size_t nbSteps, size_t axis,
-                                                                             Scalar slice = 0.0) {
-    size_t sliceid = static_cast<size_t>(std::floor(slice * nbSteps));
+                                                                             const int nbSteps, const int axis,
+                                                                             const Scalar slice = 0.0) {
+    int sliceid = static_cast<int>(std::floor(slice * nbSteps));
 
-    auto dim1 = (axis + 1) % 3;
-    auto dim2 = (axis + 2) % 3;
+    const auto dim1 = (axis + 1) % 3;
+    const auto dim2 = (axis + 2) % 3;
 
-    Scalar du = (upperBound[dim1] - lowerBound[dim1]) / Scalar(nbSteps);
-    Scalar dv = (upperBound[dim2] - lowerBound[dim2]) / Scalar(nbSteps);
-    Scalar dw = (upperBound[axis] - lowerBound[axis]) / Scalar(nbSteps);
+    const Scalar du = (upperBound[dim1] - lowerBound[dim1]) / static_cast<Scalar>(nbSteps);
+    const Scalar dv = (upperBound[dim2] - lowerBound[dim2]) / static_cast<Scalar>(nbSteps);
+    const Scalar dw = (upperBound[axis] - lowerBound[axis]) / static_cast<Scalar>(nbSteps);
 
-    Scalar u = lowerBound[dim1];
-    Scalar v = lowerBound[dim2];
-    Scalar w = lowerBound[axis] + sliceid * dw;
+    const Scalar u = lowerBound[dim1];
+    const Scalar v = lowerBound[dim2];
+    const Scalar w = lowerBound[axis] + sliceid * dw;
 
     VectorType p;
     VectorType vu, vv;
@@ -417,17 +426,19 @@ std::pair<SampleMatrixType, std::vector<std::array<size_t, 4>>> create_frame(con
             vu = VectorType(du, 0, 0);
             vv = VectorType(0, dv, 0);
             break;
+        default:
+            break;
     }
 
     //   std::vector<VectorType> vertices(nbSteps*nbSteps);
 
-    SampleMatrixType vertices(nbSteps * nbSteps, 3);
+    std::vector<VectorType> vertices(nbSteps * nbSteps);
 
-    SampleVectorType values = SampleVectorType::Zero(nbSteps * nbSteps);
+    auto values = SampleVectorType(nbSteps * nbSteps);
 
     std::vector<std::array<size_t, 4>> faces;
     faces.reserve(nbSteps * nbSteps);
-    std::array<size_t, 4> face;
+    std::array<size_t, 4> face{};
 
     // Regular grid construction
     for (size_t id = 0; id < nbSteps * nbSteps; ++id) {
@@ -435,7 +446,7 @@ std::pair<SampleMatrixType, std::vector<std::array<size_t, 4>>> create_frame(con
         auto j = id / nbSteps;
         p = lowerBound + i * vu + j * vv;
         p[axis] += sliceid * dw;
-        vertices.row(id) = p;
+        vertices[id] = p;
         face = {id, id + 1, id + 1 + nbSteps, id + nbSteps};
         if (((i + 1) < nbSteps) && ((j + 1) < nbSteps))
             faces.push_back(face);
@@ -448,13 +459,13 @@ class CylinderGenerator {
 public:
     CylinderGenerator() = default;
 
-    void generateCylinder(MyPointCloud<Scalar> &cloud, Scalar sigma_pos, Scalar sigma_normal) {
+    void generateCylinder(PointCloudDiff<Scalar> &cloud, const Scalar sigma_pos, const Scalar sigma_normal) const {
 
-        SampleMatrixType parabolic_verts = SampleMatrixType(x_cylinder * z_cylinder, 3);
-        SampleMatrixType parabolic_norms = SampleMatrixType(x_cylinder * z_cylinder, 3);
+        auto parabolic_verts = SampleMatrixType(x_cylinder * z_cylinder, 3);
+        auto parabolic_norms = SampleMatrixType(x_cylinder * z_cylinder, 3);
 
-        Scalar dx = (2.0f) / (x_cylinder - 1);
-        Scalar dz = (2.0f) / (z_cylinder - 1);
+        const Scalar dx = (2.0f) / (x_cylinder - 1.0);
+        const Scalar dz = (2.0f) / (z_cylinder - 1.0);
 
         for (int i = 0; i < x_cylinder; ++i) {
             for (int j = 0; j < z_cylinder; ++j) {
@@ -463,19 +474,16 @@ public:
                 Scalar y = a_cylinder + bx_cylinder * x + bz_cylinder * z +
                            c_a * (cx_cylinder * x + cz_cylinder * z) * (cx_cylinder * x + cz_cylinder * z);
 
-                parabolic_verts(i * z_cylinder + j, 0) = x;
-                parabolic_verts(i * z_cylinder + j, 1) = y;
-                parabolic_verts(i * z_cylinder + j, 2) = z;
-
-                parabolic_norms(i * z_cylinder + j, 0) =
-                        bx_cylinder + 2 * c_a * (cx_cylinder * cx_cylinder * x + cx_cylinder * cz_cylinder * z);
-                parabolic_norms(i * z_cylinder + j, 1) = -1;
-                parabolic_norms(i * z_cylinder + j, 2) =
-                        bz_cylinder + 2 * c_a * (cz_cylinder * cz_cylinder * z + cx_cylinder * cz_cylinder * x);
+                parabolic_verts.row(i * z_cylinder + j) = VectorType(x, y, z);
+                parabolic_norms.row(i * z_cylinder + j) = VectorType(
+                        bx_cylinder + 2 * c_a * (cx_cylinder * cx_cylinder * x + cx_cylinder * cz_cylinder * z),
+                        -1,
+                        bz_cylinder + 2 * c_a * (cz_cylinder * cz_cylinder * z + cx_cylinder * cz_cylinder * x));
             }
         }
-        cloud = MyPointCloud<Scalar>(parabolic_verts, parabolic_norms);
-        cloud.addNoise(sigma_pos, sigma_normal);
+        cloud = PointCloudDiff<Scalar>("MyParabolic", parabolic_verts, parabolic_norms);
+        cloud.addNoisePosition(sigma_pos);
+        cloud.addNoiseNormal(sigma_normal);
     }
 
 public:
@@ -505,24 +513,24 @@ class SinusGenerator {
 public:
     SinusGenerator() = default;
 
-    std::pair<Scalar, VectorType> computeModulatingSinus(Scalar x) {
+    [[nodiscard]] std::pair<Scalar, VectorType> computeModulatingSinus(Scalar x) const {
         Scalar y_mod = h_sinus2 * sin(f_sinus2 * x + p_sinus2);
         VectorType norm_mod = VectorType(h_sinus2 * f_sinus2 * cos(f_sinus2 * x + p_sinus2), -1, 0);
         return std::make_pair(y_mod, norm_mod);
     }
 
-    std::pair<Scalar, VectorType> computeBaseSinus(Scalar x) {
+    [[nodiscard]] std::pair<Scalar, VectorType> computeBaseSinus(Scalar x) const {
         Scalar y = h_sinus * sin(f_sinus * x + p_sinus);
-        VectorType norm = VectorType(h_sinus * f_sinus * cos(f_sinus * x + p_sinus), -1, 0);
+        auto norm = VectorType(h_sinus * f_sinus * cos(f_sinus * x + p_sinus), -1, 0);
         return std::make_pair(y, norm);
     }
 
-    void generateSinus(MyPointCloud<Scalar> &cloud, Scalar sigma_pos, Scalar sigma_normal) {
-        SampleMatrixType sinus_verts = SampleMatrixType(x_sinus * z_sinus, 3);
-        SampleMatrixType sinus_norms = SampleMatrixType(x_sinus * z_sinus, 3);
+    void generateSinus(PointCloudDiff<Scalar> &cloud, Scalar sigma_pos, Scalar sigma_normal) const {
+        auto sinus_verts = SampleMatrixType(x_sinus * z_sinus, 3);
+        auto sinus_norms = SampleMatrixType(x_sinus * z_sinus, 3);
 
-        Scalar dx = (x_max - x_min) / (x_sinus - 1);
-        Scalar dz = (z_max - z_min) / (z_sinus - 1);
+        const Scalar dx = (x_max - x_min) / (x_sinus - 1);
+        const Scalar dz = (z_max - z_min) / (z_sinus - 1);
 
         for (int j = 0; j < z_sinus; ++j) {
             for (int i = 0; i < x_sinus; ++i) {
@@ -533,18 +541,19 @@ public:
                 auto [y_mod, norm_mod] = computeModulatingSinus(x);
 
                 Scalar y = y_base + y_mod;
-                VectorType norm = (norm_base + norm_mod).normalized();
+                const VectorType norm = (norm_base + norm_mod).normalized();
 
                 sinus_verts.row(i * z_sinus + j) = VectorType(x, y, z);
                 sinus_norms.row(i * z_sinus + j) = norm;
             }
         }
 
-        cloud = MyPointCloud<Scalar>(sinus_verts, sinus_norms);
-        cloud.addNoise(sigma_pos, sigma_normal);
+        cloud = PointCloudDiff<Scalar>("MySine", sinus_verts, sinus_norms);
+        cloud.addNoisePosition(sigma_pos);
+        cloud.addNoiseNormal(sigma_normal);
     }
 
-    void saveSinus(MyPointCloud<Scalar> &cloud) { savePTSObject(cloud, "MySin.pts"); }
+    static void saveSinus(PointCloudDiff<Scalar> &cloud) { savePTSObject(cloud, "MySin.pts"); }
 
 public:
     // Parameters for the base sinus
@@ -567,125 +576,3 @@ public:
 
     bool automatic_sinus = false;
 };
-
-
-class Mesh_test {
-
-public:
-    Mesh_test(std::string &filename) {
-        if (filename.substr(filename.find_last_of(".") + 1) == "ply") {
-            Eigen::MatrixXi cloudE;
-            SampleMatrixType cloudUV;
-            igl::readPLY(filename, cloudV, meshF, cloudE, cloudN, cloudUV);
-        } else {
-            igl::read_triangle_mesh(filename, cloudV, meshF);
-        }
-        if (cloudN.rows() == 0)
-            igl::per_vertex_normals(cloudV, meshF, cloudN);
-        // Check if there is mesh
-        if (meshF.rows() == 0 && cloudN.rows() == 0) {
-            std::cerr << "[libIGL] The mesh is empty. Aborting..." << std::endl;
-            exit(EXIT_FAILURE);
-        }
-
-        // Check if normals have been properly loaded
-        int nbUnitNormal = cloudN.rowwise().squaredNorm().sum();
-        // if ( meshF.rows() != 0 && nbUnitNormal != cloudV.rows() ) {
-        if (meshF.rows() != 0 && cloudN.rows() == 0) {
-            std::cerr << "[libIGL] An error occurred when computing the normal vectors from the mesh. Aborting..."
-                      << std::endl;
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    void rotateTranslate(std::string &filenameRotation) {
-        std::ifstream file(filenameRotation);
-        if (!file.is_open()) {
-            std::cerr << "The translation / rotation file : " << filenameRotation << " doen't exist." << std::endl;
-            return;
-        }
-
-        // Format :  rotation x y z
-        //           translation x y z
-
-        VectorType rotation, translation;
-
-        std::string line;
-        for (int line_idx = 0; line_idx < 2; ++line_idx) {
-            std::getline(file, line);
-            std::istringstream iss(line);
-            std::vector<Scalar> values(3);
-            for (int i = 0; i < 3; ++i) {
-                iss >> values[i];
-            }
-            if (line_idx == 0)
-                rotation = VectorType(values[0], values[1], values[2]);
-            else
-                translation = VectorType(values[0], values[1], values[2]);
-        }
-
-        // Rotation (degree) to radian
-        rotation = rotation * M_PI / 180.0;
-
-        Eigen::Matrix<Scalar, 3, 3> rot, rotX, rotY, rotZ;
-        rotX << 1, 0, 0, 0, cos(rotation[0]), -sin(rotation[0]), 0, sin(rotation[0]), cos(rotation[0]);
-        rotY << cos(rotation[1]), 0, sin(rotation[1]), 0, 1, 0, -sin(rotation[1]), 0, cos(rotation[1]);
-        rotZ << cos(rotation[2]), -sin(rotation[2]), 0, sin(rotation[2]), cos(rotation[2]), 0, 0, 0, 1;
-        rot = rotX.transpose() * rotY.transpose() * rotZ.transpose();
-
-        for (int i = 0; i < cloudV.rows(); ++i) {
-            cloudV.row(i) = rot.transpose() * cloudV.row(i).transpose() + translation;
-            cloudN.row(i) = rot.transpose() * cloudN.row(i).transpose();
-        }
-    }
-
-    const Eigen::MatrixXi getIndices() { return meshF; }
-
-    const SampleMatrixType getVertices() { return cloudV; }
-
-    const SampleMatrixType getNormals() { return cloudN; }
-
-private:
-    Eigen::MatrixXi meshF;
-    SampleMatrixType cloudV, cloudN;
-}; // class Mesh_test
-
-/***
- * Cloud is already loaded, we just need to open the file,
- * load the normals from the mesh and add the corresponding normal to each point of the Cloud.
- * The normals are computed using per face normals.
- */
-void normalsFromMesh(MyPointCloud<Scalar> &cloud, Mesh_test &originalMesh, Scalar sigma_pos, Scalar sigma_normal) {
-
-    const Eigen::MatrixXi meshF = originalMesh.getIndices();
-    const SampleMatrixType cloudV = originalMesh.getVertices();
-    const SampleMatrixType cloudN = originalMesh.getNormals();
-
-    SampleMatrixType cloudN_new = cloud.getNormals();
-
-    VectorType point_i;
-    VectorType normal_i = VectorType::Zero();
-    for (int i = 0; i < cloud.getSize(); ++i) {
-        point_i = cloud.getVertices().row(i);
-        // Check the nearest point / face to the point_i in the meshF
-        double minDist = std::numeric_limits<double>::max();
-        for (int j = 0; j < meshF.rows(); ++j) {
-            VectorType face = cloudV.row(meshF(j, 0)) + cloudV.row(meshF(j, 1)) + cloudV.row(meshF(j, 2));
-            face /= 3.0;
-            double dist = (point_i - face).norm();
-            if (dist < minDist) {
-                minDist = dist;
-                normal_i = cloudN.row(meshF(j, 0)) + cloudN.row(meshF(j, 1)) + cloudN.row(meshF(j, 2));
-                normal_i.normalize();
-            }
-        }
-        cloudN_new.row(i) = normal_i;
-    }
-
-    cloud.setNormals(cloudN_new);
-
-    // SampleMatrixType resca = rescalePoints(cloudV);
-    // cloud = MyPointCloud<Scalar>(cloudV, cloudN);
-
-    // cloud.addNoise(sigma_pos, sigma_normal);
-}

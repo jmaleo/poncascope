@@ -3,9 +3,6 @@
 // GUI
 #include "GUI/GUI.h"
 
-// PointCloud
-#include "MyPointCloud.h"
-
 // PointProcessing
 #include "PointProcessing.h"
 
