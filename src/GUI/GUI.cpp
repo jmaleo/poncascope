@@ -9,6 +9,7 @@ void GUI::mainCallBack() {
     saveCameraSettings();
 
     cloudGeneration();
+
     if (isCylinder) {
         cylinderParameters();
     }
@@ -38,6 +39,7 @@ void GUI::mainCallBack() {
     picking();
 
     cloudComputing();
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -110,6 +112,7 @@ void GUI::generationFromFile() {
             fileNames.push_back(entry.path().filename().string());
         }
     }
+
     std::vector<const char *> fileNamesCStr;
     for (const auto &str: fileNames) {
         fileNamesCStr.push_back(str.c_str());
@@ -119,12 +122,14 @@ void GUI::generationFromFile() {
     ImGui::ListBox("Files", &selectedFileIndex, fileNamesCStr.data(), fileNamesCStr.size());
 
     ImGui::SameLine();
+
     if (ImGui::Button("File research")) {
         dialogInfo.title = "Choose File";
         dialogInfo.type = ImGuiFileDialogType_OpenFile;
         dialogInfo.directoryPath = std::filesystem::current_path();
         fileDialogOpen = true;
     }
+
     fileResearch();
 
     // If the user selected a file, display the name of the file
@@ -139,6 +144,8 @@ void GUI::generationFromFile() {
 
     // generation
     if (ImGui::Button("Generate") && selectedFile != "") {
+        // Reset the cloud
+        mainCloud = PointCloudDiff<Scalar>("mainCloud");
         cloudNeedsUpdate = true;
 
         pointProcessing.measureTime("[Generation] Load object",
@@ -332,9 +339,9 @@ void GUI::cloudComputingUpdateAll() {
         for (int i = 0; i < selectedQuantities.size(); ++i) {
             if (selectedQuantities[i]) {
                 std::string completeName = "[" + methodName + "] " + quantityNames[i];
-                auto DiffQuantities = mainCloud.getDiffQuantities();
+                auto diffQuantities = mainCloud.getDiffQuantities();
                 addQuantities(polyscope_mainCloud, completeName,
-                              DiffQuantities.getByName(quantityNames[i]));
+                              diffQuantities.getByName(quantityNames[i]));
             }
         }
         if (displayProjectedPointCloud) {
@@ -357,9 +364,9 @@ void GUI::cloudComputingUpdateAll() {
 
         // Add the shapeIndex to the main cloud
         std::string completeName = "[" + methodName + "] " + "shape index";
-        auto quantity =
-                polyscope_mainCloud->addScalarQuantity(completeName, mainCloud.getDiffQuantities().shapeIndex());
-        quantity->setMapRange(std::pair<double, double>(-1, 1));
+        auto diffQuantities = mainCloud.getDiffQuantities();
+        SampleVectorType shapeIndex = diffQuantities.shapeIndex();
+        addQuantities(polyscope_mainCloud, completeName, shapeIndex);
     });
 
     all_computed = false;
@@ -370,6 +377,8 @@ void GUI::cloudComputingUpdateUnique() {
     if (!unique_computed)
         return;
 
+
+    std::cout << "Cloud computing update unique" << std::endl;
 
     pointProcessing.measureTime("[Polyscope] Update unique projection", [this]() {
         std::string cloudName = "[" + methodName + "] " + "unique";
@@ -382,7 +391,10 @@ void GUI::cloudComputingUpdateUnique() {
             }
         }
         // check if the methodName contains "CNC"
-        if (methodName.find("CNC") != std::string::npos) {
+        if (methodName.find("Hexagram") != std::string::npos
+        || methodName.find("Uniform") != std::string::npos 
+        || methodName.find("Independent") != std::string::npos 
+        || methodName.find("AvgHexagram") != std::string::npos ) {
             // Create a new surface mesh
 
             // std::vector for indices
@@ -394,43 +406,61 @@ void GUI::cloudComputingUpdateUnique() {
             std::string meshName = "[" + methodName + "] " + "mesh";
             polyscope::SurfaceMesh *mesh = polyscope::registerSurfaceMesh(meshName, tempCloud.getTriangles(), indices);
             // Add quantities to the mesh
-            mesh->addVertexVectorQuantity("normals", tempCloud.getDiffQuantities().normal());
-            mesh->addVertexVectorQuantity("d1", tempCloud.getDiffQuantities().d1());
-            mesh->addVertexVectorQuantity("d2", tempCloud.getDiffQuantities().d2());
+            mesh->addVertexVectorQuantity("normals", tempCloud.normals);
+            mesh->addVertexVectorQuantity("d1", tempCloud.v1);
+            mesh->addVertexVectorQuantity("d2", tempCloud.v2);
             polyscope_meshs.push_back(mesh);
         } else {
-            if (methodName.find("PCA") != methodName.find("MeanPLANE")) {
-                VectorType origin = pointProcessing.getVertexSourcePosition();
-                VectorType normal = tempCloud.getDiffQuantities().normal().row(0);
-                std::pair<std::vector<VectorType>, std::vector<std::array<size_t, 3>>> faces_idx =
-                        generatePlane(tempCloud.getDiffQuantities().position(), normal);
+            if ( methodName.find("PCA") != std::string::npos
+            || methodName.find("MeanPLANE") != std::string::npos ) {
+                std::cout << "Computing plane 1" << std::endl;
+                VectorType origin = tempCloud.points.row(0);
+                VectorType normal = tempCloud.normals.row(0);
+                VectorType minDir = tempCloud.v1.row(0);
+                VectorType maxDir = tempCloud.v2.row(0);
+                std::cout << "Computing plane 2" << std::endl;
+                std::pair< std::vector<VectorType>, std::vector<std::array<size_t, 3> > > faces_idx = generatePlane(tempCloud.points, normal, minDir, maxDir);
                 // Create a new surface mesh
                 std::string meshName = "[" + methodName + "] " + "mesh";
-                polyscope::SurfaceMesh *mesh =
-                        polyscope::registerSurfaceMesh(meshName, faces_idx.first, faces_idx.second);
+                polyscope::SurfaceMesh* mesh = polyscope::registerSurfaceMesh(meshName, faces_idx.first, faces_idx.second);
+                std::cout << "Computing plane 3" << std::endl;
                 // Add quantities only to the first vertex (or face)
                 std::vector<VectorType> normals(faces_idx.first.size(), VectorType::Zero());
                 std::vector<VectorType> d1(faces_idx.first.size(), VectorType::Zero());
                 std::vector<VectorType> d2(faces_idx.first.size(), VectorType::Zero());
                 normals[0] = normal;
-                d1[0] = tempCloud.getDiffQuantities().d1().row(0);
-                d2[0] = tempCloud.getDiffQuantities().d2().row(0);
+                d1[0] = minDir;
+                d2[0] = maxDir;
                 mesh->addVertexVectorQuantity("normals", normals);
                 mesh->addVertexVectorQuantity("d1", d1);
                 mesh->addVertexVectorQuantity("d2", d2);
                 polyscope_meshs.push_back(mesh);
             } else {
-                // if ( methodName.find("Sphere") || methodName.find("APSS") || methodName.find("UnorientedSphere") ) {
-
-                // }
-
-                // Create a new point cloud
-                polyscope::PointCloud *newCloud =
-                        polyscope::registerPointCloud(cloudName, tempCloud.getDiffQuantities().position());
-                polyscope_uniqueClouds.push_back(newCloud);
-                addQuantities(newCloud, "normals", tempCloud.getDiffQuantities().normal());
-                addQuantities(newCloud, "d1", tempCloud.getDiffQuantities().d1());
-                addQuantities(newCloud, "d2", tempCloud.getDiffQuantities().d2());
+                if ( methodName.find("Sphere") != std::string::npos || methodName.find("APSS") != std::string::npos || methodName.find("UnorientedSphere") != std::string::npos ){
+                    Scalar radius = Scalar(1) / std::abs( tempCloud.mean[0] );
+                    std::vector<VectorType> vertices(1, tempCloud.points.row(0));
+                    SampleMatrixType normals(1, 3); normals.row(0) = tempCloud.normals.row(0);
+                    SampleMatrixType d1(1, 3); d1.row(0) = tempCloud.v1.row(0);
+                    SampleMatrixType d2(1, 3); d2.row(0) = tempCloud.v2.row(0);
+                    SampleVectorType radii = SampleVectorType::Ones(1) * radius;
+                    // Create simple point cloud with this unique point
+                    std::string cloudName = "[" + methodName + "] " + "unique";
+                    polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, vertices);
+                    polyscope_uniqueClouds.push_back(newCloud);
+                    addQuantities(newCloud, "normals", normals);
+                    addQuantities(newCloud, "d1", d1);
+                    addQuantities(newCloud, "d2", d2);
+                    addQuantities(newCloud, "radius", radii);
+                    newCloud->setPointRadiusQuantity("radius", false);
+                } 
+                else{
+                    // Create a new point cloud
+                    polyscope::PointCloud* newCloud = polyscope::registerPointCloud(cloudName, tempCloud.points);
+                    polyscope_uniqueClouds.push_back(newCloud);
+                    addQuantities(newCloud, "normals", tempCloud.normals);
+                    addQuantities(newCloud, "d1", tempCloud.v1);
+                    addQuantities(newCloud, "d2", tempCloud.v2);
+                }
             }
         }
     });
@@ -521,7 +551,9 @@ void GUI::methodForCloudComputing(const std::string &metName, bool unique) {
         Scalar dist = (mainCloud.getMin() - mainCloud.getMax()).norm() / 50.0;
         create_cube(tempCloud, pointProcessing.getVertexSourcePosition(), dist);
         methodName = metName;
+        std::cout << "Unique point computation" << std::endl;
         pointProcessing.computeUniquePoint<FitT>(metName, tempCloud);
+        std::cout << "Unique point computed" << std::endl;
         unique_computed = true;
     }
 }
@@ -546,9 +578,9 @@ void GUI::methodForCloudComputing_OnlyTriangle(const std::string &metName, const
 
     if (ImGui::Button(buttonName_unique.c_str())) {
         methodName = metName;
-
+        std::cout << "Unique point computation TRIANGLE" << std::endl;
         pointProcessing.computeUniquePoint<ConstWeightFunc>(metName, tempCloud);
-
+        std::cout << "Unique point computed" << std::endl;
         if (tempCloud.getTriangles().size() == 0) {
             std::cerr << "Error: computeUniquePointTriangle returned an empty matrix" << std::endl;
             return;
@@ -764,6 +796,8 @@ void GUI::quantitiesParameters() {
     // mean curv) Also another combo boxe to display the projected point cloud
     for (int i = 0; i < selectedQuantities.size(); ++i) {
         ImGui::Checkbox(quantityNames[i].c_str(), (bool *) &selectedQuantities[i]);
+        if (i % 2 == 0)
+            ImGui::SameLine();
     }
     ImGui::Separator();
     ImGui::Checkbox("Projected point cloud", &displayProjectedPointCloud);

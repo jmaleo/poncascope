@@ -5,6 +5,8 @@
 #include <Eigen/Dense>
 #include <DGtal/math/Statistic.h>
 
+#include "../../definitions.h"
+
 
 template <typename _Scalar>
 struct Quantity {
@@ -73,8 +75,8 @@ public:
     }
 
     inline void computeShapeIndex() {
-        m_shapeIndex = SampleVectorType(m_k1.size());
-        for (int i = 0; i < m_k1.size(); i++) {
+        m_shapeIndex = SampleVectorType(m_position.rows());
+        for (int i = 0; i < m_position.rows(); i++) {
             _Scalar sIndex       = ( 2.0 / M_PI ) * std::atan( ( m_k1[ i ] + m_k2[ i ] ) / ( m_k1 [ i ] - m_k2[ i ] ) );
             m_shapeIndex[i] = sIndex;
         }
@@ -87,9 +89,9 @@ public:
 
     [[nodiscard]] int getNumNonstable() const { return m_nonstable; }
 
-    inline Scalar getNonStableRatio () const { return Scalar( m_nonstable ) / Scalar( m_position.size() ); }
+    inline Scalar getNonStableRatio () const { return Scalar( m_nonstable ) / Scalar( m_position.rows() ); }
 
-    std::vector<unsigned int> getNonStableVector() { return m_non_stable_ratio;}
+    std::vector<unsigned int> getNonStableVector() const { return m_non_stable_ratio;}
 
     [[nodiscard]] inline SampleVectorType k1()     const { return m_k1; }
     [[nodiscard]] inline SampleVectorType k2()     const { return m_k2; }
@@ -107,27 +109,16 @@ public:
     inline DGtal::Statistic<Scalar> statNeighbors() const { return m_statNeighbors; }
     inline DGtal::Statistic<Scalar> statTimings()   const { return m_statTimings; }
 
-    SampleMatrixType getByName(const std::string& propertyName) {
-        if (propertyName == "Min curvature") {
-            return m_k1;
-        } else if (propertyName == "Max curvature") {
-            return m_k2;
-        } else if (propertyName == "Mean curvature") {
-            return m_mean;
-        } else if (propertyName == "Gaussian curvature") {
-            return m_gauss;
-        } else if (propertyName == "ShapeIndex") {
-            return m_shapeIndex;
-        } else if (propertyName == "Min curvature direction") {
-            return m_d1;
-        } else if (propertyName == "Max curvature direction") {
-            return m_d2;
-        } else if (propertyName == "Normals") {
-            return m_normal;
-        } else {
-            std::cerr << "Error: property name not found" << std::endl;
-            return SampleVectorType(1, 0);
-        }
+    const SampleMatrixType getByName (const std::string &name){
+        if (name == "Projections") return m_position;
+        if (name == "Normals") return m_normal;
+        if (name == "Min curvature direction") return m_d1;
+        if (name == "Max curvature direction") return m_d2;
+        if (name == "Min curvature") return m_k1;
+        if (name == "Max curvature") return m_k2;
+        if (name == "Mean curvature") return m_mean;
+        if (name == "Shape index") return m_shapeIndex;
+        return m_position;
     }
 
 private:

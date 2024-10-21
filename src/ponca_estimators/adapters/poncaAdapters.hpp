@@ -56,7 +56,8 @@ private:
 template<typename KdTreeType, typename SampleMatrixType>
 void
 buildKdTree(const SampleMatrixType& cloudV, const SampleMatrixType& cloudN, KdTreeType& tree){
-    std::vector<int> ids(cloudV.size());
+    using VectorType = typename KdTreeType::DataPoint::VectorType;
+    std::vector<int> ids(cloudV.rows());
     std::iota(ids.begin(), ids.end(), 0);
 
     using VN = std::pair<const SampleMatrixType&, const SampleMatrixType&>;
@@ -64,10 +65,10 @@ buildKdTree(const SampleMatrixType& cloudV, const SampleMatrixType& cloudN, KdTr
     tree.buildWithSampling(VN(cloudV, cloudN),
                            ids,
                            [](VN bufs, typename KdTreeType::PointContainer &out) {
-                               int s = bufs.first.size();
+                               int s = bufs.first.rows();
                                out.reserve(s);
                                for (int i = 0; i != s; ++i)
-                                   out.push_back(typename KdTreeType::DataPoint(bufs.first.row(i),
-                                                                                bufs.second.row(i)));
+                                   out.push_back(typename KdTreeType::DataPoint(bufs.first.row(i).transpose(),
+                                                                                bufs.second.row(i).transpose()));
                            });
 }

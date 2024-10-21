@@ -58,7 +58,6 @@ public:
     void init() {
         pointProcessing.measureTime("[Generation] Load object",
                                     [this]() { loadObject(mainCloud, selectedFile, pointNoise, normalNoise); });
-
         pointProcessing.update(mainCloud);
         polyscope_mainCloud = polyscope::registerPointCloud(mainCloudName, mainCloud.points);
         addQuantities(polyscope_mainCloud, "real normals", mainCloud.normals);
@@ -67,7 +66,7 @@ public:
         if (fastMode) {
             polyscope_mainCloud->setPointRenderMode(polyscope::PointRenderMode::Quad);
         }
-
+        std::cout << "init done" << std::endl;
         if (pointRadius > 0.0f)
             polyscope_mainCloud->setPointRadius(pointRadius);
     }
@@ -254,7 +253,7 @@ private:
 
     // Point Cloud Informations
     std::string mainCloudName = "mainCloud";
-    std::string assetsDir = "assets/";
+    std::string assetsDir = "../assets/";
     std::string selectedFile = "";
     int selectedFileIndex = -1;
 
@@ -380,21 +379,22 @@ private:
 
     void cloudComputingParameters();
 
-    template <typename VectorQuantity>
-    void addQuantities(polyscope::PointCloud *pc, const std::string &name, const VectorQuantity &values) {
-        // If VectorQuantity is type of SampleVectorType :
-        if constexpr (std::is_same_v<VectorQuantity, SampleVectorType>) {
-            auto quantity = pc->addScalarQuantity(name, values);
-            // Set bound [-5, 5] for the scalar quantity
-            if (name != "knn" && name != "euclidean nei") {
+    void addQuantities(polyscope::PointCloud *pc, const std::string &name, const SampleMatrixType &values) {
+        if (values.cols() == 1) {
+            auto quantity = pc->addScalarQuantity(name, values.col(0));
+            if (name != "knn" && name != "euclidean nei" && name != "ShapeIndex") {
                 quantity->setMapRange(std::pair<double, double>(-5, 5));
                 quantity->setColorMap("coolwarm");
             } else {
-                quantity->setColorMap("turbo");
-                quantity->setEnabled(true);
+                if (name == "ShapeIndex") {
+                    quantity->setMapRange(std::pair<double, double>(-1, 1));
+                    quantity->setColorMap("viridis");
+                } else {
+                    quantity->setColorMap("turbo");
+                    quantity->setEnabled(true);
+                }
             }
-        }
-        else {
+        } else {
             pc->addVectorQuantity(name, values);
         }
     }
@@ -407,7 +407,15 @@ private:
 
     template<typename WeightFunc>
     void methodWithKernel() {
-        pointProcessing.computeDiffQuantities<WeightFunc>(methodName, mainCloud);
+        std::string currentSelectedMethod = std::string(methods[item_selected_method]);
+        if ( currentSelectedMethod == "AvgHexagram"
+        || currentSelectedMethod == "Hexagram"
+        || currentSelectedMethod == "Uniform"
+        || currentSelectedMethod == "Independent" ) {
+            methodForCloudComputing_OnlyTriangle(currentSelectedMethod, 0);
+        } else {
+            methodForCloudComputing<WeightFunc>(currentSelectedMethod);
+        }
     }
 
     static bool isQuantityMatrix(const std::string &name) {

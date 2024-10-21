@@ -17,7 +17,6 @@ void measureTime( const std::string &actionName, Functor F ){
             std::chrono::steady_clock::now();
     F(); // run process
     const auto end = std::chrono::steady_clock::now();
-    std::cout << actionName << " in " << (end - start) / 1ms << "ms.\n";
 }
 
 /// Generic processing function: traverse point cloud, compute fitting, and use functor to process fitting output
@@ -145,7 +144,7 @@ SampleVectorType evalScalarField( std::string name, const SampleMatrixType &inpu
 template<typename WeightFunc>
 SampleVectorType neiRequest(int index) {
     int nvert = ponca_kdtree.index_data().size();
-    SampleVectorType nei_value(nvert);
+    SampleVectorType nei_value = SampleVectorType::Zero(nvert);
 
     VectorType pos = ponca_kdtree.point_data()[index].pos();
     WeightFunc w(radius);

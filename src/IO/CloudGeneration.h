@@ -6,38 +6,26 @@
 
 #include "../definitions.h"
 
-inline std::pair<std::vector<VectorType>, std::vector<std::array<size_t, 3>>> generatePlane(const SampleMatrixType &vertices,
-                                                                                     VectorType &normal) {
-    std::vector<std::array<size_t, 3>> faces(3);
-    faces[0] = {0, 1, 2};
-    faces[1] = {0, 2, 3};
-    faces[2] = {0, 0, 0};
-
-    const VectorType origin = vertices.row(0);
+inline std::pair< std::vector<VectorType>, std::vector<std::array<size_t, 3> >> generatePlane(const SampleMatrixType& vertices, VectorType & normal, VectorType& d1, VectorType& d2){
+    std::vector<std::array<size_t, 3>> faces (3);
+    faces[0] = {0, 0, 0};
+    faces[1] = {1, 2, 3};
+    faces[2] = {1, 3, 4};
+    
+    VectorType origin = vertices.row(0);
 
     // compute the bounding box from vertices
-    VectorType min = {std::numeric_limits<Scalar>::max(), std::numeric_limits<Scalar>::max(),
-                      std::numeric_limits<Scalar>::max()};
-    VectorType max = {std::numeric_limits<Scalar>::min(), std::numeric_limits<Scalar>::min(),
-                      std::numeric_limits<Scalar>::min()};
-
-    for ( int i = 0; i < vertices.rows(); i++) {
-        VectorType p = vertices.row(i);
-        min = min.cwiseMin(p);
-        max = max.cwiseMax(p);
-    }
-
-    const Scalar min_dist = std::sqrt(origin.dot(min));
-
-    const VectorType origin_min = origin - min;
-    const VectorType origin_max = origin - max;
+    VectorType min = vertices.colwise().minCoeff();
+    VectorType max = vertices.colwise().maxCoeff();
+    Scalar min_dist = (max - min).norm() / 4.0;
 
     std::vector<VectorType> farestPoints;
-    farestPoints.push_back(origin + min_dist * origin_min);
-    farestPoints.push_back(origin + min_dist * origin_max);
-    farestPoints.push_back(origin - min_dist * origin_min);
-    farestPoints.push_back(origin - min_dist * origin_max);
-
+    farestPoints.push_back(origin);
+    farestPoints.push_back(origin + min_dist * d1);
+    farestPoints.push_back(origin + min_dist * d2);
+    farestPoints.push_back(origin - min_dist * d1);
+    farestPoints.push_back(origin - min_dist * d2);
+    
 
     return std::make_pair(farestPoints, faces);
 }
@@ -127,147 +115,8 @@ inline void savePTSObject(PointCloudDiff<Scalar> &cloud, std::string filename) {
     file.close();
 }
 
-inline void loadPTSObject(PointCloudDiff<Scalar> &cloud, const std::string& filename, Scalar sigma_pos, Scalar sigma_normal) {
-
-    std::vector<VectorType> cloudVVec, cloudNVec;
-
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "Could not open the file: " << filename << std::endl;
-        return;
-    }
-
-    std::string line;
-    // Read the first line (header)
-    std::getline(file, line);
-    std::istringstream iss(line);
-    std::vector<std::string> header;
-    std::string word;
-    while (iss >> word) {
-        header.push_back(word);
-    }
-
-    // Find the indices of the x, y, z, nx, ny, nz in the header
-    std::map<std::string, int> indices;
-    for (int i = 0; i < header.size(); ++i) {
-        if (header[i] == "x" || header[i] == "y" || header[i] == "z" || header[i] == "nx" || header[i] == "ny" ||
-            header[i] == "nz") {
-            indices[header[i]] = i - 1;
-        }
-    }
-
-    // Read the rest of the file
-    while (std::getline(file, line)) {
-        std::istringstream iss(line);
-        std::vector<Scalar> values(header.size());
-        for (int i = 0; i < header.size(); ++i) {
-            iss >> values[i];
-        }
-
-        cloudVVec.push_back(VectorType(values[indices["x"]], values[indices["y"]], values[indices["z"]]));
-
-        cloudNVec.push_back(VectorType(values[indices["nx"]], values[indices["ny"]], values[indices["nz"]]));
-    }
-
-    file.close();
-
-    SampleMatrixType cloudV = Eigen::Map<SampleMatrixType>(cloudVVec[0].data(), cloudVVec.size(), 3);
-    SampleMatrixType cloudN = Eigen::Map<SampleMatrixType>(cloudNVec[0].data(), cloudNVec.size(), 3);
-
-    SampleMatrixType cloudV_centered = applyCentering(cloudV);
-
-    cloud = PointCloudDiff<Scalar>("MyPTSPointCloud", cloudV_centered, cloudN);
-    cloud.addNoisePosition(sigma_pos);
-    cloud.addNoiseNormal(sigma_normal);
-}
-
-inline void loadXYZObject(PointCloudDiff<Scalar> &cloud, std::string &filename, Scalar sigma_pos, Scalar sigma_normal) {
-
-    std::vector<VectorType> cloudVVec, cloudNVec;
-
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "Could not open the file: " << filename << std::endl;
-        return;
-    }
-
-    std::string line;
-    // Read the first line (header)
-    std::getline(file, line);
-    std::istringstream iss(line);
-    std::string word;
-
-    // Find the indices of the x, y, z, nx, ny, nz in the header
-    std::map<std::string, int> indices;
-
-    indices["x"] = 0;
-    indices["y"] = 1;
-    indices["z"] = 2;
-
-    // Read the rest of the file
-    while (std::getline(file, line)) {
-        std::istringstream iss(line);
-        std::vector<Scalar> values(3);
-        for (int i = 0; i < 3; ++i) {
-            iss >> values[i];
-        }
-
-        // Add the read values to the matrices
-        cloudVVec.push_back(VectorType(values[indices["x"]], values[indices["y"]], values[indices["z"]]));
-        cloudNVec.push_back(VectorType(0, 0, 0));
-    }
-
-    file.close();
-
-    SampleMatrixType cloudV = Eigen::Map<SampleMatrixType>(cloudVVec[0].data(), cloudVVec.size(), 3);
-    SampleMatrixType cloudN = Eigen::Map<SampleMatrixType>(cloudNVec[0].data(), cloudNVec.size(), 3);
-
-    SampleMatrixType cloudV_centered = applyCentering(cloudV);
-
-    cloud = PointCloudDiff<Scalar>("MyXYZPointCloud", cloudV_centered, cloudN);
-    cloud.addNoisePosition(sigma_pos);
-    cloud.addNoiseNormal(sigma_normal);
-}
-
 inline void loadObject(PointCloudDiff<Scalar> &cloud, std::string filename, const Scalar sigma_pos, const Scalar sigma_normal) {
-
-    Eigen::MatrixXi meshF;
-    Eigen::Matrix<Scalar, Eigen::Dynamic, 3> cloudV, cloudN;
-
-    if (filename.substr(filename.find_last_of(".") + 1) == "pts") {
-        loadPTSObject(cloud, filename, sigma_pos, sigma_normal);
-        return;
-    }
-    if (filename.substr(filename.find_last_of(".") + 1) == "xyz") {
-        loadXYZObject(cloud, filename, sigma_pos, sigma_normal);
-        return;
-    }
-    if (filename.substr(filename.find_last_of(".") + 1) == "ply") {
-        Eigen::MatrixXi cloudE;
-        Eigen::Matrix<Scalar, Eigen::Dynamic, 3> cloudUV;
-        igl::readPLY(filename, cloudV, meshF, cloudE, cloudN, cloudUV);
-    } else {
-        igl::read_triangle_mesh(filename, cloudV, meshF);
-    }
-    if (cloudN.rows() == 0)
-        igl::per_vertex_normals(cloudV, meshF, cloudN);
-    // Check if there is mesh
-    if (meshF.rows() == 0 && cloudN.rows() == 0) {
-        std::cerr << "[libIGL] The mesh is empty. Aborting..." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // Check if normals have been properly loaded
-    if (meshF.rows() != 0 && cloudN.rows() == 0) {
-        std::cerr << "[libIGL] An error occurred when computing the normal vectors from the mesh. Aborting..."
-                  << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    SampleMatrixType cloudV_centered = applyCentering(cloudV);
-
-    // SampleMatrixType resca = rescalePoints(cloudV);
-    cloud = PointCloudDiff<Scalar>("MyPointCloud", cloudV_centered, cloudN);
+    IO::loadPointCloud<PointCloudDiff<Scalar>,Scalar>(cloud, filename);
 
     cloud.addNoisePosition(sigma_pos);
     cloud.addNoiseNormal(sigma_normal);

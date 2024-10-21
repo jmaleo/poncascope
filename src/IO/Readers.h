@@ -92,18 +92,10 @@ void loadPointCloud_other_than_PTS( PointCloudDiff& pointCloud,  std::string & i
         std::cout << "[libIGL] The number of vertices and normals are not consistent. Aborting..." << std::endl;
         // exit (EXIT_FAILURE);
     }
+    pointCloud.init_zeros(cloudV.rows());
 
-    // Fill the point cloud
-    for ( int i = 0; i < cloudV.rows(); i++ ) {
-        pointCloud.points.push_back( Point( cloudV( i, 0 ), cloudV( i, 1 ), cloudV( i, 2 ) ) );
-        pointCloud.normals.push_back( Point( cloudN( i, 0 ), cloudN( i, 1 ), cloudN( i, 2 ) ) );
-        pointCloud.gauss.push_back( 0. );
-        pointCloud.mean.push_back( 0. );
-        pointCloud.k1.push_back( 0. );
-        pointCloud.k2.push_back( 0. );
-        pointCloud.v1.push_back( Point( 0., 0., 0. ) );
-        pointCloud.v2.push_back( Point( 0., 0., 0. ) );
-    }
+    pointCloud.points = cloudV;
+    pointCloud.normals = cloudN;
 }
 
 
@@ -129,12 +121,12 @@ void processHeader( std::map < std::string, _Scalar > & header_idx, std::string 
 }
 
 template <typename PointCloudDiff, typename _Scalar>
-void processLine ( PointCloudDiff& pointCloud, const std::map < std::string, _Scalar > & header_idx, std::string & line ) {
+bool processLine ( PointCloudDiff& pointCloud, const int line_idx, const std::map < std::string, _Scalar > & header_idx, std::string & line ) {
 
     using Point = Eigen::Matrix<_Scalar, 3, 1>;
     if (line.find("#") != std::string::npos) {
         std::cout << "Skipping # line" << std::endl;
-        return;
+        return false;
     }
 
     std::vector<_Scalar> line_values(header_idx.size(), 0.0);
@@ -170,17 +162,18 @@ void processLine ( PointCloudDiff& pointCloud, const std::map < std::string, _Sc
         _Scalar val_k1 = line_values[header_idx.at("k1")];
         _Scalar val_k2 = line_values[header_idx.at("k2")];
         if ( val_k1 > epsilon || val_k1 < -epsilon || val_k2 > epsilon || val_k2 < -epsilon ) {
-            return;
+            return false;
         }
     }
 
-    pointCloud.points.push_back(Point(line_values[header_idx.at("x")],
+    pointCloud.points.row(line_idx) = Point(line_values[header_idx.at("x")],
                            line_values[header_idx.at("y")],
-                           line_values[header_idx.at("z")]));
+                           line_values[header_idx.at("z")]);
+
     if (header_idx.find("nx") != header_idx.end())
-        pointCloud.normals.push_back(Point(line_values[header_idx.at("nx")],
+        pointCloud.normals.row(line_idx) = Point(line_values[header_idx.at("nx")],
                                 line_values[header_idx.at("ny")],
-                                line_values[header_idx.at("nz")]));
+                                line_values[header_idx.at("nz")]);
 
     if (header_idx.find("Gauss_Curvature") != header_idx.end() &&
         header_idx.find("Mean_Curvature") != header_idx.end() &&
@@ -188,17 +181,31 @@ void processLine ( PointCloudDiff& pointCloud, const std::map < std::string, _Sc
         header_idx.find("k2") != header_idx.end() &&
         header_idx.find("d1x") != header_idx.end() &&
         header_idx.find("d2x") != header_idx.end()) {
-            pointCloud.gauss.push_back(line_values[header_idx.at("Gauss_Curvature")]);
-            pointCloud.mean.push_back(line_values[header_idx.at("Mean_Curvature")]);
-            pointCloud.k1.push_back(line_values[header_idx.at("k1")]);
-            pointCloud.k2.push_back(line_values[header_idx.at("k2")]);
-            pointCloud.v1.push_back(Point(line_values[header_idx.at("d1x")],
+            pointCloud.gauss[line_idx] = line_values[header_idx.at("Gauss_Curvature")];
+            pointCloud.mean[line_idx] = line_values[header_idx.at("Mean_Curvature")];
+            pointCloud.k1[line_idx] = line_values[header_idx.at("k1")];
+            pointCloud.k2[line_idx] = line_values[header_idx.at("k2")];
+            pointCloud.v1.row(line_idx) = Point(line_values[header_idx.at("d1x")],
                             line_values[header_idx.at("d1y")],
-                            line_values[header_idx.at("d1z")]));
-            pointCloud.v2.push_back(Point(line_values[header_idx.at("d2x")],
+                            line_values[header_idx.at("d1z")]);
+            pointCloud.v2.row(line_idx) = Point(line_values[header_idx.at("d2x")],
                             line_values[header_idx.at("d2y")],
-                            line_values[header_idx.at("d2z")]));
+                            line_values[header_idx.at("d2z")]);
     }
+
+    return true;
+}
+
+int pointCount (std::string & input){
+    int nVert = 0;
+    std::string line;
+    std::ifstream ifs( input, std::ifstream::in );
+    do {
+        if (line.find("#") != std::string::npos) continue;
+        nVert++;
+    } while ( std::getline( ifs, line ) );
+    ifs.close();
+    return nVert;
 }
 
 template <typename PointCloudDiff, typename _Scalar>
@@ -212,37 +219,25 @@ void loadPointCloud( PointCloudDiff& pointCloud, std::string & input )
         loadPointCloud_other_than_PTS<PointCloudDiff, _Scalar>(pointCloud, input);
         return;
     }
+    int nVert = pointCount(input);
+    pointCloud.init_zeros(nVert);
 
     std::map < std::string, _Scalar > header_idx;
     std::ifstream ifs( input, std::ifstream::in );
-
     // If first line is a header (starts with #), read it
     std::string line;
+    int line_idx = 0;
     if ( std::getline( ifs, line ) )
     {
         processHeader<_Scalar>( header_idx, line );
     }
-
     do {
-        processLine<PointCloudDiff, _Scalar>( pointCloud, header_idx, line );
+        if ( processLine<PointCloudDiff, _Scalar>( pointCloud, line_idx, header_idx, line ) ) 
+            line_idx++; 
     } while ( std::getline( ifs, line ) );
-
-    if ( pointCloud.k1.size() == 0 )
-    {
-        pointCloud.k1.resize( pointCloud.points.size(), 0. );
-        pointCloud.k2.resize( pointCloud.points.size(), 0. );
-        pointCloud.gauss.resize( pointCloud.points.size(), 0. );
-        pointCloud.mean.resize( pointCloud.points.size(), 0. );
-        pointCloud.v1.resize( pointCloud.points.size(), Point( 0., 0., 0. ) );
-        pointCloud.v2.resize( pointCloud.points.size(), Point( 0., 0., 0. ) );
-    }
-    if ( pointCloud.normals.size() == 0 )
-    {
-        pointCloud.normals.resize( pointCloud.points.size(), Point( 1., 0., 0. ) );
-    }
-
-    std::cout << "Read: {} points " << pointCloud.points.size() << std::endl;
+    
     ifs.close();
+    std::cout << "Read: {} points " << nVert << std::endl;
 }
 
 } // namespace IO

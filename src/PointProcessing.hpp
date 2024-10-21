@@ -19,6 +19,15 @@ void PointProcessing::computeDiffQuantities(const std::string &name, PointCloudD
 
 template<typename WeightFunc>
 void PointProcessing::computeUniquePoint(const std::string &name, PointCloudDiff<Scalar> &cloud) {
+    cloud.v1 = SampleMatrixType::Zero(cloud.points.rows(), 3);
+    cloud.v2 = SampleMatrixType::Zero(cloud.points.rows(), 3);
+    cloud.normals = SampleMatrixType::Zero(cloud.points.rows(), 3);
+    cloud.mean = SampleVectorType::Zero(cloud.points.rows());
+    cloud.k1 = SampleVectorType::Zero(cloud.points.rows());
+    cloud.k2 = SampleVectorType::Zero(cloud.points.rows());
+    cloud.gauss = SampleVectorType::Zero(cloud.points.rows());
+    cloud.shapeIndex = SampleVectorType::Zero(cloud.points.rows());
+
     estimateAndProject_OnePoint<WeightFunc>(name, cloud, iVertexSource);
 }
 

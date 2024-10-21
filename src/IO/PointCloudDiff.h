@@ -421,19 +421,26 @@ struct PointCloudDiff
   }
 
   [[nodiscard]] std::pair<SampleMatrixType, SampleVectorType> getNonZeros(const SampleVectorType& nei_val, const int iVertexSource) const {
-    std::vector<Scalar> nei_value;
-    std::vector<VectorType> nei_pos;
+    int nb_non_zeros = 0;
     for (int i = 0; i < nei_val.size(); i++) {
-      Scalar val = nei_val[i];
-      VectorType pos = points.row(i);
-        if (val != 0 && i != iVertexSource) {
-            nei_value.push_back(val);
-            nei_pos.push_back(pos);
-        }
+      if (nei_val[i] != 0) {
+        nb_non_zeros++;
+      }
     }
-    auto nei_pos_mat = Eigen::Map<SampleMatrixType>(nei_pos[0].data(), nei_pos.size(), 3);
-    auto nei_value_vec = Eigen::Map<SampleVectorType>(nei_value.data(), nei_value.size());
-    return std::make_pair(nei_pos_mat, nei_value_vec);
+
+    SampleVectorType nei_value(nb_non_zeros);
+    SampleMatrixType nei_pos(nb_non_zeros, 3);
+
+    int idx = 0;
+    for (int i = 0; i < nei_val.size(); i++) {
+      if (nei_val[i] != 0) {
+        nei_value[idx] = nei_val[i];
+        nei_pos.row(idx) = points.row(i);
+        idx++;
+      }
+    }
+    return std::make_pair(nei_pos, nei_value);
+
   }
 
   const DifferentialQuantities<_Scalar> & getDiffQuantities() {
